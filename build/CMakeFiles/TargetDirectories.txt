@@ -1,0 +1,3 @@
+/home/wyf_15255/codes/build/CMakeFiles/cmake_learn_1.dir
+/home/wyf_15255/codes/build/CMakeFiles/edit_cache.dir
+/home/wyf_15255/codes/build/CMakeFiles/rebuild_cache.dir
