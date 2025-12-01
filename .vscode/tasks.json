@@ -1,0 +1,46 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "CMake: 配置",
+			"type": "shell",
+			"command": "cmake",
+			"args": [
+				"-S",
+				"${workspaceFolder}",
+				"-B",
+				"${workspaceFolder}/build",
+				"-G",
+				"MinGW Makefiles",
+				"-DCMAKE_TOOLCHAIN_FILE=C:/Users/15255/vcpkg/scripts/buildsystems/vcpkg.cmake",
+				"-DVCPKG_TARGET_TRIPLET=x64-mingw-static"
+			],
+			"problemMatcher": [],
+			"group": "build",
+			"detail": "CMake 配置任务"
+		},
+		{
+			"label": "CMake: 构建",
+			"type": "shell",
+			"command": "cmake",
+			"args": [
+				"--build",
+				"${workspaceFolder}/build"
+			],
+			"problemMatcher": [],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"detail": "CMake 构建任务"
+		},
+		{
+			"label": "运行项目",
+			"type": "shell",
+			"command": "${workspaceFolder}/build/Thunder_fighter_jet.exe",
+			"problemMatcher": [],
+			"group": "none",
+			"detail": "运行编译好的可执行文件"
+		}
+	]
+}
