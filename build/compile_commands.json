@@ -1,13 +1,13 @@
 [
 {
   "directory": "D:/Thunder_fighter_jet/build",
-  "command": "D:\\program\\MinGW\\bin\\c++.exe  @CMakeFiles/Thunder_fighter_jet.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Thunder_fighter_jet.dir\\src\\main.cpp.obj -c D:\\Thunder_fighter_jet\\src\\main.cpp",
+  "command": "D:\\MinGw\\x86_64-15.1.0-release-win32-seh-ucrt-rt_v12-rev0\\mingw64\\bin\\g++.exe  @CMakeFiles/Thunder_fighter_jet.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Thunder_fighter_jet.dir\\src\\main.cpp.obj -c D:\\Thunder_fighter_jet\\src\\main.cpp",
   "file": "D:/Thunder_fighter_jet/src/main.cpp",
   "output": "CMakeFiles/Thunder_fighter_jet.dir/src/main.cpp.obj"
 },
 {
   "directory": "D:/Thunder_fighter_jet/build",
-  "command": "D:\\program\\MinGW\\bin\\c++.exe  @CMakeFiles/Thunder_fighter_jet.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Thunder_fighter_jet.dir\\src\\def.cpp.obj -c D:\\Thunder_fighter_jet\\src\\def.cpp",
+  "command": "D:\\MinGw\\x86_64-15.1.0-release-win32-seh-ucrt-rt_v12-rev0\\mingw64\\bin\\g++.exe  @CMakeFiles/Thunder_fighter_jet.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Thunder_fighter_jet.dir\\src\\def.cpp.obj -c D:\\Thunder_fighter_jet\\src\\def.cpp",
   "file": "D:/Thunder_fighter_jet/src/def.cpp",
   "output": "CMakeFiles/Thunder_fighter_jet.dir/src/def.cpp.obj"
 }

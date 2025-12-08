@@ -34,7 +34,7 @@ endif()
 
 # Set path to fallback-tool for dependency-resolution.
 if(NOT DEFINED CMAKE_OBJDUMP)
-  set(CMAKE_OBJDUMP "D:/program/MinGW/bin/objdump.exe")
+  set(CMAKE_OBJDUMP "D:/MinGw/x86_64-15.1.0-release-win32-seh-ucrt-rt_v12-rev0/mingw64/bin/objdump.exe")
 endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
