@@ -76,30 +76,30 @@ CMakeFiles/Thunder_fighter_jet.dir/src/main.cpp.obj: CMakeFiles/Thunder_fighter_
 CMakeFiles/Thunder_fighter_jet.dir/src/main.cpp.obj: D:/Thunder_fighter_jet/src/main.cpp
 CMakeFiles/Thunder_fighter_jet.dir/src/main.cpp.obj: CMakeFiles/Thunder_fighter_jet.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=D:\Thunder_fighter_jet\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/Thunder_fighter_jet.dir/src/main.cpp.obj"
-	D:\MinGw\x86_64-15.1.0-release-win32-seh-ucrt-rt_v12-rev0\mingw64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Thunder_fighter_jet.dir/src/main.cpp.obj -MF CMakeFiles\Thunder_fighter_jet.dir\src\main.cpp.obj.d -o CMakeFiles\Thunder_fighter_jet.dir\src\main.cpp.obj -c D:\Thunder_fighter_jet\src\main.cpp
+	D:\program\MinGW\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Thunder_fighter_jet.dir/src/main.cpp.obj -MF CMakeFiles\Thunder_fighter_jet.dir\src\main.cpp.obj.d -o CMakeFiles\Thunder_fighter_jet.dir\src\main.cpp.obj -c D:\Thunder_fighter_jet\src\main.cpp
 
 CMakeFiles/Thunder_fighter_jet.dir/src/main.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/Thunder_fighter_jet.dir/src/main.cpp.i"
-	D:\MinGw\x86_64-15.1.0-release-win32-seh-ucrt-rt_v12-rev0\mingw64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E D:\Thunder_fighter_jet\src\main.cpp > CMakeFiles\Thunder_fighter_jet.dir\src\main.cpp.i
+	D:\program\MinGW\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E D:\Thunder_fighter_jet\src\main.cpp > CMakeFiles\Thunder_fighter_jet.dir\src\main.cpp.i
 
 CMakeFiles/Thunder_fighter_jet.dir/src/main.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/Thunder_fighter_jet.dir/src/main.cpp.s"
-	D:\MinGw\x86_64-15.1.0-release-win32-seh-ucrt-rt_v12-rev0\mingw64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S D:\Thunder_fighter_jet\src\main.cpp -o CMakeFiles\Thunder_fighter_jet.dir\src\main.cpp.s
+	D:\program\MinGW\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S D:\Thunder_fighter_jet\src\main.cpp -o CMakeFiles\Thunder_fighter_jet.dir\src\main.cpp.s
 
 CMakeFiles/Thunder_fighter_jet.dir/src/def.cpp.obj: CMakeFiles/Thunder_fighter_jet.dir/flags.make
 CMakeFiles/Thunder_fighter_jet.dir/src/def.cpp.obj: CMakeFiles/Thunder_fighter_jet.dir/includes_CXX.rsp
 CMakeFiles/Thunder_fighter_jet.dir/src/def.cpp.obj: D:/Thunder_fighter_jet/src/def.cpp
 CMakeFiles/Thunder_fighter_jet.dir/src/def.cpp.obj: CMakeFiles/Thunder_fighter_jet.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=D:\Thunder_fighter_jet\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/Thunder_fighter_jet.dir/src/def.cpp.obj"
-	D:\MinGw\x86_64-15.1.0-release-win32-seh-ucrt-rt_v12-rev0\mingw64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Thunder_fighter_jet.dir/src/def.cpp.obj -MF CMakeFiles\Thunder_fighter_jet.dir\src\def.cpp.obj.d -o CMakeFiles\Thunder_fighter_jet.dir\src\def.cpp.obj -c D:\Thunder_fighter_jet\src\def.cpp
+	D:\program\MinGW\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Thunder_fighter_jet.dir/src/def.cpp.obj -MF CMakeFiles\Thunder_fighter_jet.dir\src\def.cpp.obj.d -o CMakeFiles\Thunder_fighter_jet.dir\src\def.cpp.obj -c D:\Thunder_fighter_jet\src\def.cpp
 
 CMakeFiles/Thunder_fighter_jet.dir/src/def.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/Thunder_fighter_jet.dir/src/def.cpp.i"
-	D:\MinGw\x86_64-15.1.0-release-win32-seh-ucrt-rt_v12-rev0\mingw64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E D:\Thunder_fighter_jet\src\def.cpp > CMakeFiles\Thunder_fighter_jet.dir\src\def.cpp.i
+	D:\program\MinGW\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E D:\Thunder_fighter_jet\src\def.cpp > CMakeFiles\Thunder_fighter_jet.dir\src\def.cpp.i
 
 CMakeFiles/Thunder_fighter_jet.dir/src/def.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/Thunder_fighter_jet.dir/src/def.cpp.s"
-	D:\MinGw\x86_64-15.1.0-release-win32-seh-ucrt-rt_v12-rev0\mingw64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S D:\Thunder_fighter_jet\src\def.cpp -o CMakeFiles\Thunder_fighter_jet.dir\src\def.cpp.s
+	D:\program\MinGW\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S D:\Thunder_fighter_jet\src\def.cpp -o CMakeFiles\Thunder_fighter_jet.dir\src\def.cpp.s
 
 # Object files for target Thunder_fighter_jet
 Thunder_fighter_jet_OBJECTS = \
