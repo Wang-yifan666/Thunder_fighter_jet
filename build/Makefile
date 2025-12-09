@@ -152,6 +152,30 @@ src/def.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\Thunder_fighter_jet.dir\build.make CMakeFiles/Thunder_fighter_jet.dir/src/def.cpp.s
 .PHONY : src/def.cpp.s
 
+src/enemy.obj: src/enemy.cpp.obj
+.PHONY : src/enemy.obj
+
+# target to build an object file
+src/enemy.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Thunder_fighter_jet.dir\build.make CMakeFiles/Thunder_fighter_jet.dir/src/enemy.cpp.obj
+.PHONY : src/enemy.cpp.obj
+
+src/enemy.i: src/enemy.cpp.i
+.PHONY : src/enemy.i
+
+# target to preprocess a source file
+src/enemy.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Thunder_fighter_jet.dir\build.make CMakeFiles/Thunder_fighter_jet.dir/src/enemy.cpp.i
+.PHONY : src/enemy.cpp.i
+
+src/enemy.s: src/enemy.cpp.s
+.PHONY : src/enemy.s
+
+# target to generate assembly for a file
+src/enemy.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Thunder_fighter_jet.dir\build.make CMakeFiles/Thunder_fighter_jet.dir/src/enemy.cpp.s
+.PHONY : src/enemy.cpp.s
+
 src/main.obj: src/main.cpp.obj
 .PHONY : src/main.obj
 
@@ -188,6 +212,9 @@ help:
 	@echo ... src/def.obj
 	@echo ... src/def.i
 	@echo ... src/def.s
+	@echo ... src/enemy.obj
+	@echo ... src/enemy.i
+	@echo ... src/enemy.s
 	@echo ... src/main.obj
 	@echo ... src/main.i
 	@echo ... src/main.s
