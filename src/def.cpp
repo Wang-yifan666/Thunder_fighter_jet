@@ -44,7 +44,8 @@ top_row_clear_(true),             //
 last_score_time_(0),              //
 highest_score_(0),                //
 is_invincible_(false),            //
-invincible_until_(start_time_)    //
+invincible_until_(start_time_),   //
+cheat_invincible_(false)          //
 {
 	HideCursor();
 	ClearScreen();
@@ -190,6 +191,10 @@ void ThunderFighter::DrawFrame()
 	{
 		cheats_life();
 	}
+	if(GetAsyncKeyState('5') & 0x8000)
+	{
+		cheats_invincible();
+	}
 
 	player_x_ = std::clamp(player_x_, 0, kScreenWidth - player_w);
 	player_y_ = std::clamp(player_y_, 0, kScreenHeight - player_h);
@@ -236,9 +241,8 @@ void ThunderFighter::DrawFrame()
 			char c = screen_buffer[y][x];
 			if(c == '*' || c == '0') // 玩家
 			{
-				auto col = //
-				    is_invincible_ ? Color::GreenLight
-				                   : Color::YellowLight;
+				bool inv = is_invincible_ || cheat_invincible_;
+				auto col = inv ? Color::GreenLight : Color::YellowLight;
 				line_chars.push_back(text(std::string(1, c)) //
 				                     | bold                  //
 				                     | color(col));          //
@@ -322,7 +326,7 @@ void ThunderFighter::DrawFrame()
 
 void ThunderFighter::CheckPlayerCollision()
 {
-	if(is_invincible_) //已经处于无敌状态，直接返回
+	if(is_invincible_ || cheat_invincible_) //已经处于无敌状态，直接返回
 		return;
 
 	const int player_w = 3;

@@ -46,6 +46,7 @@ private:
 	void HideCursor() const;    //隐藏光标
 	void cheats_kills();        //作弊：秒杀所有敌人
 	void cheats_life();         //作弊：加血
+	void cheats_invincible();   //作弊：无敌
 	void LoadHighScore();       //加载最高分
 	void SaveHighScore() const; //保存最高分
 
@@ -75,8 +76,9 @@ private:
 
 	//===== 状态：辅助计时 / 敌人容器 =====
 	std::chrono::steady_clock::time_point
-	    last_fps_time_;          //上次 FPS 统计时间
-	bool is_invincible_ = false; //当前是否处于无敌
+	    last_fps_time_;             //上次 FPS 统计时间
+	bool is_invincible_ = false;    //当前是否处于无敌
+	bool cheat_invincible_ = false; //无敌挂开关
 	std::chrono::steady_clock::time_point
 	    invincible_until_; // 无敌结束时间
 
