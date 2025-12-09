@@ -87,6 +87,7 @@ CMakeFiles/Thunder_fighter_jet.dir/src/def.cpp.obj: D:/Thunder_fighter_jet/src/d
   D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/bits/exception.h \
   D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/bits/exception_defines.h \
   D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/bits/exception_ptr.h \
+  D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/bits/fstream.tcc \
   D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/bits/functexcept.h \
   D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/bits/functional_hash.h \
   D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/bits/hash_bytes.h \
@@ -170,6 +171,7 @@ CMakeFiles/Thunder_fighter_jet.dir/src/def.cpp.obj: D:/Thunder_fighter_jet/src/d
   D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/ext/numeric_traits.h \
   D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/ext/string_conversions.h \
   D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/ext/type_traits.h \
+  D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/fstream \
   D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/functional \
   D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/initializer_list \
   D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/iomanip \
@@ -204,8 +206,10 @@ CMakeFiles/Thunder_fighter_jet.dir/src/def.cpp.obj: D:/Thunder_fighter_jet/src/d
   D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/variant \
   D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/vector \
   D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/x86_64-w64-mingw32/bits/atomic_word.h \
+  D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/x86_64-w64-mingw32/bits/basic_file.h \
   D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/x86_64-w64-mingw32/bits/c++allocator.h \
   D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/x86_64-w64-mingw32/bits/c++config.h \
+  D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/x86_64-w64-mingw32/bits/c++io.h \
   D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/x86_64-w64-mingw32/bits/c++locale.h \
   D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/x86_64-w64-mingw32/bits/cpu_defines.h \
   D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/x86_64-w64-mingw32/bits/ctype_base.h \
@@ -1140,6 +1144,8 @@ D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/bits/char_traits.
 
 D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/pmmintrin.h:
 
+D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/fstream:
+
 D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/bits/concept_check.h:
 
 D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/bits/stl_algobase.h:
@@ -1159,6 +1165,8 @@ D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/bits/erase_if.h:
 D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/bits/exception.h:
 
 D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/bits/exception_ptr.h:
+
+D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/bits/fstream.tcc:
 
 D:/program/MinGW/x86_64-w64-mingw32/include/concurrencysal.h:
 
@@ -1446,7 +1454,15 @@ D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/mm3dnow.h:
 
 D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/x86_64-w64-mingw32/bits/atomic_word.h:
 
+D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/x86_64-w64-mingw32/bits/basic_file.h:
+
 D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/x86_64-w64-mingw32/bits/c++config.h:
+
+D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/tr1/poly_laguerre.tcc:
+
+D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/cetintrin.h:
+
+D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/x86_64-w64-mingw32/bits/c++io.h:
 
 D:/program/MinGW/x86_64-w64-mingw32/include/pshpack1.h:
 
@@ -1475,10 +1491,6 @@ D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/x86_64-w64-mingw3
 D:/Thunder_fighter_jet/src/enemy.h:
 
 D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/x86_64-w64-mingw32/bits/time_members.h:
-
-D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/c++/tr1/poly_laguerre.tcc:
-
-D:/program/MinGW/lib/gcc/x86_64-w64-mingw32/11.2.0/include/cetintrin.h:
 
 D:/program/MinGW/x86_64-w64-mingw32/include/utilapiset.h:
 
