@@ -6,6 +6,7 @@
 #include <algorithm>
 //#include <random>
 #include <iomanip>
+#include <fstream>
 
 #include "def.h"
 
@@ -40,12 +41,14 @@ enemy_move_interval_(20),         //
 remaining_rows_in_batch_(0),      //
 score_(0),                        //
 top_row_clear_(true),             //
-last_score_time_(0)               //
+last_score_time_(0),              //
+highest_score_(0)                 //
 {
 	HideCursor();
 	ClearScreen();
 	last_fps_time_ = steady_clock::now();
 
+	LoadHighScore();
 	Make_enermy();
 }
 
@@ -244,41 +247,46 @@ void ThunderFighter::DrawFrame()
 	};
 
 	auto window =
-	    vbox({text("雷霆战机 v1.1") //
-	              | bold            //
-	              | center,         //
-	          separator(),          //
-	          hbox({
-	              text("帧率: "),                                  //
-	              text(std::to_string(current_fps_) + " FPS  ")    //
-	                  | bold                                       //
-	                  | color(Color::Green),                       //
-	              text(" | 时长: "),                               //
-	              text(std::to_string(elapsed_seconds_) + " 秒  ") //
-	                  | bold                                       //
-	                  | color(Color::BlueLight),                   //
-	              text(" | level: "),                              //
-	              text(std::to_string(level_))                     //
-	                  | bold                                       //
-	                  | color(Color::Green),                       //
-	              text(" | 剩余敌人: "),                           //
-	              text(std::to_string(enemies_.size()              //
-	                                  + pending_enemies_.size()))  //
-	                  | bold                                       //
-	                  | color(Color::Red),                         //
-	              text(" | 分数: ")                                //
-	                  | bold                                       //
-	                  | color(Color::Yellow),
-	              text((std::stringstream()
-	                    << std::setw(10) << std::setfill('0') << score_)
-	                       .str())                //
-	                  | bold                      //
-	                  | color(Color::YellowLight) //
-	          }),                                 //
-	          text("按q退出,按wasd移动"),         //
-	          separator(),                        //
-	          vbox(lines)                         //
-	              | vscroll_indicator             //
+	    vbox({text("雷霆战机 v1.1")                                  //
+	              | bold                                             //
+	              | center,                                          //
+	          separator(),                                           //
+	          hbox({text("帧率: "),                                  //
+	                text(std::to_string(current_fps_) + " FPS  ")    //
+	                    | bold                                       //
+	                    | color(Color::Green),                       //
+	                text(" | 时长: "),                               //
+	                text(std::to_string(elapsed_seconds_) + " 秒  ") //
+	                    | bold                                       //
+	                    | color(Color::BlueLight),                   //
+	                text(" | level: "),                              //
+	                text(std::to_string(level_))                     //
+	                    | bold                                       //
+	                    | color(Color::Green),                       //
+	                text(" | 剩余敌人: "),                           //
+	                text(std::to_string(enemies_.size()              //
+	                                    + pending_enemies_.size()))  //
+	                    | bold                                       //
+	                    | color(Color::Red),                         //
+	                text(" | 分数: ")                                //
+	                    | bold                                       //
+	                    | color(Color::Yellow),
+	                text((std::stringstream()
+	                      << std::setw(10) << std::setfill('0')
+	                      << score_)
+	                         .str())                     //
+	                    | bold                           //
+	                    | color(Color::YellowLight),     //
+	                text(" | 最高分: ")                  //
+	                    | bold                           //
+	                    | color(Color::CyanLight),       //
+	                text(std::to_string(highest_score_)) //
+	                    | bold                           //
+	                    | color(Color::CyanLight)}),     //
+	          text("按q退出,按wasd移动"),                //
+	          separator(),                               //
+	          vbox(lines)                                //
+	              | vscroll_indicator                    //
 	              | frame,
 	          filler(),           //
 	          separator(),        //
@@ -294,16 +302,57 @@ void ThunderFighter::DrawFrame()
 	std::cout << std::flush;
 }
 
+void ThunderFighter::LoadHighScore()
+{
+	std::ifstream fin("../highscore.txt");
+	if(fin)
+	{
+		fin >> highest_score_;
+		if(!fin)
+		{
+			highest_score_ = 0;
+		}
+	}
+	else
+	{
+		// 文件不存在，当作0分
+		highest_score_ = 0;
+	}
+}
+
+void ThunderFighter::SaveHighScore() const
+{
+	std::ofstream fout("../highscore.txt");
+	if(fout)
+	{
+		fout << highest_score_;
+	}
+	// 简单版本：不做错误提示，写失败就算了
+}
+
 void ThunderFighter::Run()
 {
-
 	while(running_ && !ShouldExit())
 	{
 		DrawFrame();
 		std::this_thread::sleep_for(16ms);
 	}
 
-	ClearScreen();
+	if(score_ > highest_score_)
+	{
+		highest_score_ = score_;
+		SaveHighScore();
+		ClearScreen();
+		std::cout << "\n\n恭喜你创造了新的最高分: " << highest_score_
+		          << " 分！\n";
+	}
+	else
+	{
+		ClearScreen();
+		std::cout << "\n\n本局得分: " << score_
+		          << " 分，当前最高分: " << highest_score_ << " 分。\n";
+	}
+
 	std::cout << "\n\n雷霆战机已退出,平均帧率: " << current_fps_
 	          << " FPS" << std::endl;
 	system("pause");

@@ -39,9 +39,11 @@ private:
 	                 int screen_height); //敌人实际移动
 
 	//===== 控制台 / 输出工具 =====
-	void ClearScreen() const; //清屏
-	void HideCursor() const;  //隐藏光标
-	void cheats_kills();      //作弊：秒杀所有敌人
+	void ClearScreen() const;   //清屏
+	void HideCursor() const;    //隐藏光标
+	void cheats_kills();        //作弊：秒杀所有敌人
+	void LoadHighScore();       //加载最高分
+	void SaveHighScore() const; //保存最高分
 
 	//===== 状态：核心游戏数据 =====
 	// 按照构造函数初始化列表的顺序声明，避免编译器关于“初始化顺序不同”的警告
@@ -63,6 +65,7 @@ private:
 	int remaining_rows_in_batch_; //当前刷怪批次剩余行数
 
 	int score_;               //分数
+	int highest_score_;       //最高分
 	bool top_row_clear_;      //顶部是否空（用于刷怪）
 	int last_score_time_ = 0; //上次加分的时间点（秒）
 
