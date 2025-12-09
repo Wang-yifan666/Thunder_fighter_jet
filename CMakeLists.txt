@@ -16,6 +16,7 @@ add_executable(Thunder_fighter_jet
     src/main.cpp
     src/def.cpp
     src/enemy.cpp
+    src/cheats.cpp
 )
 
 target_link_libraries(Thunder_fighter_jet PRIVATE

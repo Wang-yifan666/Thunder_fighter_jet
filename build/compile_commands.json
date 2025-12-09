@@ -16,5 +16,11 @@
   "command": "D:\\program\\MinGW\\bin\\c++.exe  @CMakeFiles/Thunder_fighter_jet.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Thunder_fighter_jet.dir\\src\\enemy.cpp.obj -c D:\\Thunder_fighter_jet\\src\\enemy.cpp",
   "file": "D:/Thunder_fighter_jet/src/enemy.cpp",
   "output": "CMakeFiles/Thunder_fighter_jet.dir/src/enemy.cpp.obj"
+},
+{
+  "directory": "D:/Thunder_fighter_jet/build",
+  "command": "D:\\program\\MinGW\\bin\\c++.exe  @CMakeFiles/Thunder_fighter_jet.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Thunder_fighter_jet.dir\\src\\cheats.cpp.obj -c D:\\Thunder_fighter_jet\\src\\cheats.cpp",
+  "file": "D:/Thunder_fighter_jet/src/cheats.cpp",
+  "output": "CMakeFiles/Thunder_fighter_jet.dir/src/cheats.cpp.obj"
 }
 ]

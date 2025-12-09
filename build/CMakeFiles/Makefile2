@@ -84,12 +84,12 @@ clean: CMakeFiles/Thunder_fighter_jet.dir/clean
 CMakeFiles/Thunder_fighter_jet.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\Thunder_fighter_jet.dir\build.make CMakeFiles/Thunder_fighter_jet.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\Thunder_fighter_jet.dir\build.make CMakeFiles/Thunder_fighter_jet.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=D:\Thunder_fighter_jet\build\CMakeFiles --progress-num=1,2,3,4 "Built target Thunder_fighter_jet"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=D:\Thunder_fighter_jet\build\CMakeFiles --progress-num=1,2,3,4,5 "Built target Thunder_fighter_jet"
 .PHONY : CMakeFiles/Thunder_fighter_jet.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/Thunder_fighter_jet.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start D:\Thunder_fighter_jet\build\CMakeFiles 4
+	$(CMAKE_COMMAND) -E cmake_progress_start D:\Thunder_fighter_jet\build\CMakeFiles 5
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 CMakeFiles/Thunder_fighter_jet.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start D:\Thunder_fighter_jet\build\CMakeFiles 0
 .PHONY : CMakeFiles/Thunder_fighter_jet.dir/rule
@@ -101,7 +101,7 @@ Thunder_fighter_jet: CMakeFiles/Thunder_fighter_jet.dir/rule
 # codegen rule for target.
 CMakeFiles/Thunder_fighter_jet.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\Thunder_fighter_jet.dir\build.make CMakeFiles/Thunder_fighter_jet.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=D:\Thunder_fighter_jet\build\CMakeFiles --progress-num=1,2,3,4 "Finished codegen for target Thunder_fighter_jet"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=D:\Thunder_fighter_jet\build\CMakeFiles --progress-num=1,2,3,4,5 "Finished codegen for target Thunder_fighter_jet"
 .PHONY : CMakeFiles/Thunder_fighter_jet.dir/codegen
 
 # clean rule for target.

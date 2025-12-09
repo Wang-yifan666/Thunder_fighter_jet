@@ -30,18 +30,22 @@ private:
 	void Clear_Current_Enemies();   //清空当前enemies_
 	void SpawnEnemiesFromPending(); //从pending刷一批敌人到屏幕
 	bool IsOverlapping(const Enemy& a,
-	                   const Enemy& b); //AABB 重叠检测
+	                   const Enemy& b); //检查两个敌人是否重叠
 	bool WillOverlap(const Enemy& cur,
 	                 const std::vector<Enemy>& enemies, int new_x,
-	                 int new_y); // 预测移动后是否重叠
+	                 int new_y); //预测移动后是否重叠
 	void MoveEnemies(std::vector<Enemy>& active_enemies, int level,
 	                 int screen_width,
 	                 int screen_height); //敌人实际移动
+
+	// ========= 新增：玩家碰撞检测 =========
+	void CheckPlayerCollision(); //玩家与敌人碰撞检测
 
 	//===== 控制台 / 输出工具 =====
 	void ClearScreen() const;   //清屏
 	void HideCursor() const;    //隐藏光标
 	void cheats_kills();        //作弊：秒杀所有敌人
+	void cheats_life();         //作弊：加血
 	void LoadHighScore();       //加载最高分
 	void SaveHighScore() const; //保存最高分
 
@@ -71,7 +75,10 @@ private:
 
 	//===== 状态：辅助计时 / 敌人容器 =====
 	std::chrono::steady_clock::time_point
-	    last_fps_time_; //上次 FPS 统计时间
+	    last_fps_time_;          //上次 FPS 统计时间
+	bool is_invincible_ = false; //当前是否处于无敌
+	std::chrono::steady_clock::time_point
+	    invincible_until_; // 无敌结束时间
 
 	std::vector<Enemy> enemies_;         //屏幕上的敌人
 	std::vector<Enemy> pending_enemies_; //待生成敌人队列

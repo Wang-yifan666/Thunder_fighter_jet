@@ -128,6 +128,30 @@ Thunder_fighter_jet/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\Thunder_fighter_jet.dir\build.make CMakeFiles/Thunder_fighter_jet.dir/build
 .PHONY : Thunder_fighter_jet/fast
 
+src/cheats.obj: src/cheats.cpp.obj
+.PHONY : src/cheats.obj
+
+# target to build an object file
+src/cheats.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Thunder_fighter_jet.dir\build.make CMakeFiles/Thunder_fighter_jet.dir/src/cheats.cpp.obj
+.PHONY : src/cheats.cpp.obj
+
+src/cheats.i: src/cheats.cpp.i
+.PHONY : src/cheats.i
+
+# target to preprocess a source file
+src/cheats.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Thunder_fighter_jet.dir\build.make CMakeFiles/Thunder_fighter_jet.dir/src/cheats.cpp.i
+.PHONY : src/cheats.cpp.i
+
+src/cheats.s: src/cheats.cpp.s
+.PHONY : src/cheats.s
+
+# target to generate assembly for a file
+src/cheats.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Thunder_fighter_jet.dir\build.make CMakeFiles/Thunder_fighter_jet.dir/src/cheats.cpp.s
+.PHONY : src/cheats.cpp.s
+
 src/def.obj: src/def.cpp.obj
 .PHONY : src/def.obj
 
@@ -209,6 +233,9 @@ help:
 	@echo ... edit_cache
 	@echo ... rebuild_cache
 	@echo ... Thunder_fighter_jet
+	@echo ... src/cheats.obj
+	@echo ... src/cheats.i
+	@echo ... src/cheats.s
 	@echo ... src/def.obj
 	@echo ... src/def.i
 	@echo ... src/def.s

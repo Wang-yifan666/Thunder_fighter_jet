@@ -1,4 +1,6 @@
 file(REMOVE_RECURSE
+  "CMakeFiles/Thunder_fighter_jet.dir/src/cheats.cpp.obj"
+  "CMakeFiles/Thunder_fighter_jet.dir/src/cheats.cpp.obj.d"
   "CMakeFiles/Thunder_fighter_jet.dir/src/def.cpp.obj"
   "CMakeFiles/Thunder_fighter_jet.dir/src/def.cpp.obj.d"
   "CMakeFiles/Thunder_fighter_jet.dir/src/enemy.cpp.obj"

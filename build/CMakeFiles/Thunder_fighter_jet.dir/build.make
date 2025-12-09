@@ -116,11 +116,27 @@ CMakeFiles/Thunder_fighter_jet.dir/src/enemy.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/Thunder_fighter_jet.dir/src/enemy.cpp.s"
 	D:\program\MinGW\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S D:\Thunder_fighter_jet\src\enemy.cpp -o CMakeFiles\Thunder_fighter_jet.dir\src\enemy.cpp.s
 
+CMakeFiles/Thunder_fighter_jet.dir/src/cheats.cpp.obj: CMakeFiles/Thunder_fighter_jet.dir/flags.make
+CMakeFiles/Thunder_fighter_jet.dir/src/cheats.cpp.obj: CMakeFiles/Thunder_fighter_jet.dir/includes_CXX.rsp
+CMakeFiles/Thunder_fighter_jet.dir/src/cheats.cpp.obj: D:/Thunder_fighter_jet/src/cheats.cpp
+CMakeFiles/Thunder_fighter_jet.dir/src/cheats.cpp.obj: CMakeFiles/Thunder_fighter_jet.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=D:\Thunder_fighter_jet\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/Thunder_fighter_jet.dir/src/cheats.cpp.obj"
+	D:\program\MinGW\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Thunder_fighter_jet.dir/src/cheats.cpp.obj -MF CMakeFiles\Thunder_fighter_jet.dir\src\cheats.cpp.obj.d -o CMakeFiles\Thunder_fighter_jet.dir\src\cheats.cpp.obj -c D:\Thunder_fighter_jet\src\cheats.cpp
+
+CMakeFiles/Thunder_fighter_jet.dir/src/cheats.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/Thunder_fighter_jet.dir/src/cheats.cpp.i"
+	D:\program\MinGW\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E D:\Thunder_fighter_jet\src\cheats.cpp > CMakeFiles\Thunder_fighter_jet.dir\src\cheats.cpp.i
+
+CMakeFiles/Thunder_fighter_jet.dir/src/cheats.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/Thunder_fighter_jet.dir/src/cheats.cpp.s"
+	D:\program\MinGW\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S D:\Thunder_fighter_jet\src\cheats.cpp -o CMakeFiles\Thunder_fighter_jet.dir\src\cheats.cpp.s
+
 # Object files for target Thunder_fighter_jet
 Thunder_fighter_jet_OBJECTS = \
 "CMakeFiles/Thunder_fighter_jet.dir/src/main.cpp.obj" \
 "CMakeFiles/Thunder_fighter_jet.dir/src/def.cpp.obj" \
-"CMakeFiles/Thunder_fighter_jet.dir/src/enemy.cpp.obj"
+"CMakeFiles/Thunder_fighter_jet.dir/src/enemy.cpp.obj" \
+"CMakeFiles/Thunder_fighter_jet.dir/src/cheats.cpp.obj"
 
 # External object files for target Thunder_fighter_jet
 Thunder_fighter_jet_EXTERNAL_OBJECTS =
@@ -128,6 +144,7 @@ Thunder_fighter_jet_EXTERNAL_OBJECTS =
 Thunder_fighter_jet.exe: CMakeFiles/Thunder_fighter_jet.dir/src/main.cpp.obj
 Thunder_fighter_jet.exe: CMakeFiles/Thunder_fighter_jet.dir/src/def.cpp.obj
 Thunder_fighter_jet.exe: CMakeFiles/Thunder_fighter_jet.dir/src/enemy.cpp.obj
+Thunder_fighter_jet.exe: CMakeFiles/Thunder_fighter_jet.dir/src/cheats.cpp.obj
 Thunder_fighter_jet.exe: CMakeFiles/Thunder_fighter_jet.dir/build.make
 Thunder_fighter_jet.exe: C:/Users/15255/vcpkg/installed/x64-mingw-static/debug/lib/libftxui-dom.a
 Thunder_fighter_jet.exe: C:/Users/15255/vcpkg/installed/x64-mingw-static/debug/lib/libftxui-screen.a
@@ -137,7 +154,7 @@ Thunder_fighter_jet.exe: C:/Users/15255/vcpkg/installed/x64-mingw-static/debug/l
 Thunder_fighter_jet.exe: CMakeFiles/Thunder_fighter_jet.dir/linkLibs.rsp
 Thunder_fighter_jet.exe: CMakeFiles/Thunder_fighter_jet.dir/objects1.rsp
 Thunder_fighter_jet.exe: CMakeFiles/Thunder_fighter_jet.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=D:\Thunder_fighter_jet\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Linking CXX executable Thunder_fighter_jet.exe"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=D:\Thunder_fighter_jet\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Linking CXX executable Thunder_fighter_jet.exe"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles\Thunder_fighter_jet.dir\link.txt --verbose=$(VERBOSE)
 	C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -noprofile -executionpolicy Bypass -file C:/Users/15255/vcpkg/scripts/buildsystems/msbuild/applocal.ps1 -targetBinary D:/Thunder_fighter_jet/build/Thunder_fighter_jet.exe -installedDir C:/Users/15255/vcpkg/installed/x64-windows/debug/bin -OutVariable out
 

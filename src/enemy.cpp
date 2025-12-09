@@ -1,3 +1,4 @@
+#include <windows.h>
 #include "def.h"
 
 #include <algorithm>
@@ -38,13 +39,6 @@ void ThunderFighter::Clear_Current_Enemies()
 	alive_enemies_count = 0;
 }
 
-void ThunderFighter::cheats_kills()
-{
-	enemies_.clear();
-	pending_enemies_.clear();
-	alive_enemies_count = 0;
-}
-
 void ThunderFighter::SpawnEnemiesFromPending()
 {
 	if(pending_enemies_.empty())
@@ -54,7 +48,7 @@ void ThunderFighter::SpawnEnemiesFromPending()
 	if(remaining_rows_in_batch_ == 0)
 	{
 		// 这波最多能有多少批？理论上 <= pending 数量，外加上限 15
-		int max_possible_batches = std::min(
+		int max_possible_batches = std::min<int>(
 		    kMaxBatchCount, static_cast<int>(pending_enemies_.size()));
 
 		if(max_possible_batches <= 0)
@@ -82,7 +76,7 @@ void ThunderFighter::SpawnEnemiesFromPending()
 	if(remaining <= 0)
 		return;
 
-	int max_in_row = std::min(kMaxPerBatch, remaining);
+	int max_in_row = std::min<int>(kMaxPerBatch, remaining);
 	std::uniform_int_distribution<int> count_dist(1, max_in_row);
 	int enemies_in_row = count_dist(Rng());
 

@@ -42,7 +42,9 @@ remaining_rows_in_batch_(0),      //
 score_(0),                        //
 top_row_clear_(true),             //
 last_score_time_(0),              //
-highest_score_(0)                 //
+highest_score_(0),                //
+is_invincible_(false),            //
+invincible_until_(start_time_)    //
 {
 	HideCursor();
 	ClearScreen();
@@ -136,6 +138,11 @@ void ThunderFighter::DrawFrame()
 	elapsed_seconds_ =
 	    duration_cast<seconds>(now2 - start_time_).count();
 
+	if(is_invincible_ && now2 >= invincible_until_) //无敌计时结束检查
+	{
+		is_invincible_ = false;
+	}
+
 	if(enemy_move_counter_ >= enemy_move_interval_)
 	{
 		MoveEnemies(enemies_, level_, kScreenWidth, kScreenHeight);
@@ -179,9 +186,15 @@ void ThunderFighter::DrawFrame()
 	{
 		cheats_kills();
 	}
+	if(GetAsyncKeyState('6') & 0x8000)
+	{
+		cheats_life();
+	}
 
 	player_x_ = std::clamp(player_x_, 0, kScreenWidth - player_w);
 	player_y_ = std::clamp(player_y_, 0, kScreenHeight - player_h);
+
+	CheckPlayerCollision();
 
 	ClearScreen();
 
@@ -221,10 +234,15 @@ void ThunderFighter::DrawFrame()
 		for(int x = 0; x < kScreenWidth; ++x)
 		{
 			char c = screen_buffer[y][x];
-			if(c == '*' || c == '0')                         // 玩家
+			if(c == '*' || c == '0') // 玩家
+			{
+				auto col = //
+				    is_invincible_ ? Color::GreenLight
+				                   : Color::YellowLight;
 				line_chars.push_back(text(std::string(1, c)) //
 				                     | bold                  //
-				                     | color(Color::YellowLight)); //
+				                     | color(col));          //
+			}
 			else if(c == '$' || c == 'o')                       // 敌人
 				line_chars.push_back(text(std::string(1, c))    //
 				                     | bold                     //
@@ -302,6 +320,47 @@ void ThunderFighter::DrawFrame()
 	std::cout << std::flush;
 }
 
+void ThunderFighter::CheckPlayerCollision()
+{
+	if(is_invincible_) //已经处于无敌状态，直接返回
+		return;
+
+	const int player_w = 3;
+	const int player_h = 1;
+
+	int px = player_x_;
+	int py = player_y_;
+
+	for(auto& e: enemies_)
+	{
+		if(!e.alive)
+			continue;
+
+		int ex = e.x;
+		int ey = static_cast<int>(e.y);
+		int ew = e.width;
+		int eh = e.height;
+
+		//矩形碰撞检测：如果完全不重叠则跳过
+		bool no_overlap = (px + player_w <= ex) || (ex + ew <= px)
+		    || (py + player_h <= ey) || (ey + eh <= py);
+
+		if(no_overlap)
+			continue;
+
+		//走到这里说明发生碰撞
+		life_number--;                                // 扣一条命
+		is_invincible_ = true;                        // 开启无敌
+		invincible_until_ = steady_clock::now() + 1s; // 1 秒无敌
+
+
+		if(life_number < 0) //生命耗尽，下一帧 ShouldExit() 会让游戏结束
+			life_number = 0;
+
+		break; //本帧只处理一次碰撞
+	}
+}
+
 void ThunderFighter::LoadHighScore()
 {
 	std::ifstream fin("../highscore.txt");
@@ -327,7 +386,6 @@ void ThunderFighter::SaveHighScore() const
 	{
 		fout << highest_score_;
 	}
-	// 简单版本：不做错误提示，写失败就算了
 }
 
 void ThunderFighter::Run()
