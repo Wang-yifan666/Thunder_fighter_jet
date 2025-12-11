@@ -1,0 +1,105 @@
+{
+	"configurations" : 
+	[
+		{
+			"abstractTargets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "Threads::Threads::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-Threads__Threads-c9e064f72d3287542f3b.json",
+					"name" : "Threads::Threads",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "ftxui::component::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-ftxui__component-d832805fdd8291774402.json",
+					"name" : "ftxui::component",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "ftxui::dom::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-ftxui__dom-ec4b665698280d817f28.json",
+					"name" : "ftxui::dom",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "ftxui::screen::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-ftxui__screen-7c4bc86e8b7936d53382.json",
+					"name" : "ftxui::screen",
+					"projectIndex" : 0
+				}
+			],
+			"directories" : 
+			[
+				{
+					"abstractTargetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3
+					],
+					"build" : ".",
+					"jsonFile" : "directory-.-f6f22219c74102c3da70.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.14"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0
+					]
+				}
+			],
+			"name" : "",
+			"projects" : 
+			[
+				{
+					"abstractTargetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3
+					],
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "Thunder_fighter_jet",
+					"targetIndexes" : 
+					[
+						0
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "Thunder_fighter_jet::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-Thunder_fighter_jet-cc8b4740122a04985629.json",
+					"name" : "Thunder_fighter_jet",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "D:/Thunder_fighter_jet/build",
+		"source" : "D:/Thunder_fighter_jet"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 9
+	}
+}
