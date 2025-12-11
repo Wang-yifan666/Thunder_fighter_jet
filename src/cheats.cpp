@@ -34,3 +34,8 @@ void ThunderFighter::cheats_invincible()
 		is_invincible_ = false;
 	}
 }
+
+void ThunderFighter::cheats_addscore()
+{
+	score_ += 1000; //每次加1000分
+}

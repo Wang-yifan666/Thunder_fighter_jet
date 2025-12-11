@@ -21,7 +21,7 @@ private:
 	//===== 高层游戏逻辑 =====
 	void DrawFrame();        //每帧更新 + 渲染
 	void Level();            //等级 / 难度管理
-	void score();            //分数随时间增加
+	void score();            //分数管理
 	void Life();             //生命相关逻辑
 	bool ShouldExit() const; //检查是否退出游戏
 
@@ -47,6 +47,7 @@ private:
 	void cheats_kills();        //作弊：秒杀所有敌人
 	void cheats_life();         //作弊：加血
 	void cheats_invincible();   //作弊：无敌
+	void cheats_addscore();     //作弊：加分
 	void LoadHighScore();       //加载最高分
 	void SaveHighScore() const; //保存最高分
 
@@ -87,4 +88,20 @@ private:
 	int alive_enemies_count = 0;         //存活敌人数
 
 	int elapsed_seconds_ = 0; //游戏已运行秒数
+
+	// ========= 子弹相关 =========
+	struct Bullet
+	{
+		int x;
+		int y;
+		Bullet(int _x = 0, int _y = 0) //
+		:
+		x(_x), //
+		y(_y)  //
+		{
+		}
+	};
+	void UpdateBullets();         // 更新所有子弹位置 + 碰撞
+	std::vector<Bullet> bullets_; // 场上的所有子弹
+	int bullets_remaining_;       // 玩家弹药数
 };

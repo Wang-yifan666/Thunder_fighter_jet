@@ -23,4 +23,5 @@ target_link_libraries(Thunder_fighter_jet PRIVATE
     ftxui::dom
     ftxui::screen
     ftxui::component
+    winmm
 )

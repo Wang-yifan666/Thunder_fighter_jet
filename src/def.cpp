@@ -45,7 +45,8 @@ last_score_time_(0),              //
 highest_score_(0),                //
 is_invincible_(false),            //
 invincible_until_(start_time_),   //
-cheat_invincible_(false)          //
+cheat_invincible_(false),         //
+bullets_remaining_(200)           //
 {
 	HideCursor();
 	ClearScreen();
@@ -170,6 +171,18 @@ void ThunderFighter::DrawFrame()
 	const int player_w = 3;
 	const int player_h = 1;
 
+	if((GetAsyncKeyState(VK_SPACE) & 0x8000) && bullets_remaining_ > 0)
+	{
+		int bx = player_x_ + 1; //玩家 "*0*" 的中间
+		int by = player_y_ - 1; //玩家上面一格
+
+		if(by < 0)
+			by = 0;
+
+		bullets_.emplace_back(bx, by); //在列表里新增一颗子弹
+		bullets_remaining_--;          //弹药 -1
+	}
+
 	if(GetAsyncKeyState('A') & 0x8000)
 		player_x_--;
 	if(GetAsyncKeyState('D') & 0x8000)
@@ -195,11 +208,17 @@ void ThunderFighter::DrawFrame()
 	{
 		cheats_invincible();
 	}
+	if(GetAsyncKeyState('4') & 0x8000)
+	{
+		cheats_addscore();
+	}
 
 	player_x_ = std::clamp(player_x_, 0, kScreenWidth - player_w);
 	player_y_ = std::clamp(player_y_, 0, kScreenHeight - player_h);
 
 	CheckPlayerCollision();
+
+	UpdateBullets();
 
 	ClearScreen();
 
@@ -228,6 +247,17 @@ void ThunderFighter::DrawFrame()
 		alive_enemies_count++;
 	}
 
+	//绘制子弹
+	for(const auto& b: bullets_)
+	{
+		if(b.y >= 0 && b.y < kScreenHeight && b.x >= 0
+		   && b.x < kScreenWidth)
+		{
+			screen_buffer[b.y][b.x] = '|';
+		}
+	}
+
+	//绘制玩家
 	std::string player_str = "*0*";
 	for(int i = 0; i < 3 && player_x_ + i < kScreenWidth; ++i)
 		screen_buffer[player_y_][player_x_ + i] = player_str[i];
@@ -251,6 +281,10 @@ void ThunderFighter::DrawFrame()
 				line_chars.push_back(text(std::string(1, c))    //
 				                     | bold                     //
 				                     | color(Color::RedLight)); //
+			else if(c == '|')                                   // 子弹
+				line_chars.push_back(text("|")                  //
+				                     | bold                     //
+				                     | color(Color::Magenta));  //
 			else
 				line_chars.push_back(text(" "));
 		}
@@ -269,7 +303,7 @@ void ThunderFighter::DrawFrame()
 	};
 
 	auto window =
-	    vbox({text("雷霆战机 v1.1")                                  //
+	    vbox({text("雷霆战机 v1.2")                                  //
 	              | bold                                             //
 	              | center,                                          //
 	          separator(),                                           //
@@ -305,10 +339,13 @@ void ThunderFighter::DrawFrame()
 	                text(std::to_string(highest_score_)) //
 	                    | bold                           //
 	                    | color(Color::CyanLight)}),     //
-	          text("按q退出,按wasd移动"),                //
-	          separator(),                               //
-	          vbox(lines)                                //
-	              | vscroll_indicator                    //
+	          hbox({text("按Q退出, 按WASD移动, 空格开火  |  子弹: "),
+	                text(std::to_string(bullets_remaining_)) //
+	                    | bold                               //
+	                    | color(Color::White)}),             ////
+	          separator(),                                   //
+	          vbox(lines)                                    //
+	              | vscroll_indicator                        //
 	              | frame,
 	          filler(),           //
 	          separator(),        //
@@ -362,6 +399,75 @@ void ThunderFighter::CheckPlayerCollision()
 			life_number = 0;
 
 		break; //本帧只处理一次碰撞
+	}
+}
+
+void ThunderFighter::UpdateBullets()
+{
+	if(bullets_.empty())
+		return;
+
+	//所有子弹向上移动一格
+	for(auto& b: bullets_)
+	{
+		b.y -= 1;
+	}
+
+	//删除飞出屏幕顶端的子弹
+	bullets_.erase(std::remove_if //
+	               (bullets_.begin(), bullets_.end(),
+	                [](const Bullet& b) //
+	                {
+		                return b.y < 0;
+	                }),
+	               bullets_.end());
+
+	//子弹与敌人碰撞检测
+	for(auto b_it = bullets_.begin(); b_it != bullets_.end();)
+	{
+		bool bullet_consumed = false;
+
+		for(auto e_it = enemies_.begin(); e_it != enemies_.end();)
+		{
+			Enemy& e = *e_it;
+			if(!e.alive)
+			{
+				e_it = enemies_.erase(e_it);
+				continue;
+			}
+
+			int ex = e.x;
+			int ey = e.y;
+			int ew = e.width;
+			int eh = e.height;
+
+			bool hit = (b_it->y >= ey)  //
+			    && (b_it->y < ey + eh)  //
+			    && (b_it->x >= ex)      //
+			    && (b_it->x < ex + ew); //
+
+			if(hit)
+			{
+				//子弹打中敌人：删敌人、删子弹、加分
+				e_it = enemies_.erase(e_it);
+				score_ += 100; //每个敌人击破 +100 分（你可以改）
+				bullet_consumed = true;
+				break; //退出本帧
+			}
+			else
+			{
+				e_it++;
+			}
+		}
+
+		if(bullet_consumed)
+		{
+			b_it = bullets_.erase(b_it);
+		}
+		else
+		{
+			b_it++;
+		}
 	}
 }
 
