@@ -44,10 +44,10 @@ void ThunderFighter::SpawnEnemiesFromPending()
 	if(pending_enemies_.empty())
 		return;
 
-	// 1. 如果当前这一波还没决定“总共有多少批”，在这里随机一个 1~15 批
+	//如果当前这一波还没决定“总共有多少批”，在这里随机一个 1~15 批
 	if(remaining_rows_in_batch_ == 0)
 	{
-		// 这波最多能有多少批？理论上 <= pending 数量，外加上限 15
+		//这波最多能有多少批？理论上<=pending 数量，外加上限 15
 		int max_possible_batches = std::min<int>(
 		    kMaxBatchCount, static_cast<int>(pending_enemies_.size()));
 
@@ -59,7 +59,7 @@ void ThunderFighter::SpawnEnemiesFromPending()
 		remaining_rows_in_batch_ = batch_dist(Rng());
 	}
 
-	// 2. 只有当前“顶行完全空”的时候，才生成下一批
+	//只有当前“顶行完全空”的时候，才生成下一批
 	bool top_row_clear = std::none_of(
 	    enemies_.begin(), enemies_.end(), [](const Enemy& e) {
 		    return e.y < 1; // y == 0 认为在顶行，<1 即顶行及以上
@@ -68,7 +68,7 @@ void ThunderFighter::SpawnEnemiesFromPending()
 	if(!top_row_clear)
 		return; // 顶行还没空，等下一帧再说
 
-	// 3. 生成当前这一批：1~3 个敌人，全部放在 y = 0，x 随机且尽量不重叠
+	//生成当前这一批：1~3 个敌人，全部放在 y = 0，x 随机且尽量不重叠
 	const int enemy_width = 3;
 	const int max_x = kScreenWidth - enemy_width;
 
@@ -104,17 +104,17 @@ void ThunderFighter::SpawnEnemiesFromPending()
 		pending_enemies_.erase(pending_enemies_.begin());
 
 		e.x = x;
-		e.y = 0; // 顶行生成
+		e.y = 0; //顶行生成
 		spawned_row.push_back(e);
 	}
 
 	enemies_.insert(enemies_.end(), spawned_row.begin(),
 	                spawned_row.end());
 
-	// 4. 当前这批刷完了，这一波的剩余批次数量减一
+	//当前这批刷完了，这一波的剩余批次数量减一
 	remaining_rows_in_batch_--;
 
-	// 如果这一波批次刷完了，但 pending 里还有敌人，下一次再进来会重新随机新一波批数
+	//如果这一波批次刷完了，但 pending 里还有敌人，下一次再进来会重新随机新一波批数
 	if(remaining_rows_in_batch_ < 0)
 		remaining_rows_in_batch_ = 0;
 }

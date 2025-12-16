@@ -98,6 +98,8 @@ void ThunderFighter::Level()
 		level_++;
 		last_level_up_time = elapsed_seconds_;
 
+		bullets_remaining_ += 10; //每升一级加10发子弹
+
 		Make_enermy();
 	}
 
@@ -105,6 +107,7 @@ void ThunderFighter::Level()
 	{
 		level_++;
 		Make_enermy();
+		bullets_remaining_ += 10;
 	}
 
 	// 根据 level 调整敌人移动速度
@@ -383,8 +386,10 @@ void ThunderFighter::CheckPlayerCollision()
 		int eh = e.height;
 
 		//矩形碰撞检测：如果完全不重叠则跳过
-		bool no_overlap = (px + player_w <= ex) || (ex + ew <= px)
-		    || (py + player_h <= ey) || (ey + eh <= py);
+		bool no_overlap = (px + player_w <= ex) //
+		    || (ex + ew <= px)                  //
+		    || (py + player_h <= ey)            //
+		    || (ey + eh <= py);                 //
 
 		if(no_overlap)
 			continue;
@@ -414,8 +419,9 @@ void ThunderFighter::UpdateBullets()
 	}
 
 	//删除飞出屏幕顶端的子弹
-	bullets_.erase(std::remove_if //
-	               (bullets_.begin(), bullets_.end(),
+	bullets_.erase(std::remove_if       //
+	               (bullets_.begin(),   //
+	                bullets_.end(),     //
 	                [](const Bullet& b) //
 	                {
 		                return b.y < 0;
@@ -450,9 +456,10 @@ void ThunderFighter::UpdateBullets()
 			{
 				//子弹打中敌人：删敌人、删子弹、加分
 				e_it = enemies_.erase(e_it);
-				score_ += 100; //每个敌人击破 +100 分（你可以改）
+				score_ += 100; //每个敌人击破+100分
 				bullet_consumed = true;
-				break; //退出本帧
+				bullets_remaining_ += 5; //每击落一个敌人加5发子弹
+				break;                   //退出本帧
 			}
 			else
 			{
