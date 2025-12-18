@@ -15,7 +15,8 @@ public:
 	ThunderFighter();
 	~ThunderFighter() = default;
 
-	void Run(); //主循环
+	void Run();       //主循环
+	bool IsRunning(); //检查游戏是否在运行
 
 private:
 	//===== 高层游戏逻辑 =====
@@ -24,6 +25,7 @@ private:
 	void score();            //分数管理
 	void Life();             //生命相关逻辑
 	bool ShouldExit() const; //检查是否退出游戏
+	void ResetGame();        //重置游戏状态
 
 	//===== 敌人相关 =====
 	void Make_enermy();             //生成pending敌人
@@ -70,10 +72,10 @@ private:
 	int enemy_move_interval_;     //敌人移动间隔
 	int remaining_rows_in_batch_; //当前刷怪批次剩余行数
 
-	int score_;               //分数
-	int highest_score_;       //最高分
-	bool top_row_clear_;      //顶部是否空（用于刷怪）
-	int last_score_time_ = 0; //上次加分的时间点（秒）
+	int score_;                    //分数
+	std::vector<int> high_scores_; //历史最高分列表
+	bool top_row_clear_;           //顶部是否空（用于刷怪）
+	int last_score_time_ = 0;      //上次加分的时间点（秒）
 
 	//===== 状态：辅助计时 / 敌人容器 =====
 	std::chrono::steady_clock::time_point

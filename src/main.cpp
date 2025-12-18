@@ -4,6 +4,11 @@
 int main()
 {
 	ThunderFighter game;
-	game.Run();
+
+	while(game.IsRunning())
+	{
+		game.Run();
+	}
+
 	return 0;
 }
