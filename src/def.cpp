@@ -43,6 +43,7 @@ remaining_rows_in_batch_(0),      //
 score_(0),                        //
 top_row_clear_(true),             //
 last_score_time_(0),              //
+is_paused_(false),                //
 is_invincible_(false),            //
 invincible_until_(start_time_),   //
 cheat_invincible_(false),         //
@@ -116,6 +117,9 @@ void ThunderFighter::ResetGame()
 	is_invincible_ = false;
 	cheat_invincible_ = false;
 
+	// 防止暂停
+	is_paused_ = false;
+
 	// 重新生成敌人
 	Make_enermy();
 }
@@ -171,94 +175,122 @@ void ThunderFighter::score()
 
 void ThunderFighter::DrawFrame()
 {
-	frame_count_++;
-	fps_counter_++;
-	enemy_move_counter_++;
-
-	auto now2 = steady_clock::now();
-	elapsed_seconds_ =
-	    duration_cast<seconds>(now2 - start_time_).count();
-
-	if(is_invincible_ && now2 >= invincible_until_) //无敌计时结束检查
+	//暂停逻辑
+	if(GetAsyncKeyState('P') & 0x8000)
 	{
-		is_invincible_ = false;
+		is_paused_ = !is_paused_;
+		if(is_paused_)
+		{
+			pause_start_time_ = steady_clock::now();
+		}
+		else
+		{
+			//暂停结束，修正时间，防止游戏时间跳变
+			auto now = steady_clock::now();
+			auto duration = now - pause_start_time_;
+			start_time_ += duration;
+			last_fps_time_ += duration;
+			if(is_invincible_)
+				invincible_until_ += duration;
+		}
+		std::this_thread::sleep_for(200ms); // 防止按键连触
 	}
 
-	if(enemy_move_counter_ >= enemy_move_interval_)
+	if(!is_paused_)
 	{
-		MoveEnemies(enemies_, level_, kScreenWidth, kScreenHeight);
-		enemy_move_counter_ = 0;
+		frame_count_++;
+		fps_counter_++;
+		enemy_move_counter_++;
+
+		auto now2 = steady_clock::now();
+		elapsed_seconds_ =
+		    duration_cast<seconds>(now2 - start_time_).count();
+
+		if(is_invincible_
+		   && now2 >= invincible_until_) //无敌计时结束检查
+		{
+			is_invincible_ = false;
+		}
+
+		if(enemy_move_counter_ >= enemy_move_interval_)
+		{
+			MoveEnemies(enemies_, level_, kScreenWidth, kScreenHeight);
+			enemy_move_counter_ = 0;
+		}
+
+		if(!pending_enemies_.empty())
+		{
+			SpawnEnemiesFromPending();
+		}
+
+		Level();
+		score();
+
+		auto now = steady_clock::now();
+		auto elapsed =
+		    duration_cast<milliseconds>(now - last_fps_time_);
+		if(elapsed >= 1000ms)
+		{
+			current_fps_ = fps_counter_;
+			fps_counter_ = 0;
+			last_fps_time_ = now;
+		}
+
+		const int player_w = 3;
+		const int player_h = 1;
+
+		if((GetAsyncKeyState(VK_SPACE) & 0x8000)
+		   && bullets_remaining_ > 0)
+		{
+			int bx = player_x_ + 1; //玩家 "*0*" 的中间
+			int by = player_y_ - 1; //玩家上面一格
+
+			if(by < 0)
+				by = 0;
+
+			bullets_.emplace_back(bx, by); //在列表里新增一颗子弹
+			bullets_remaining_--;          //弹药 -1
+		}
+
+		if(GetAsyncKeyState('A') & 0x8000)
+			player_x_--;
+		if(GetAsyncKeyState('D') & 0x8000)
+			player_x_++;
+		if(GetAsyncKeyState('W') & 0x8000)
+			player_y_--;
+		if(GetAsyncKeyState('S') & 0x8000)
+			player_y_++;
+
+		if(GetAsyncKeyState('8') & 0x8000)
+		{
+			Clear_Current_Enemies();
+		}
+		if(GetAsyncKeyState('7') & 0x8000)
+		{
+			cheats_kills();
+		}
+		if(GetAsyncKeyState('6') & 0x8000)
+		{
+			cheats_life();
+		}
+		if(GetAsyncKeyState('5') & 0x8000)
+		{
+			cheats_invincible();
+		}
+		if(GetAsyncKeyState('4') & 0x8000)
+		{
+			cheats_addscore();
+		}
+
+		player_x_ = std::clamp(player_x_, 0, kScreenWidth - player_w);
+		player_y_ = std::clamp(player_y_, 0, kScreenHeight - player_h);
+
+		CheckPlayerCollision();
+
+		UpdateBullets();
 	}
 
-	if(!pending_enemies_.empty())
-	{
-		SpawnEnemiesFromPending();
-	}
-
-	Level();
-	score();
-
-	auto now = steady_clock::now();
-	auto elapsed = duration_cast<milliseconds>(now - last_fps_time_);
-	if(elapsed >= 1000ms)
-	{
-		current_fps_ = fps_counter_;
-		fps_counter_ = 0;
-		last_fps_time_ = now;
-	}
-
-	const int player_w = 3;
-	const int player_h = 1;
-
-	if((GetAsyncKeyState(VK_SPACE) & 0x8000) && bullets_remaining_ > 0)
-	{
-		int bx = player_x_ + 1; //玩家 "*0*" 的中间
-		int by = player_y_ - 1; //玩家上面一格
-
-		if(by < 0)
-			by = 0;
-
-		bullets_.emplace_back(bx, by); //在列表里新增一颗子弹
-		bullets_remaining_--;          //弹药 -1
-	}
-
-	if(GetAsyncKeyState('A') & 0x8000)
-		player_x_--;
-	if(GetAsyncKeyState('D') & 0x8000)
-		player_x_++;
-	if(GetAsyncKeyState('W') & 0x8000)
-		player_y_--;
-	if(GetAsyncKeyState('S') & 0x8000)
-		player_y_++;
-
-	if(GetAsyncKeyState('8') & 0x8000)
-	{
-		Clear_Current_Enemies();
-	}
-	if(GetAsyncKeyState('7') & 0x8000)
-	{
-		cheats_kills();
-	}
-	if(GetAsyncKeyState('6') & 0x8000)
-	{
-		cheats_life();
-	}
-	if(GetAsyncKeyState('5') & 0x8000)
-	{
-		cheats_invincible();
-	}
-	if(GetAsyncKeyState('4') & 0x8000)
-	{
-		cheats_addscore();
-	}
-
-	player_x_ = std::clamp(player_x_, 0, kScreenWidth - player_w);
-	player_y_ = std::clamp(player_y_, 0, kScreenHeight - player_h);
-
-	CheckPlayerCollision();
-
-	UpdateBullets();
-
+	//始终执行，保证画面不消失
 	ClearScreen();
 
 	//创建字符缓冲区
@@ -301,6 +333,19 @@ void ThunderFighter::DrawFrame()
 	for(int i = 0; i < 3 && player_x_ + i < kScreenWidth; ++i)
 		screen_buffer[player_y_][player_x_ + i] = player_str[i];
 
+	//暂停状态时显示暂停文字
+	if(is_paused_)
+	{
+		std::string pause_txt = "== P A U S E D ==";
+		int py = kScreenHeight / 2;
+		int px = (kScreenWidth - (int)pause_txt.size()) / 2;
+		for(int i = 0; i < (int)pause_txt.size(); ++i)
+		{
+			if(px + i >= 0 && px + i < kScreenWidth)
+				screen_buffer[py][px + i] = pause_txt[i];
+		}
+	}
+
 	Elements lines;
 	for(int y = 0; y < kScreenHeight; ++y)
 	{
@@ -324,6 +369,12 @@ void ThunderFighter::DrawFrame()
 				line_chars.push_back(text("|")                  //
 				                     | bold                     //
 				                     | color(Color::Magenta));  //
+			// === 新增：暂停文字高亮显示 ===
+			else if(is_paused_ && y == kScreenHeight / 2 && c != ' ')
+			{
+				line_chars.push_back(text(std::string(1, c)) | bold
+				                     | color(Color::White));
+			}
 			else
 				line_chars.push_back(text(" "));
 		}
@@ -342,53 +393,56 @@ void ThunderFighter::DrawFrame()
 	};
 
 	auto window =
-	    vbox({text("雷霆战机 v1.3")                                  //
-	              | bold                                             //
-	              | center,                                          //
-	          separator(),                                           //
-	          hbox({text("帧率: "),                                  //
-	                text(std::to_string(current_fps_) + " FPS  ")    //
-	                    | bold                                       //
-	                    | color(Color::Green),                       //
-	                text(" | 时长: "),                               //
-	                text(std::to_string(elapsed_seconds_) + " 秒  ") //
-	                    | bold                                       //
-	                    | color(Color::BlueLight),                   //
-	                text(" | level: "),                              //
-	                text(std::to_string(level_))                     //
-	                    | bold                                       //
-	                    | color(Color::Green),                       //
-	                text(" | 剩余敌人: "),                           //
-	                text(std::to_string(enemies_.size()              //
-	                                    + pending_enemies_.size()))  //
-	                    | bold                                       //
-	                    | color(Color::Red),                         //
-	                text(" | 分数: ")                                //
-	                    | bold                                       //
-	                    | color(Color::Yellow),
-	                text((std::stringstream()
-	                      << std::setw(10) << std::setfill('0')
-	                      << score_)
-	                         .str())                           //
-	                    | bold                                 //
-	                    | color(Color::YellowLight),           //
-	                text(" | 最高分: ")                        //
-	                    | bold                                 //
-	                    | color(Color::CyanLight),             //
-	                text(std::to_string(high_scores_.front())) //
-	                    | bold                                 //
-	                    | color(Color::CyanLight)}),           //
-	          hbox({text("按Q退出, 按WASD移动, 空格开火  |  子弹: "),
-	                text(std::to_string(bullets_remaining_)) //
-	                    | bold                               //
-	                    | color(Color::White)}),             ////
-	          separator(),                                   //
-	          vbox(lines)                                    //
-	              | vscroll_indicator                        //
-	              | frame,
-	          filler(),           //
-	          separator(),        //
-	          make_life()})       //
+	    vbox(
+	        {text("雷霆战机 v1.3") //
+	             | bold            //
+	             | center,         //
+	         separator(),          //
+	         hbox(
+	             {text("帧率: "),                                  //
+	              text(std::to_string(current_fps_) + " FPS  ")    //
+	                  | bold                                       //
+	                  | color(Color::Green),                       //
+	              text(" | 时长: "),                               //
+	              text(std::to_string(elapsed_seconds_) + " 秒  ") //
+	                  | bold                                       //
+	                  | color(Color::BlueLight),                   //
+	              text(" | level: "),                              //
+	              text(std::to_string(level_))                     //
+	                  | bold                                       //
+	                  | color(Color::Green),                       //
+	              text(" | 剩余敌人: "),                           //
+	              text(std::to_string(enemies_.size()              //
+	                                  + pending_enemies_.size()))  //
+	                  | bold                                       //
+	                  | color(Color::Red),                         //
+	              text(" | 分数: ")                                //
+	                  | bold                                       //
+	                  | color(Color::Yellow),
+	              text((std::stringstream()
+	                    << std::setw(10) << std::setfill('0') << score_)
+	                       .str())                           //
+	                  | bold                                 //
+	                  | color(Color::YellowLight),           //
+	              text(" | 最高分: ")                        //
+	                  | bold                                 //
+	                  | color(Color::CyanLight),             //
+	              text(std::to_string(high_scores_.front())) //
+	                  | bold                                 //
+	                  | color(Color::CyanLight)}),           //
+	         hbox(
+	             {text(
+	                  "按Q退出, P暂停, 按WASD移动, 空格开火  |  子弹: "), // 更新了操作说明
+	              text(std::to_string(bullets_remaining_)) //
+	                  | bold                               //
+	                  | color(Color::White)}),             ////
+	         separator(),                                  //
+	         vbox(lines)                                   //
+	             | vscroll_indicator                       //
+	             | frame,
+	         filler(),            //
+	         separator(),         //
+	         make_life()})        //
 	    | size(WIDTH, EQUAL, 100) //
 	    | size(HEIGHT, EQUAL, 50) //
 	    | border;                 //
@@ -521,6 +575,13 @@ void ThunderFighter::LoadHighScore()
 	std::ifstream fin("../highscore.txt");
 	if(!fin)
 	{
+		//文件不存在时，创建一个新的
+		std::ofstream fout("../highscore.txt");
+		if(fout)
+		{
+			fout << 0; // 写入初始分数0
+		}
+		high_scores_.push_back(0);
 		return;
 	}
 
@@ -532,6 +593,12 @@ void ThunderFighter::LoadHighScore()
 		{
 			break;
 		}
+	}
+
+	//防止崩溃
+	if(high_scores_.empty())
+	{
+		high_scores_.push_back(0);
 	}
 
 	std::sort(high_scores_.begin(), high_scores_.end(),
@@ -604,7 +671,7 @@ void ThunderFighter::Run()
 		}
 		else if(rank <= 5)
 		{
-			std::cout << "恭喜你！进入历史第 " << rank << " 名！\n\n";
+			std::cout << "恭喜你！成为历史第 " << rank << " 名！\n\n";
 		}
 		else
 		{

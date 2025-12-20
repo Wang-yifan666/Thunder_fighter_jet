@@ -1,0 +1,17 @@
+---
+Language:        Cpp
+BasedOnStyle:    LLVM
+
+UseTab:          Always   # 强制使用 Tab
+IndentWidth:     4        # 缩进宽度 4
+TabWidth:        4        # Tab 宽度 4
+
+#使用Allman风格(大括号独占一行)
+BreakBeforeBraces: Allman
+
+IndentCaseLabels: true
+AccessModifierOffset: -4
+ColumnLimit:     100
+SortIncludes:    true
+AllowShortIfStatementsOnASingleLine: true
+...

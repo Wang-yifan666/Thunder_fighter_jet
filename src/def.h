@@ -79,7 +79,10 @@ private:
 
 	//===== 状态：辅助计时 / 敌人容器 =====
 	std::chrono::steady_clock::time_point
-	    last_fps_time_;             //上次 FPS 统计时间
+	    last_fps_time_; //上次 FPS 统计时间
+	std::chrono::steady_clock::time_point
+	    pause_start_time_;          //暂停开始时间点
+	bool is_paused_ = false;        //游戏是否暂停
 	bool is_invincible_ = false;    //当前是否处于无敌
 	bool cheat_invincible_ = false; //无敌挂开关
 	std::chrono::steady_clock::time_point

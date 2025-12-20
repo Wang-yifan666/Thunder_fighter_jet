@@ -20,5 +20,10 @@
         "comments": "off",
         "strings": "on"
     },
-    "editor.formatOnType": false
+    "editor.formatOnType": false,
+    //这里是vcpkg的入口
+    "cmake.configureSettings": {
+        "CMAKE_TOOLCHAIN_FILE": "C:/Users/15255/vcpkg/scripts/buildsystems/vcpkg.cmake",
+        "ftxui_DIR": "C:/Users/15255/vcpkg/installed/x64-mingw-static/share/ftxui"
+    }
 }

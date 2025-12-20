@@ -12,9 +12,15 @@
 
 本项目注重 **游戏循环结构、状态管理与终端 UI 渲染**，适合作为：
 
-- C++ 课程设计 / 综合练习项目  
+- 小型练习项目  
 - 终端 UI（FTXUI）实践示例  
 - 小型游戏架构入门案例  
+
+---
+
+<p align="center">
+  <img src="assets/gameplay1.png" alt="游戏运行截图" width="600" />
+</p>
 
 ---
 
@@ -29,6 +35,7 @@
 | `Space` | 发射子弹 |
 | `R` | 结算界面重新开始 |
 | `Q / ESC` | 退出游戏 |
+| `P` | 暂停游戏 |
 
 ---
 
@@ -73,8 +80,8 @@ Thunder_fighter_jet/
 ├── build/                    # CMake 构建目录
 ├── highscore.txt             # 本地历史最高分数据
 └── README.md
-
 ```
+---
 ```
 程序启动
    ↓
@@ -89,24 +96,41 @@ Thunder_fighter_jet/
 R → 重置游戏并重新开始
 Q → 退出程序
 ```
-### 编译与运行
 
-## 编译环境
+### 调试/作弊指令 (Cheats)
+*   `4`: 加分 (+1000)
+*   `5`: 无敌模式开关
+*   `6`: 增加生命
+*   `7`: 秒杀全屏敌人
+*   `8`: 清空当前敌人
+*   `9`: 强制升级关卡
+
+## 编译与运行
+
+### 编译环境
 - C++17
 - Windows
 - MinGW / MSVC
 - CMake
+- vcpkg
 - FTXUI
 
-## 构建示例（MinGW）
+### 构建示例 (MinGW + vcpkg)
+
+确保你已经安装了 vcpkg 并下载了 ftxui 库 (`vcpkg install ftxui:x64-mingw-static`)。
+
 ```
 mkdir build
 cd build
-cmake .. -G "MinGW Makefiles"
+# 请将下面路径中的 [path/to/vcpkg] 替换为你的实际 vcpkg 安装路径
+cmake .. -G "MinGW Makefiles" -DCMAKE_TOOLCHAIN_FILE=[path/to/vcpkg]/scripts/buildsystems/vcpkg.cmake
 cmake --build .
 ```
 
 运行生成的可执行文件即可开始游戏。(应该吧)
+```
+./Thunder_fighter_jet.exe
+```
 
 ### 版本更新记录
 - v1.3
