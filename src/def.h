@@ -9,6 +9,13 @@
 
 #include "enemy.h"
 
+enum class GameState
+{
+	Menu,    // 主菜单
+	Playing, // 游戏中
+	Exit     // 退出程序
+};
+
 class ThunderFighter
 {
 public:
@@ -20,6 +27,9 @@ public:
 
 private:
 	//===== 高层游戏逻辑 =====
+	GameState state_;        //游戏状态管理
+	void ShowMenu();         // 显示主菜单
+	void Back_to_menu();     //回到菜单
 	void DrawFrame();        //每帧更新 + 渲染
 	void Level();            //等级 / 难度管理
 	void score();            //分数管理
@@ -40,7 +50,7 @@ private:
 	                 int screen_width,
 	                 int screen_height); //敌人实际移动
 
-	// ========= 新增：玩家碰撞检测 =========
+	//========= 新增：玩家碰撞检测 =========
 	void CheckPlayerCollision(); //玩家与敌人碰撞检测
 
 	//===== 控制台 / 输出工具 =====
@@ -50,6 +60,8 @@ private:
 	void cheats_life();         //作弊：加血
 	void cheats_invincible();   //作弊：无敌
 	void cheats_addscore();     //作弊：加分
+	void cheats_addbullters();  //作弊：加弹药
+	void cheats_godlike();      //作弊：上帝模式
 	void LoadHighScore();       //加载最高分
 	void SaveHighScore() const; //保存最高分
 
@@ -85,6 +97,7 @@ private:
 	bool is_paused_ = false;        //游戏是否暂停
 	bool is_invincible_ = false;    //当前是否处于无敌
 	bool cheat_invincible_ = false; //无敌挂开关
+	bool q_was_down_ = false;       //q键是否按下
 	std::chrono::steady_clock::time_point
 	    invincible_until_; // 无敌结束时间
 

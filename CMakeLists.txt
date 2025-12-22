@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.14)
 
-set(CMAKE_TOOLCHAIN_FILE "C:/Users/15255/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
+if (DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+  set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
+endif()
 
 project(Thunder_fighter_jet LANGUAGES CXX)
 

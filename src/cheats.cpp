@@ -1,4 +1,5 @@
 #include <windows.h>
+#include <climits>
 #include "def.h"
 
 //#include <algorithm>
@@ -38,4 +39,17 @@ void ThunderFighter::cheats_invincible()
 void ThunderFighter::cheats_addscore()
 {
 	score_ += 1000; //每次加1000分
+}
+
+void ThunderFighter::cheats_addbullters()
+{
+	bullets_remaining_ += 100; //每次加100发子弹
+}
+
+
+void ThunderFighter::cheats_godlike()
+{
+	cheats_invincible();
+	life_number = INT_MAX;
+	bullets_remaining_ = INT_MAX;
 }
