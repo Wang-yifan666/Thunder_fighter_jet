@@ -7,7 +7,7 @@ int main()
 	SetConsoleOutputCP(CP_UTF8);
 	SetConsoleCP(CP_UTF8);
 
-	ThunderFighter game;
+	ThunderFighter game(false);
 
 	while(game.IsRunning())
 	{

@@ -9,6 +9,9 @@
 
 #include "enemy.h"
 
+constexpr const char* GAME_NAME = "雷霆战机";
+constexpr const char* GAME_VERSION = "v1.4";
+
 enum class GameState
 {
 	Menu,    // 主菜单
@@ -25,8 +28,29 @@ public:
 	void Run();       //主循环
 	bool IsRunning(); //检查游戏是否在运行
 
+	explicit ThunderFighter(bool test_mode = false);
+
+	//测试函数
+	GameState GetState() const
+	{
+		return state_;
+	}
+	int GetLife() const
+	{
+		return life_number;
+	}
+	int GetScore() const
+	{
+		return score_;
+	}
+	bool IsRunning() const
+	{
+		return running_;
+	}
+
 private:
 	//===== 高层游戏逻辑 =====
+	bool test_mode_;         //测试状态
 	GameState state_;        //游戏状态管理
 	void ShowMenu();         // 显示主菜单
 	void Back_to_menu();     //回到菜单

@@ -1,21 +1,15 @@
-include(FetchContent)
-
-#下载 GoogleTest
-FetchContent_Declare(
-  googletest
-  URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
-  DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+add_executable(tests
+    test_main.cpp
 )
 
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(googletest)
+target_link_libraries(tests PRIVATE
+    thunder_core
+    GTest::gtest_main
+)
 
-add_executable(unit_tests test_main.cpp)
-
-target_link_libraries(unit_tests PRIVATE GTest::gtest_main)
-
-target_link_options(unit_tests PRIVATE "-static")
+if(MINGW)
+    target_link_options(tests PRIVATE -static)
+endif()
 
 include(GoogleTest)
-gtest_discover_tests(unit_tests)
-
+gtest_discover_tests(tests)

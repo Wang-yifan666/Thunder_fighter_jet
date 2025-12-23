@@ -1,9 +1,48 @@
 #include <gtest/gtest.h>
+#include "def.h"
 
-// 这是一个演示用的测试用例
-// 证明测试框架可以正常工作
-TEST(DemoTest, BasicMath)
+//测试
+TEST(ThunderFighterBasic, InitialState)
 {
-	EXPECT_EQ(1 + 1, 2);
-	EXPECT_TRUE(10 > 5);
+	ThunderFighter game(true);
+
+	EXPECT_TRUE(game.IsRunning());
+	EXPECT_EQ(game.GetState(), GameState::Menu);
+	EXPECT_EQ(game.GetLife(), 5);
+	EXPECT_EQ(game.GetScore(), 0);
+}
+
+//状态测试
+TEST(ThunderFighterState, InitialStateIsValid)
+{
+	ThunderFighter game(true);
+
+	GameState s = game.GetState();
+	EXPECT_TRUE(s == GameState::Menu || s == GameState::Playing
+	            || s == GameState::Exit);
+}
+
+//稳定性测试
+TEST(ThunderFighterStability, MultipleConstructDestroy)
+{
+	for(int i = 0; i < 5; ++i)
+	{
+		ThunderFighter game(true);
+		EXPECT_TRUE(game.IsRunning());
+		EXPECT_EQ(game.GetState(), GameState::Menu);
+	}
+}
+
+//分数测试
+TEST(ThunderFighterLogic, ScoreStartsAtZero)
+{
+	ThunderFighter game(true);
+	EXPECT_EQ(game.GetScore(), 0);
+}
+
+//生命测试
+TEST(ThunderFighterLogic, LifeStartsAtFive)
+{
+	ThunderFighter game(true);
+	EXPECT_EQ(game.GetLife(), 5);
 }

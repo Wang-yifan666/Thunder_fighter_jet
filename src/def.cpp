@@ -30,6 +30,7 @@ int max_life_display = 10; //最大生命显示数量
 ThunderFighter::ThunderFighter():
 
 
+test_mode_(false),                //
 state_(GameState::Menu),          //
 frame_count_(0),                  //
 running_(true),                   //
@@ -53,8 +54,12 @@ invincible_until_(start_time_),   //
 cheat_invincible_(false),         //
 bullets_remaining_(200)           //
 {
-	HideCursor();
-	ClearScreen();
+	if(!test_mode_)
+	{
+		HideCursor();
+		ClearScreen();
+	}
+
 	last_fps_time_ = steady_clock::now();
 
 	LoadHighScore();
@@ -70,10 +75,10 @@ void ThunderFighter::ShowMenu()
 		std::cout << "\n\n";
 		std::cout << "================================\n";
 		std::cout << "        雷 霆 战 机           \n";
-		std::cout << "================================\n\n";
+		std::cout << "================================\n\n\n";
 
 		std::cout << "  [1] 开始游戏\n";
-		std::cout << "  [2] 退出游戏\n\n";
+		std::cout << "  [2] 退出游戏\n\n\n";
 
 		std::cout << "*********************************\n\n";
 
@@ -223,8 +228,8 @@ void ThunderFighter::DrawFrame()
 		Back_to_menu();
 		q_was_down_ = true;
 		std::this_thread::sleep_for(
-		    std::chrono::milliseconds(120)); // 防止抖动
-		return; // 立刻结束这一帧，后面不要再跑
+		    std::chrono::milliseconds(120)); //防止抖动
+		return; //立刻结束这一帧，后面不要再跑
 	}
 	q_was_down_ = q_down;
 
@@ -246,18 +251,11 @@ void ThunderFighter::DrawFrame()
 			if(is_invincible_)
 				invincible_until_ += duration;
 		}
-		std::this_thread::sleep_for(200ms); // 防止按键连续触发
+		std::this_thread::sleep_for(200ms); //防止按键连续触发
 	}
 
 	if(!is_paused_)
 	{
-		// if(GetAsyncKeyState('Q') & 0x8000)
-		// {
-		// 	Back_to_menu();
-		// 	std::this_thread::sleep_for(std::chrono::milliseconds(200));
-		// 	return;
-		// }
-
 		frame_count_++;
 		fps_counter_++;
 		enemy_move_counter_++;
@@ -364,8 +362,10 @@ void ThunderFighter::DrawFrame()
 		return;
 	}
 
-	//始终执行，保证画面不消失
-	ClearScreen();
+	if(!test_mode_)
+	{
+		ClearScreen(); //保持画面不消失
+	}
 
 	//创建字符缓冲区
 	std::vector<std::string> screen_buffer(
@@ -478,10 +478,10 @@ void ThunderFighter::DrawFrame()
 
 	auto window =
 	    vbox(
-	        {text("雷霆战机 v1.3") //
-	             | bold            //
-	             | center,         //
-	         separator(),          //
+	        {text(std::string(GAME_NAME) + " " + GAME_VERSION) //
+	             | bold                                        //
+	             | center,                                     //
+	         separator(),                                      //
 	         hbox(
 	             {text("帧率: "),                                  //
 	              text(std::to_string(current_fps_) + " FPS  ")    //
@@ -704,47 +704,76 @@ void ThunderFighter::SaveHighScore() const
 
 void ThunderFighter::Run()
 {
+	//主菜单
 	if(state_ == GameState::Menu)
 	{
-		ShowMenu(); // 或 ShowMenuFTXUI()
+		ShowMenu();
 		return;
 	}
 
+	//游戏状态
 	while(running_ && state_ == GameState::Playing && !ShouldExit())
 	{
 		DrawFrame();
 
-		// DrawFrame 里可能把 state_ 改成 Menu/Exit
+		//切换状态
 		if(state_ != GameState::Playing)
 			return;
 
-		std::this_thread::sleep_for(16ms);
+		std::this_thread::sleep_for(std::chrono::milliseconds(16));
 	}
 
-	// 如果是返回菜单，不要做结算
-	if(state_ == GameState::Menu)
+	if(life_number > 0)
+	{
 		return;
+	}
 
-	// 如果是退出
-	if(!running_ || state_ == GameState::Exit)
-		return;
-
+	//结算
 	score_ += bullets_remaining_ * 10;
 
 	high_scores_.push_back(score_);
-	std::sort(high_scores_.begin(), high_scores_.end(),
-	          std::greater<int>());
+	std::sort(high_scores_.begin(), //
+	          high_scores_.end(),   //
+	          std::greater<int>()); //
+
 	if(high_scores_.size() > 5)
 		high_scores_.resize(5);
 
 	SaveHighScore();
 
-	//结算
+	//计算排名
+	int rank = 1;
+	for(int s: high_scores_)
+	{
+		if(score_ < s)
+			rank++;
+		else
+			break;
+	}
+
+	//结算界面
 	while(true)
 	{
-		ClearScreen();
+		system("cls");
+
 		std::cout << "\n=== 游戏结束 ===\n";
-		std::cout << "得分: " << score_ << "\n\n";
+		std::cout << "本局得分: " << score_ << " 分\n\n";
+
+		std::cout << "=== 历史最高分 TOP 5 ===\n";
+		for(size_t i = 0; i < high_scores_.size(); ++i)
+		{
+			std::cout << (i + 1) << ". " << high_scores_[i] << " 分\n";
+		}
+
+		std::cout << "\n";
+		if(rank == 1)
+			std::cout << "恭喜你！创造了历史最高分！\n";
+		else if(rank <= 5)
+			std::cout << "恭喜你！成为历史第 " << rank << " 名！\n";
+		else
+			std::cout << "本次未进入历史前五名，加油！\n";
+
+		std::cout << "\n-------------------------\n";
 		std::cout << "[R] 返回主菜单\n";
 		std::cout << "[Q] 退出游戏\n";
 
@@ -761,7 +790,7 @@ void ThunderFighter::Run()
 			return;
 		}
 
-		std::this_thread::sleep_for(100ms);
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
 }
 
