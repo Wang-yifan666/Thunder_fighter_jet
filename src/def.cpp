@@ -54,7 +54,7 @@ invincible_until_(start_time_),   //
 cheat_invincible_(false),         //
 bullets_remaining_(200)           //
 {
-	if(!test_mode_)
+	if(!IS_TEST_MODE)
 	{
 		HideCursor();
 		ClearScreen();
@@ -119,6 +119,13 @@ void ThunderFighter::HideCursor() const
 {
 	HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
 	CONSOLE_CURSOR_INFO ci{1, FALSE};
+	SetConsoleCursorInfo(h, &ci);
+}
+
+void ThunderFighter::ShowCursor() const
+{
+	HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+	CONSOLE_CURSOR_INFO ci{1, TRUE};
 	SetConsoleCursorInfo(h, &ci);
 }
 
@@ -704,6 +711,9 @@ void ThunderFighter::SaveHighScore() const
 
 void ThunderFighter::Run()
 {
+	if(IS_TEST_MODE)
+		return;
+
 	//主菜单
 	if(state_ == GameState::Menu)
 	{

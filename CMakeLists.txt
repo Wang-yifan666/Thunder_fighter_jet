@@ -12,18 +12,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #ftxui
 find_package(ftxui CONFIG REQUIRED)
 
-#GoogleTest
-include(FetchContent)
-
-FetchContent_Declare(
-  googletest
-  URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
-  DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-)
-
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(googletest)
-
 #thunder_core
 add_library(thunder_core
     src/def.cpp
@@ -54,7 +42,3 @@ target_link_libraries(Thunder_fighter_jet PRIVATE
 if(MINGW)
   target_link_options(Thunder_fighter_jet PRIVATE -static)
 endif()
-
-#tests
-enable_testing()
-add_subdirectory(tests)

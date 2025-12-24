@@ -50,6 +50,6 @@ void ThunderFighter::cheats_addbullters()
 void ThunderFighter::cheats_godlike()
 {
 	cheats_invincible();
-	life_number = INT_MAX;
-	bullets_remaining_ = INT_MAX;
+	life_number = 9999999;
+	bullets_remaining_ = 9999999;
 }

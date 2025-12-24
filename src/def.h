@@ -1,5 +1,11 @@
 #pragma once
 
+#ifdef UNIT_TEST
+constexpr bool IS_TEST_MODE = true;
+#else
+constexpr bool IS_TEST_MODE = false;
+#endif
+
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/screen/screen.hpp>
 //#include <string>
@@ -28,7 +34,6 @@ public:
 	void Run();       //主循环
 	bool IsRunning(); //检查游戏是否在运行
 
-	explicit ThunderFighter(bool test_mode = false);
 
 	//测试函数
 	GameState GetState() const
@@ -80,6 +85,7 @@ private:
 	//===== 控制台 / 输出工具 =====
 	void ClearScreen() const;   //清屏
 	void HideCursor() const;    //隐藏光标
+	void ShowCursor() const;    //显示光标
 	void cheats_kills();        //作弊：秒杀所有敌人
 	void cheats_life();         //作弊：加血
 	void cheats_invincible();   //作弊：无敌
