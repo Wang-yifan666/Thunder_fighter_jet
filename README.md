@@ -18,9 +18,27 @@
 
 ---
 
+## 游戏界面展示
+
+### 游戏进行时
 <p align="center">
   <img src="assets/gameplay1.png" alt="游戏运行截图" width="600" />
 </p>
+
+### 主菜单界面
+<p align="center"> 
+   <img src="assets/MENU.png" alt="主菜单界面" width="600" /> 
+</p>菜单界面
+
+### 排行榜界面
+<p align="center"> 
+   <img src="assets/TOP.png" alt="排行榜界面" width="600" /> 
+</p>排行榜
+
+### 游戏结束 / 结算界面
+<p align="center"> 
+   <img src="assets/END.png" alt="游戏结束界面" width="600" />
+</p>结算
 
 ---
 

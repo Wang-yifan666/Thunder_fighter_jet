@@ -471,17 +471,17 @@ void ThunderFighter::DrawFrame()
 		screen_buffer[player_y_][player_x_ + i] = player_str[i];
 
 	//暂停状态时显示暂停文字
-	if(is_paused_)
-	{
-		std::string pause_txt = "=== P A U S E D ===";
-		int py = kScreenHeight / 2;
-		int px = (kScreenWidth - (int)pause_txt.size()) / 2;
-		for(int i = 0; i < (int)pause_txt.size(); ++i)
-		{
-			if(px + i >= 0 && px + i < kScreenWidth)
-				screen_buffer[py][px + i] = pause_txt[i];
-		}
-	}
+	// if(is_paused_)
+	// {
+	// 	std::string pause_txt = "=== P A U S E D ===";
+	// 	int py = kScreenHeight / 2;
+	// 	int px = (kScreenWidth - (int)pause_txt.size()) / 2;
+	// 	for(int i = 0; i < (int)pause_txt.size(); ++i)
+	// 	{
+	// 		if(px + i >= 0 && px + i < kScreenWidth)
+	// 			screen_buffer[py][px + i] = pause_txt[i];
+	// 	}
+	// }
 
 	Elements lines;
 	for(int y = 0; y < kScreenHeight; ++y)
