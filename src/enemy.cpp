@@ -1,6 +1,6 @@
-#include <windows.h>
 #include "def.h"
 
+#include <windows.h>
 #include <algorithm>
 #include <random>
 
@@ -10,26 +10,40 @@ constexpr int kScreenWidth = 98;
 constexpr int kScreenHeight = 40;
 constexpr int kStartToMoveDown = 2;
 constexpr int kStartToMoveLeftRight = 4;
-constexpr int kMaxBatchCount = 15; //一波最多15批
-constexpr int kMaxPerBatch = 3;    //每批最多3个敌人
+int kMaxBatchCount = 15; //一波最多15批
+int kMaxPerBatch = 3;    //每批最多3个敌人
 
 std::mt19937& Rng()
 { //全局随机数生成器
 	static std::mt19937 rng{std::random_device{}()};
 	return rng;
 }
+
 } //namespace
 
 void ThunderFighter::Make_enermy()
 {
 	std::uniform_int_distribution<int> randSpeed(1, 3);
 
-	int total_to_spawn = level_ * 2;
+	int base = level_ * 2;
+	int total_to_spawn;
+	switch(difficulty_)
+	{
+	case Difficulty::Easy:
+		total_to_spawn = std::max(2, base - 2);
+		break;
+	case Difficulty::Normal:
+		total_to_spawn = base;
+		break;
+	case Difficulty::Hard:
+		total_to_spawn = base * 2;
+		break;
+	}
 
 	for(int i = 0; i < total_to_spawn; ++i)
 		pending_enemies_.emplace_back(0, 0, randSpeed(Rng()));
 
-	//开启一波新的刷怪，让SpawnEnemiesFromPending随机决定这波有几批
+	//开启一波新的刷新
 	remaining_rows_in_batch_ = 0;
 }
 
@@ -43,6 +57,22 @@ void ThunderFighter::SpawnEnemiesFromPending()
 {
 	if(pending_enemies_.empty())
 		return;
+
+	switch(difficulty_)
+	{
+	case Difficulty::Easy:
+		kMaxBatchCount = 5;
+		kMaxPerBatch = 2;
+		break;
+	case Difficulty::Normal:
+		kMaxBatchCount = 15;
+		kMaxPerBatch = 3;
+		break;
+	case Difficulty::Hard:
+		kMaxBatchCount = 20;
+		kMaxPerBatch = 5;
+		break;
+	}
 
 	//如果当前这一波还没决定“总共有多少批”，在这里随机一个 1~15 批
 	if(remaining_rows_in_batch_ == 0)

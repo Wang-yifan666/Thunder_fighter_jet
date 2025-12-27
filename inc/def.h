@@ -1,11 +1,5 @@
 #pragma once
 
-#ifdef UNIT_TEST
-constexpr bool IS_TEST_MODE = true;
-#else
-constexpr bool IS_TEST_MODE = false;
-#endif
-
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/screen/screen.hpp>
 //#include <string>
@@ -14,6 +8,7 @@ constexpr bool IS_TEST_MODE = false;
 //#include <random>
 
 #include "enemy.h"
+#include "HighScore.h"
 
 constexpr const char* GAME_NAME = "雷霆战机";
 constexpr const char* GAME_VERSION = "v1.4";
@@ -23,6 +18,13 @@ enum class GameState
 	Menu,    // 主菜单
 	Playing, // 游戏中
 	Exit     // 退出程序
+};
+
+enum class Difficulty
+{
+	Easy,
+	Normal,
+	Hard
 };
 
 class ThunderFighter
@@ -55,16 +57,18 @@ public:
 
 private:
 	//===== 高层游戏逻辑 =====
-	bool test_mode_;         //测试状态
-	GameState state_;        //游戏状态管理
-	void ShowMenu();         // 显示主菜单
-	void Back_to_menu();     //回到菜单
-	void DrawFrame();        //每帧更新 + 渲染
-	void Level();            //等级 / 难度管理
-	void score();            //分数管理
-	void Life();             //生命相关逻辑
-	bool ShouldExit() const; //检查是否退出游戏
-	void ResetGame();        //重置游戏状态
+	bool test_mode_;           //测试状态
+	GameState state_;          //游戏状态管理
+	void ShowMenu();           //显示主菜单
+	void ShowDifficultyMenu(); //选择难度
+	void ShowLeaderboard();    //显示排行榜页面
+	void Back_to_menu();       //回到菜单
+	void DrawFrame();          //每帧更新 + 渲染
+	void Level();              //等级 / 难度管理
+	void score();              //分数管理
+	void Life();               //生命相关逻辑
+	bool ShouldExit() const;   //检查是否退出游戏
+	void ResetGame();          //重置游戏状态
 
 	//===== 敌人相关 =====
 	void Make_enermy();             //生成pending敌人
@@ -83,24 +87,22 @@ private:
 	void CheckPlayerCollision(); //玩家与敌人碰撞检测
 
 	//===== 控制台 / 输出工具 =====
-	void ClearScreen() const;   //清屏
-	void HideCursor() const;    //隐藏光标
-	void ShowCursor() const;    //显示光标
-	void cheats_kills();        //作弊：秒杀所有敌人
-	void cheats_life();         //作弊：加血
-	void cheats_invincible();   //作弊：无敌
-	void cheats_addscore();     //作弊：加分
-	void cheats_addbullters();  //作弊：加弹药
-	void cheats_godlike();      //作弊：上帝模式
-	void LoadHighScore();       //加载最高分
-	void SaveHighScore() const; //保存最高分
+	void ClearScreen() const;  //清屏
+	void HideCursor() const;   //隐藏光标
+	void ShowCursor() const;   //显示光标
+	void cheats_kills();       //作弊：秒杀所有敌人
+	void cheats_life();        //作弊：加血
+	void cheats_invincible();  //作弊：无敌
+	void cheats_addscore();    //作弊：加分
+	void cheats_addbullters(); //作弊：加弹药
+	void cheats_godlike();     //作弊：上帝模式
 
 	//===== 状态：核心游戏数据 =====
-	// 按照构造函数初始化列表的顺序声明，避免编译器关于“初始化顺序不同”的警告
-	int frame_count_; //总帧数
-	bool running_;    //是否在运行
-	int fps_counter_; //每秒统计用
-	int current_fps_; //最近一次计算出的 FPS
+	Difficulty difficulty_ = Difficulty::Easy; //难度选择
+	int frame_count_;                          //总帧数
+	bool running_;                             //是否在运行
+	int fps_counter_;                          //每秒统计用
+	int current_fps_;                          //最近一次计算出的 FPS
 
 	int player_x_; //玩家位置
 	int player_y_;
@@ -114,10 +116,10 @@ private:
 	int enemy_move_interval_;     //敌人移动间隔
 	int remaining_rows_in_batch_; //当前刷怪批次剩余行数
 
-	int score_;                    //分数
-	std::vector<int> high_scores_; //历史最高分列表
-	bool top_row_clear_;           //顶部是否空（用于刷怪）
-	int last_score_time_ = 0;      //上次加分的时间点（秒）
+	int score_;               //分数
+	HighScore highscore_;     // 排行榜管理器
+	bool top_row_clear_;      //顶部是否空（用于刷怪）
+	int last_score_time_ = 0; //上次加分的时间点（秒）
 
 	//===== 状态：辅助计时 / 敌人容器 =====
 	std::chrono::steady_clock::time_point

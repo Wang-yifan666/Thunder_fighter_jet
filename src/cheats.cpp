@@ -1,5 +1,5 @@
 #include <windows.h>
-#include <climits>
+//#include <climits>
 #include "def.h"
 
 //#include <algorithm>
@@ -45,7 +45,6 @@ void ThunderFighter::cheats_addbullters()
 {
 	bullets_remaining_ += 100; //每次加100发子弹
 }
-
 
 void ThunderFighter::cheats_godlike()
 {

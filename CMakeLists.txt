@@ -17,11 +17,14 @@ add_library(thunder_core
     src/def.cpp
     src/enemy.cpp
     src/cheats.cpp
+    src/HighScore.cpp
 )
 
 target_include_directories(thunder_core PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
+
 
 target_link_libraries(thunder_core PUBLIC
     ftxui::dom

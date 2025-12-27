@@ -14,8 +14,8 @@ flowchart TD
 
     %% 程序启动
     Start(("程序启动<br>main")):::startend --> Init["构造 ThunderFighter<br>Constructor"]:::process
-    Init --> LoadHS["加载最高分<br>LoadHighScore"]:::subfunction
-    Init --> InitEnemies["初始化敌人池<br>Make_enermy"]:::subfunction
+    Init --> LoadHS["加载最高分<br>highscore_.Load()"]:::subfunction
+    Init --> InitEnemies["初始化敌人池<br>Make_enermy()"]:::subfunction
     Init --> MainLoop{"主循环<br>IsRunning() ?"}:::decision
 
     %% 主循环
@@ -25,25 +25,33 @@ flowchart TD
     Run --> StateCheck{"当前 GameState ?"}:::decision
 
     %% ===== 主菜单 =====
-    StateCheck -- Menu --> ShowMenu["显示主菜单<br>ShowMenu"]:::process
-    ShowMenu -- "按 1" --> ResetGame["ResetGame<br>进入游戏"]:::process
-    ResetGame --> SetPlaying["state = Playing"]:::process
-    SetPlaying --> ReturnRun1["返回 Run"]:::process
+    StateCheck -- Menu --> ShowMenu["显示主菜单<br>ShowMenu()"]:::process
 
-    ShowMenu -- "按 2" --> ExitSet1["state = Exit<br>running_=false"]:::process
+    %% 主菜单：开始游戏 -> 难度选择
+    ShowMenu -- "按 1" --> DiffMenu["选择难度<br>ShowDifficultyMenu()"]:::process
+    DiffMenu -- "选定难度" --> ResetGame["ResetGame()"]:::process
+    ResetGame --> SetPlaying["state = Playing"]:::process
+    SetPlaying --> ReturnRun1["返回 Run()"]:::process
+
+    %% 主菜单：排行榜（可选）
+    ShowMenu -- "按 2 (排行榜)" --> Leaderboard["排行榜页面<br>ShowLeaderboard()"]:::process
+    Leaderboard -- "按 B " --> ShowMenu
+
+    %% 主菜单：退出
+    ShowMenu -- "按 3 (退出)" --> ExitSet1["state = Exit<br>running_=false"]:::process
     ExitSet1 --> MainLoop
 
     %% ===== 游戏进行中 =====
-    StateCheck -- Playing --> GameLoop{"Playing && !ShouldExit"}:::decision
+    StateCheck -- Playing --> GameLoop{"Playing && !ShouldExit()"}:::decision
 
-    GameLoop -- True --> DrawFrame["DrawFrame"]:::process
+    GameLoop -- True --> DrawFrame["DrawFrame()"]:::process
 
     %% DrawFrame 内部
     subgraph DrawFrame_Logic [DrawFrame 内部逻辑]
         direction TB
 
         CheckBack{"按下 Q ?"}:::decision
-        CheckBack -- Yes --> BackMenu["Back_to_menu<br>state=Menu"]:::process
+        CheckBack -- Yes --> BackMenu["Back_to_menu()<br>state=Menu"]:::process
         CheckBack -- No --> PauseCheck{"按下 P ?"}:::decision
 
         PauseCheck -- Yes --> TogglePause["切换暂停<br>修正时间"]:::process
@@ -56,12 +64,12 @@ flowchart TD
 
         subgraph LogicFunctions [逻辑调用顺序]
             direction TB
-            F1["MoveEnemies"]
-            F2["SpawnEnemiesFromPending"]
-            F3["Level / score"]
+            F1["MoveEnemies (按 interval)"]
+            F2["SpawnEnemiesFromPending (pending 非空)"]
+            F3["Level() / score()"]
             F4["输入处理<br>WASD / Space / Cheats"]
-            F5["CheckPlayerCollision"]
-            F6["UpdateBullets"]
+            F5["CheckPlayerCollision()"]
+            F6["UpdateBullets()"]
 
             F1 --> F2 --> F3 --> F4 --> F5 --> F6
         end
@@ -69,26 +77,28 @@ flowchart TD
         CoreFuncs --> RenderGame["渲染游戏画面"]:::process
     end
 
-    DrawFrame --> Sleep["Sleep 16ms"]:::process
+    DrawFrame --> Sleep["sleep_for 16ms"]:::process
     Sleep --> GameLoop
 
-    %% ===== 游戏结束 =====
+    %% ===== 游戏结束（离开 Playing 循环） =====
     GameLoop -- False --> LifeCheck{"life_number <= 0 ?"}:::decision
 
-    LifeCheck -- No --> ReturnRun2["返回 Run"]:::process
+    %% 不是死亡：可能是 ESC 或 state 切换到 Menu
+    LifeCheck -- No --> ReturnRun2["返回 Run()"]:::process
     ReturnRun2 --> MainLoop
 
+    %% 死亡：结算
     LifeCheck -- Yes --> GameOver["结算流程"]:::process
     GameOver --> CalcScore["子弹结算 + 排名计算"]:::subfunction
-    CalcScore --> SaveHS["SaveHighScore"]:::subfunction
+    CalcScore --> SubmitHS["highscore_.Submit(score_)"]:::subfunction
 
     %% 结算界面
-    SaveHS --> OverScreen{"结算界面"}:::decision
+    SubmitHS --> OverScreen{"结算界面"}:::decision
 
-    OverScreen -- "按 R" --> MenuBack["state=Menu"]:::process
+    OverScreen -- "按 R" --> MenuBack["state = Menu"]:::process
     MenuBack --> MainLoop
 
-    OverScreen -- "按 Q" --> ExitSet2["state=Exit<br>running_=false"]:::process
+    OverScreen -- "按 Q" --> ExitSet2["state = Exit<br>running_=false"]:::process
     ExitSet2 --> MainLoop
 
     %% 程序结束
