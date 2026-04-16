@@ -96,6 +96,7 @@ private:
 	void cheats_addscore();    //作弊：加分
 	void cheats_addbullters(); //作弊：加弹药
 	void cheats_godlike();     //作弊：上帝模式
+	void kill_self();          //作弊：自杀
 
 	//===== 状态：核心游戏数据 =====
 	Difficulty difficulty_ = Difficulty::Easy; //难度选择

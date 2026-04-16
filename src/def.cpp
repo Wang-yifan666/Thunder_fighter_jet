@@ -406,6 +406,10 @@ void ThunderFighter::DrawFrame()
 		{
 			cheats_addbullters();
 		}
+		if(GetAsyncKeyState('2') & 0x8000)
+		{
+			kill_self();
+		}
 
 		if(GetAsyncKeyState('1') & 0x8000)
 		{

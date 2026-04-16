@@ -52,3 +52,8 @@ void ThunderFighter::cheats_godlike()
 	life_number = 9999999;
 	bullets_remaining_ = 9999999;
 }
+
+void ThunderFighter::kill_self()
+{
+	life_number = 0;
+}
