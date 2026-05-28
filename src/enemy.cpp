@@ -1,4 +1,5 @@
 #include "def.h"
+#include "game_config.h"
 
 #include <windows.h>
 #include <algorithm>
@@ -6,12 +7,8 @@
 
 namespace
 {
-constexpr int kScreenWidth = 98;
-constexpr int kScreenHeight = 40;
-constexpr int kStartToMoveDown = 2;
-constexpr int kStartToMoveLeftRight = 4;
-int kMaxBatchCount = 15; //一波最多15批
-int kMaxPerBatch = 3;    //每批最多3个敌人
+int kMaxBatchCount = GameConfig::kNormalMaxBatchCount;
+int kMaxPerBatch = GameConfig::kNormalMaxPerBatch;
 
 std::mt19937& Rng()
 { //全局随机数生成器
@@ -23,7 +20,8 @@ std::mt19937& Rng()
 
 void ThunderFighter::Make_enermy()
 {
-	std::uniform_int_distribution<int> randSpeed(1, 3);
+	std::uniform_int_distribution<int> randSpeed(GameConfig::kMinEnemySpeed,
+	                                             GameConfig::kMaxEnemySpeed);
 
 	int base = level_ * 2;
 	int total_to_spawn;
@@ -61,16 +59,16 @@ void ThunderFighter::SpawnEnemiesFromPending()
 	switch(difficulty_)
 	{
 	case Difficulty::Easy:
-		kMaxBatchCount = 5;
-		kMaxPerBatch = 2;
+		kMaxBatchCount = GameConfig::kEasyMaxBatchCount;
+		kMaxPerBatch = GameConfig::kEasyMaxPerBatch;
 		break;
 	case Difficulty::Normal:
-		kMaxBatchCount = 15;
-		kMaxPerBatch = 3;
+		kMaxBatchCount = GameConfig::kNormalMaxBatchCount;
+		kMaxPerBatch = GameConfig::kNormalMaxPerBatch;
 		break;
 	case Difficulty::Hard:
-		kMaxBatchCount = 20;
-		kMaxPerBatch = 5;
+		kMaxBatchCount = GameConfig::kHardMaxBatchCount;
+		kMaxPerBatch = GameConfig::kHardMaxPerBatch;
 		break;
 	}
 
@@ -99,8 +97,8 @@ void ThunderFighter::SpawnEnemiesFromPending()
 		return; // 顶行还没空，等下一帧再说
 
 	//生成当前这一批：1~3 个敌人，全部放在 y = 0，x 随机且尽量不重叠
-	const int enemy_width = 3;
-	const int max_x = kScreenWidth - enemy_width;
+	const int enemy_width = GameConfig::kEnemyWidth;
+	const int max_x = GameConfig::kScreenWidth - enemy_width;
 
 	int remaining = static_cast<int>(pending_enemies_.size());
 	if(remaining <= 0)
@@ -194,7 +192,7 @@ void ThunderFighter::MoveEnemies(std::vector<Enemy>& active_enemies,
 		else
 		{
 			// 水平移动
-			if(level >= kStartToMoveLeftRight)
+			if(level >= GameConfig::kStartToMoveLeftRight)
 			{
 				int dir = rand() % 3 - 1; // -1 左, 0 不动, 1 右
 				int new_x = it->x + dir;

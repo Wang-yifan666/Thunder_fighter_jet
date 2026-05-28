@@ -1,6 +1,7 @@
 #include <windows.h>
 //#include <climits>
 #include "def.h"
+#include "game_config.h"
 
 //#include <algorithm>
 
@@ -38,19 +39,19 @@ void ThunderFighter::cheats_invincible()
 
 void ThunderFighter::cheats_addscore()
 {
-	score_ += 1000; //每次加1000分
+	score_ += GameConfig::kCheatAddScore; //每次加分
 }
 
 void ThunderFighter::cheats_addbullters()
 {
-	bullets_remaining_ += 100; //每次加100发子弹
+	bullets_remaining_ += GameConfig::kCheatAddBullets; //每次加子弹
 }
 
 void ThunderFighter::cheats_godlike()
 {
 	cheats_invincible();
-	life_number = 9999999;
-	bullets_remaining_ = 9999999;
+	life_number = GameConfig::kCheatGodlikeLife;
+	bullets_remaining_ = GameConfig::kCheatGodlikeBullets;
 }
 
 void ThunderFighter::kill_self()

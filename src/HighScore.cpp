@@ -74,3 +74,16 @@ const std::vector<int>& HighScore::Scores() const
 {
 	return scores_;
 }
+
+int HighScore::GetRank(int score) const
+{
+	int rank = 1;
+	for(int s: scores_)
+	{
+		if(score < s)
+			rank++;
+		else
+			break;
+	}
+	return rank;
+}

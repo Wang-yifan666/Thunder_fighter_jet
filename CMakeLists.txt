@@ -22,6 +22,9 @@ set(THUNDER_CORE_SOURCES
     src/enemy.cpp
     src/cheats.cpp
     src/HighScore.cpp
+    src/input_console.cpp
+    src/console_utils.cpp
+    src/render_console.cpp
 )
 
 add_library(thunder_core ${THUNDER_CORE_SOURCES})

@@ -21,6 +21,9 @@ public:
 	//获取 Top 列表（保证至少有一个元素）
 	const std::vector<int>& Scores() const;
 
+	//计算给定分数的排名（1-based，越高分排名越靠前）
+	int GetRank(int score) const;
+
 private:
 	void EnsureNotEmpty();
 

@@ -82,7 +82,7 @@ BreakAfterJavaFieldAnnotations: false
 
 BreakStringLiterals: false
 
-ColumnLimit: 72
+ColumnLimit: 101
 
 CommentPragmas: '^ IWYU pragma:'
 
@@ -135,7 +135,7 @@ IndentPPDirectives: None
 
 IndentWidth: 4
 
-IndentWrappedFunctionNames: false
+IndentWrappedFunctionNames: 
 
 KeepEmptyLinesAtTheStartOfBlocks: true
 

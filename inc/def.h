@@ -2,157 +2,122 @@
 
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/screen/screen.hpp>
-//#include <string>
 #include <chrono>
 #include <vector>
-//#include <random>
 
 #include "enemy.h"
 #include "HighScore.h"
+#include "game_types.h"
 
 constexpr const char* GAME_NAME = "雷霆战机";
 constexpr const char* GAME_VERSION = "v1.4";
 
-enum class GameState
-{
-	Menu,    // 主菜单
-	Playing, // 游戏中
-	Exit     // 退出程序
-};
-
-enum class Difficulty
-{
-	Easy,
-	Normal,
-	Hard
-};
-
 class ThunderFighter
 {
 public:
+	// ========== lifecycle ==========
 	ThunderFighter();
 	~ThunderFighter() = default;
 
-	void Run();       //主循环
-	bool IsRunning(); //检查游戏是否在运行
+	void Run();          // 主循环
+	bool IsRunning();    // 检查游戏是否在运行
 
-
-	//测试函数
-	GameState GetState() const
-	{
-		return state_;
-	}
-	int GetLife() const
-	{
-		return life_number;
-	}
-	int GetScore() const
-	{
-		return score_;
-	}
-	bool IsRunning() const
-	{
-		return running_;
-	}
+	// ========== test helpers ==========
+	GameState GetState() const { return state_; }
+	int GetLife() const  { return life_number; }
+	int GetScore() const { return score_; }
+	bool IsRunning() const { return running_; }
 
 private:
-	//===== 高层游戏逻辑 =====
-	bool test_mode_;           //测试状态
-	GameState state_;          //游戏状态管理
-	void ShowMenu();           //显示主菜单
-	void ShowDifficultyMenu(); //选择难度
-	void ShowLeaderboard();    //显示排行榜页面
-	void Back_to_menu();       //回到菜单
-	void DrawFrame();          //每帧更新 + 渲染
-	void Level();              //等级 / 难度管理
-	void score();              //分数管理
-	void Life();               //生命相关逻辑
-	bool ShouldExit() const;   //检查是否退出游戏
-	void ResetGame();          //重置游戏状态
+	// ========== state ==========
+	bool test_mode_;
+	GameState state_;
+	bool running_;
 
-	//===== 敌人相关 =====
-	void Make_enermy();             //生成pending敌人
-	void Clear_Current_Enemies();   //清空当前enemies_
-	void SpawnEnemiesFromPending(); //从pending刷一批敌人到屏幕
-	bool IsOverlapping(const Enemy& a,
-	                   const Enemy& b); //检查两个敌人是否重叠
-	bool WillOverlap(const Enemy& cur,
-	                 const std::vector<Enemy>& enemies, int new_x,
-	                 int new_y); //预测移动后是否重叠
-	void MoveEnemies(std::vector<Enemy>& active_enemies, int level,
-	                 int screen_width,
-	                 int screen_height); //敌人实际移动
+	// ========== state: difficulty / level / score / time ==========
+	Difficulty difficulty_ = Difficulty::Easy;
+	int level_;
+	int score_;
+	int elapsed_seconds_ = 0;
+	int last_score_time_ = 0;
+	int frame_count_;
+	int fps_counter_;
+	int current_fps_;
+	std::chrono::steady_clock::time_point start_time_;
+	std::chrono::steady_clock::time_point last_fps_time_;
+	std::chrono::steady_clock::time_point pause_start_time_;
+	bool is_paused_ = false;
+	bool top_row_clear_;
 
-	//========= 新增：玩家碰撞检测 =========
-	void CheckPlayerCollision(); //玩家与敌人碰撞检测
+	// ========== menu / screen flow ==========
+	void ShowMenu();
+	void ShowDifficultyMenu();
+	void ShowLeaderboard();
+	void Back_to_menu();
+	void ResetGame();
+	bool ShouldExit() const;
 
-	//===== 控制台 / 输出工具 =====
-	void ClearScreen() const;  //清屏
-	void HideCursor() const;   //隐藏光标
-	void ShowCursor() const;   //显示光标
-	void cheats_kills();       //作弊：秒杀所有敌人
-	void cheats_life();        //作弊：加血
-	void cheats_invincible();  //作弊：无敌
-	void cheats_addscore();    //作弊：加分
-	void cheats_addbullters(); //作弊：加弹药
-	void cheats_godlike();     //作弊：上帝模式
-	void kill_self();          //作弊：自杀
+	// ========== main loop helpers ==========
+	void DrawFrame();
+	void Level();
+	void score();
 
-	//===== 状态：核心游戏数据 =====
-	Difficulty difficulty_ = Difficulty::Easy; //难度选择
-	int frame_count_;                          //总帧数
-	bool running_;                             //是否在运行
-	int fps_counter_;                          //每秒统计用
-	int current_fps_;                          //最近一次计算出的 FPS
-
-	int player_x_; //玩家位置
+	// ========== player ==========
+	int player_x_;
 	int player_y_;
-	int life_number; //剩余生命数
+	int life_number;
 
-	int level_; //当前关卡/等级
+	bool is_invincible_ = false;
+	bool cheat_invincible_ = false;
+	bool q_was_down_ = false;
+	std::chrono::steady_clock::time_point invincible_until_;
 
-	std::chrono::steady_clock::time_point start_time_; //游戏开始时间
+	void Life();
+	void CheckPlayerCollision();
 
-	int enemy_move_counter_;      //敌人移动计数器
-	int enemy_move_interval_;     //敌人移动间隔
-	int remaining_rows_in_batch_; //当前刷怪批次剩余行数
-
-	int score_;               //分数
-	HighScore highscore_;     // 排行榜管理器
-	bool top_row_clear_;      //顶部是否空（用于刷怪）
-	int last_score_time_ = 0; //上次加分的时间点（秒）
-
-	//===== 状态：辅助计时 / 敌人容器 =====
-	std::chrono::steady_clock::time_point
-	    last_fps_time_; //上次 FPS 统计时间
-	std::chrono::steady_clock::time_point
-	    pause_start_time_;          //暂停开始时间点
-	bool is_paused_ = false;        //游戏是否暂停
-	bool is_invincible_ = false;    //当前是否处于无敌
-	bool cheat_invincible_ = false; //无敌挂开关
-	bool q_was_down_ = false;       //q键是否按下
-	std::chrono::steady_clock::time_point
-	    invincible_until_; // 无敌结束时间
-
-	std::vector<Enemy> enemies_;         //屏幕上的敌人
-	std::vector<Enemy> pending_enemies_; //待生成敌人队列
-	int alive_enemies_count = 0;         //存活敌人数
-
-	int elapsed_seconds_ = 0; //游戏已运行秒数
-
-	// ========= 子弹相关 =========
+	// ========== bullets ==========
 	struct Bullet
 	{
 		int x;
 		int y;
-		Bullet(int _x = 0, int _y = 0) //
-		:
-		x(_x), //
-		y(_y)  //
-		{
-		}
+		Bullet(int _x = 0, int _y = 0): x(_x), y(_y) {}
 	};
-	void UpdateBullets();         // 更新所有子弹位置 + 碰撞
-	std::vector<Bullet> bullets_; // 场上的所有子弹
-	int bullets_remaining_;       // 玩家弹药数
+	std::vector<Bullet> bullets_;
+	int bullets_remaining_;
+	void UpdateBullets();
+
+	// ========== enemies ==========
+	std::vector<Enemy> enemies_;
+	std::vector<Enemy> pending_enemies_;
+	int alive_enemies_count = 0;
+	int enemy_move_counter_;
+	int enemy_move_interval_;
+	int remaining_rows_in_batch_;
+
+	void Make_enermy();
+	void Clear_Current_Enemies();
+	void SpawnEnemiesFromPending();
+	bool IsOverlapping(const Enemy& a, const Enemy& b);
+	bool WillOverlap(const Enemy& cur,
+	                 const std::vector<Enemy>& enemies, int new_x,
+	                 int new_y);
+	void MoveEnemies(std::vector<Enemy>& active_enemies, int level,
+	                 int screen_width, int screen_height);
+
+	// ========== high score ==========
+	HighScore highscore_;
+
+	// ========== console / rendering helpers ==========
+	void ClearScreen() const;
+	void HideCursor() const;
+	void ShowCursor() const;
+
+	// ========== cheats ==========
+	void cheats_kills();
+	void cheats_life();
+	void cheats_invincible();
+	void cheats_addscore();
+	void cheats_addbullters();
+	void cheats_godlike();
+	void kill_self();
 };

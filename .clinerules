@@ -1,0 +1,68 @@
+# Thunder Fighter Refactor Rules
+
+## Current Stage
+
+The current stage is behavior-preserving refactoring only.
+
+Do not introduce SDL, WebAssembly, mobile support, new gameplay logic, new rendering logic, or new input logic in this stage.
+
+## Hard Rules
+
+1. Do not rewrite the whole project at once.
+2. Keep every step buildable.
+3. Do not change gameplay behavior unless explicitly requested.
+4. Do not change enemy spawning logic.
+5. Do not change bullet logic.
+6. Do not change collision logic.
+7. Do not change score logic.
+8. Do not change leaderboard logic.
+9. Do not change menu flow.
+10. Do not change keyboard bindings.
+11. Do not change visual output.
+12. Do not introduce SDL in the current stage.
+13. Do not introduce WebAssembly in the current stage.
+14. Do not introduce mobile-specific code in the current stage.
+
+## Allowed Refactoring
+
+The following changes are allowed only when explicitly requested:
+
+1. Split large files.
+2. Move existing types into separate headers.
+3. Move existing constants into config headers.
+4. Move existing console input code into separate files.
+5. Move existing console rendering code into separate files.
+6. Move existing high score file I/O into separate files.
+7. Reorder class methods for readability.
+8. Rename functions only when behavior remains identical.
+9. Update CMake only to include newly split files.
+
+## Forbidden Refactoring
+
+1. Do not redesign the whole architecture in one step.
+2. Do not create a new GameCore yet unless explicitly requested.
+3. Do not create SDL frontend yet.
+4. Do not delete the old terminal version.
+5. Do not replace FTXUI yet.
+6. Do not optimize gameplay values.
+7. Do not rebalance difficulty.
+8. Do not change file formats.
+
+## Build Rule
+
+After every code modification, run the existing CMake configure and build commands.
+
+If the build fails, stop and report the exact error before continuing.
+
+## Long-Term Direction
+
+The long-term goal is:
+
+1. Behavior-preserving cleanup.
+2. Separate platform-specific code.
+3. Extract platform-independent game logic.
+4. Add SDL desktop frontend.
+5. Prepare WebAssembly support.
+6. Prepare mobile support.
+
+But the current stage is only step 1.
