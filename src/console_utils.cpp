@@ -48,4 +48,19 @@ SetConsoleOutputCP(CP_UTF8);
 SetConsoleCP(CP_UTF8);
 }
 
+std::string ExecutableDirectory()
+{
+char buffer[MAX_PATH] = {};
+DWORD length = GetModuleFileNameA(nullptr, buffer, MAX_PATH);
+if(length == 0)
+	return ".\\";
+
+std::string path(buffer, length);
+const std::string::size_type pos = path.find_last_of("\\/");
+if(pos == std::string::npos)
+	return ".\\";
+
+return path.substr(0, pos + 1);
+}
+
 } // namespace ConsoleUtils

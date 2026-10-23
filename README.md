@@ -199,8 +199,11 @@ Thunder_fighter_jet/
 ├── assets/fonts/              # Ubuntu Mono 字体与授权（SDL 版使用）
 ├── docx/                      # 流程图 / 迁移计划 / 界面基线
 ├── build/                     # 构建目录（CMake 生成）
-└── highscore.txt              # 本地排行榜数据
+└── highscore.txt              # 本地排行榜数据（见下方说明）
 ```
+
+排行榜文件位置：优先使用**可执行文件同目录**的 `highscore.txt`（便于单文件便携运行），
+若不存在则兼容读取上一级目录的旧文件（开发时从 `build/` 启动仍写入仓库根目录）。
 
 运行流程（两个前端一致）：
 

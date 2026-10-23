@@ -11,6 +11,7 @@
 #include "game/game_session.h"
 #include "game/input_state.h"
 #include "io/file_score_store.h"
+#include "io/score_path.h"
 #include "sdl_font.h"
 #include "sdl_input.h"
 #include "sdl_render.h"
@@ -115,7 +116,13 @@ int main(int argc, char** argv)
 		std::fprintf(stderr, "renderer unavailable (%s)\n", SDL_GetError());
 	}
 
-	thunder::FileScoreStore score_store;
+	// 排行榜文件优先放在 exe 同目录（单文件便携运行），兼容旧的上一级路径
+	std::string exe_dir;
+	if(const char* base = SDL_GetBasePath())
+		exe_dir = base;
+
+	thunder::FileScoreStore score_store(
+	    thunder::ResolveScorePath(exe_dir.empty() ? ".\\" : exe_dir));
 	thunder::GameSession session(score_store);
 
 	SdlInput::State input;

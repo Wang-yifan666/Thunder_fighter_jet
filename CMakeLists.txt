@@ -45,6 +45,7 @@ target_compile_options(thunder_logic PRIVATE ${THUNDER_WARNINGS})
 # ============ thunder_io: 文件存取（逻辑层不得依赖） ============
 add_library(thunder_io STATIC
     src/io/file_score_store.cpp
+    src/io/score_path.cpp
 )
 
 target_include_directories(thunder_io PUBLIC

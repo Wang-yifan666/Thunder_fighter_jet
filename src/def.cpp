@@ -20,6 +20,7 @@
 #include "game/game_config.h"
 #include "game/input_state.h"
 #include "game/session_snapshot.h"
+#include "io/score_path.h"
 
 using namespace ftxui;
 using namespace std::chrono;
@@ -67,8 +68,9 @@ thunder::RawInput PollRawInput()
 // lifecycle
 // ===================================================================
 
-ThunderFighter::ThunderFighter(): score_store_(), session_(score_store_),
-                                 test_mode_(false), running_(true)
+ThunderFighter::ThunderFighter():
+score_store_(thunder::ResolveScorePath(ConsoleUtils::ExecutableDirectory())),
+session_(score_store_), test_mode_(false), running_(true)
 {
 	ConsoleUtils::HideCursor();
 	ConsoleUtils::ClearScreen();
