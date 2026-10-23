@@ -8,7 +8,7 @@
 #include "io/file_score_store.h"
 
 constexpr const char* GAME_NAME = "雷霆战机";
-constexpr const char* GAME_VERSION = "v1.4";
+constexpr const char* GAME_VERSION = "v1.6";
 
 /// 终端前端：只负责采集输入，并把 SessionSnapshot 渲染到终端。
 /// 菜单 / 难度 / 排行榜 / 游戏 / 结算等流程状态机在 thunder::GameSession。

@@ -90,3 +90,30 @@ B0 基线 ─► B1 跨局状态修复 ─► B2 纯搬迁 ─► B3 回归测�
 - 隔离：逻辑层源码不得出现平台头/终端输出/系统时钟。
 - 字符网格：人工构造 `WorldSnapshot` 的 golden 比对。
 - Session：菜单键位、难度选择、Q 回菜单、R 重开、结算排名、暂停期间时间不推进。
+
+## 完成情况
+
+| 批次 | 提交 | 结果 |
+|---|---|---|
+| B0 基线 | `1a4dd5e`, `089e124` | 分支、干净构建、GTest 骨架、菜单基线 |
+| B1 跨局状态 | `91e2b9f` | `static` 计时器与刷怪全局量修复（独立提交） |
+| B2 纯搬迁 | `8d91ed2` | `thunder_logic` / `thunder_io` / `GameWorld` / `InputState` |
+| B3 测试 | `2374109` | 26 个用例 + 隔离检查 + 字符网格 golden |
+| B4 RNG | `b68958b` | RNG 归 `GameWorld` 所有，seed 可注入（独立提交） |
+| B5 会话 | `2024968` | `ScoreStore` 接口、`FileScoreStore`、非阻塞 `GameSession` |
+| B6 暂停 | `f33aa3f` | 暂停改为按下沿触发（独立提交） |
+| B7 Esc | `9d1aef7` | 游戏中 Esc 直接退出（独立提交） |
+| B8 SDL3 | `91e537d` | 最小可玩前端、固定步长、无头冒烟 |
+| B9 终端会话化 | `410694c` | 单循环前端，界面文案不变 |
+| B10 清理 | `eaa4b0f` + 文档提交 | 死代码、警告、文档与版本号 |
+
+### 与计划的偏差
+
+1. **vcpkg Manifest Mode 暂未采用**：vcpkg 自举需要从 GitHub Releases 下载
+   ninja 1.13.1 与 7-Zip 25.01，开发机网络对这些资源超时；改为本地构建 SDL3，
+   全局 vcpkg 环境未改动。
+2. **SDL3 依赖位置**：`%TEMP%/tf-sdl3-prefix`（本次验证用），构建 SDL 前端需要
+   `-DCMAKE_PREFIX_PATH=<SDL3 安装目录>`；网络恢复后建议回到 `vcpkg install sdl3`。
+3. **版本号**：游戏内 HUD 版本串由 `v1.4` 提升到 `v1.6`，与 README 对齐（有意变更，
+   菜单基线不受影响）。
+

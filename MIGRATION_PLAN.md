@@ -4,100 +4,67 @@
 
 The long-term goal is to make Thunder Fighter easier to migrate to SDL, WebAssembly, and mobile platforms.
 
-The current goal is not to add SDL yet.
+## Current State
 
-The current goal is behavior-preserving refactoring only.
+Stage 2 (logic / platform separation) is **complete**.
 
-## Current Stage
+- The terminal frontend still runs and keeps its original look and rules.
+- A new SDL3 frontend shares the same game logic; it is a minimal playable build.
+- Gameplay rules (score, collision, life, enemy behaviour, leaderboard) are unchanged.
+- Two intentional behaviour changes were made and committed separately:
+  pause is now edge-triggered, and `Esc` quits during play (matching the README).
 
-Stage 1: Behavior-preserving cleanup.
+### What Stage 2 produced
 
-In this stage, the game should remain a Windows terminal / FTXUI game.
+- `thunder_logic`: `GameWorld`, `GameSession`, `InputState` / `InputTracker`,
+  `WorldSnapshot` / `SessionSnapshot`, `HighScore`, `ScoreStore` interface
+- `thunder_io`: `FileScoreStore` (the only file IO implementation)
+- `cell_grid` belongs to the terminal layer; the SDL frontend draws from snapshots directly
+- Terminal frontend uses a single non-blocking loop driven by `GameSession`
+- `GameSession` owns the only `InputTracker`; pause never calls `GameWorld::Tick`
+- GoogleTest regression tests plus an isolation check for the logic layer
+- SDL3 frontend: minimal playable build with a fixed 16 ms logic step
 
-No gameplay behavior should change.
-
-## Current Restrictions
-
-The current stage must not:
-
-- Introduce SDL
-- Introduce WebAssembly
-- Introduce mobile input
-- Add new gameplay
-- Add new rendering style
-- Change enemy behavior
-- Change bullet behavior
-- Change collision behavior
-- Change score logic
-- Change leaderboard logic
-- Change menu flow
-- Change key bindings
-
-## Allowed Work
-
-The current stage may:
-
-- Split large source files
-- Split large header files
-- Extract type definitions
-- Extract config constants
-- Extract console input code
-- Extract console rendering code
-- Extract high score storage code
-- Improve file organization
-- Improve naming when behavior remains identical
-- Update CMake to include newly split files
-
-## Planned Stages
+## Completed Stages
 
 ### Stage 0: Safety Baseline
 
-- Create a refactor branch
-- Tag the current working version
-- Confirm the original project builds and runs
+- Refactor branch `refactor/logic-separation`
+- Fresh CMake configure, baseline menu capture (`docx/baseline`)
 
 ### Stage 1: Documentation and Rules
 
-- Add `.clinerules`
-- Add `MIGRATION_PLAN.md`
-- Do not modify source code yet
+- `.clinerules`, `MIGRATION_PLAN.md`, `docx/stage2_plan.md`
 
-### Stage 2: Extract Type Definitions
+### Stage 2: Types, Config, Input, Storage, Rendering
 
-- Move existing enums and structs into `game_types.h`
-- Do not change enum values or meanings
+- Types and constants moved into `inc/game/`
+- Input isolated in `input_console` / `InputState`
+- High score file IO isolated behind `ScoreStore`
+- Terminal rendering split into `cell_grid` + `render_console`
 
-### Stage 3: Extract Config Constants
+### Stage 3: Logic Extraction
 
-- Move repeated fixed values into `game_config.h`
-- Do not change any numeric value
+- `GameWorld` owns all mutable game state, `Tick(input, dt)` takes injected time
+- `GameSession` owns the non-blocking screen flow and the `InputTracker`
+- Terminal menus no longer block; the SDL frontend reuses the same session
 
-### Stage 4: Extract Console Input
+### Stage 4: SDL Frontend
 
-- Move Windows keyboard input code into `input_console.h/.cpp`
-- Keep key bindings unchanged
+- `Thunder_fighter_jet_sdl` target, optional at configure time
+- Fixed 16 ms logic step, rendering decoupled from display refresh
+- Text via a built-in 5x7 bitmap font (English ASCII), no font library dependency
 
-### Stage 5: Extract High Score Logic
+## Next Steps (not part of Stage 2)
 
-- Move leaderboard file I/O into `highscore.h/.cpp`
-- Keep `highscore.txt` behavior unchanged
+- Revisit vcpkg Manifest Mode when GitHub release assets are reachable
+  (vcpkg currently cannot bootstrap 7-Zip / ninja on the development machine)
+- SDL frontend polish: sprites, audio, window scaling, leaderboard parity checks
+- Separate platform services further if more frontends are added
 
-### Stage 6: Extract Console Rendering
+## Notes for Future Work
 
-- Move terminal rendering code into `render_console.h/.cpp`
-- Keep visual output unchanged
-
-### Stage 7: Clean ThunderFighter Class Layout
-
-- Reorder and group methods
-- Split long methods only when behavior remains identical
-
-### Stage 8: Prepare for Later Architecture Work
-
-- Only after behavior-preserving cleanup is stable
-- Start separating platform-dependent and platform-independent code
-
-### Stage 9: Add SDL
-
-- Not part of the current stage
-- Add only after the existing logic is cleanly separated
+- Keep the logic layer free of `windows.h`, FTXUI, SDL, `std::cout`, file IO and system clock
+  (`tests/check_isolation.cmake` enforces this)
+- Keep gameplay rules covered by tests before changing them
+- Behaviour changes must be separate commits with their own tests
