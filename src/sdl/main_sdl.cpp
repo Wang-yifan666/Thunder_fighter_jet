@@ -20,11 +20,11 @@ namespace
 constexpr auto kLogicStep = std::chrono::milliseconds(16);
 constexpr int kMaxStepsPerFrame = 5; // 卡顿时最多补 5 步，避免死亡螺旋
 
-int ParseFrameLimit(int argc, char** argv)
+int ParseIntOption(int argc, char** argv, const char* name)
 {
 	for(int i = 1; i + 1 < argc; ++i)
 	{
-		if(std::strcmp(argv[i], "--frames") == 0)
+		if(std::strcmp(argv[i], name) == 0)
 			return std::atoi(argv[i + 1]);
 	}
 	return 0;
@@ -73,14 +73,18 @@ int main(int argc, char** argv)
 		std::printf("Thunder Fighter (SDL3)\n"
 		            "  --frames N   run N frames then exit (headless smoke)\n"
 		            "  --demo       feed scripted input (menu -> difficulty -> play)\n"
+		            "  --no-vsync   disable vertical sync (uncapped rendering)\n"
+		            "  --max-fps N  limit render rate (only useful with --no-vsync)\n"
 		            "  --help       show this help\n"
 		            "In-game: WASD move, SPACE fire, P pause, Q menu, "
 		            "F11 fullscreen, ESC quit\n");
 		return 0;
 	}
 
-	const int max_frames = ParseFrameLimit(argc, argv);
+	const int max_frames = ParseIntOption(argc, argv, "--frames");
+	const int max_fps = ParseIntOption(argc, argv, "--max-fps");
 	const bool demo = HasFlag(argc, argv, "--demo");
+	const bool no_vsync = HasFlag(argc, argv, "--no-vsync");
 
 	if(!SDL_Init(SDL_INIT_VIDEO))
 	{
@@ -95,7 +99,8 @@ int main(int argc, char** argv)
 
 	if(renderer != nullptr)
 	{
-		SDL_SetRenderVSync(renderer, 1);
+		// 默认开启垂直同步；--no-vsync 用于取消同步（可配合 --max-fps 限帧）
+		SDL_SetRenderVSync(renderer, no_vsync ? 0 : 1);
 		// 逻辑分辨率固定 800x432；窗口缩放时按比例缩放并留黑边
 		SDL_SetRenderLogicalPresentation(renderer, 800, 432,
 		                                 SDL_LOGICAL_PRESENTATION_LETTERBOX);
@@ -118,6 +123,7 @@ int main(int argc, char** argv)
 	int fps = 0;
 	int frames = 0;
 	unsigned int demo_step = 0;
+	Uint64 next_frame_ns = 0; // --no-vsync 时的软限帧
 	bool fullscreen = false;
 	bool running = true;
 
@@ -207,6 +213,16 @@ int main(int argc, char** argv)
 
 		if(max_frames > 0 && frames >= max_frames)
 			running = false;
+
+		if(renderer != nullptr && no_vsync && max_fps > 0)
+		{
+			const Uint64 frame_ns =
+			    1000000000ULL / static_cast<Uint64>(max_fps);
+			const Uint64 after_present = SDL_GetTicksNS();
+			if(next_frame_ns != 0 && after_present < next_frame_ns)
+				SDL_DelayNS(next_frame_ns - after_present);
+			next_frame_ns = SDL_GetTicksNS() + frame_ns;
+		}
 
 		if(renderer == nullptr)
 			SDL_Delay(1); // 无渲染器时避免空转
