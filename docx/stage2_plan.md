@@ -124,4 +124,7 @@ B0 基线 ─► B1 跨局状态修复 ─► B2 纯搬迁 ─► B3 回归测�
    无头冒烟需用 `Start-Process -Wait -RedirectStandardOutput` 等待并取回输出。
 6. **视觉动画**：星空按深度缓慢滚动、无敌期间玩家闪烁（纯绘制层，不影响判定）；
    新增 `--help`。
+7. **字体与菜单文案**：SDL 版文字改用 Ubuntu Mono（`SDL3_ttf`，可选依赖，
+   缺失时回退内置 5×7 点阵）；菜单移除 "SDL3 BUILD" 副标题。
+   字体与授权文件见 `assets/fonts/`（Ubuntu Font Licence 1.0）。
 

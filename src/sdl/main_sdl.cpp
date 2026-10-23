@@ -11,6 +11,7 @@
 #include "game/game_session.h"
 #include "game/input_state.h"
 #include "io/file_score_store.h"
+#include "sdl_font.h"
 #include "sdl_input.h"
 #include "sdl_render.h"
 
@@ -91,6 +92,9 @@ int main(int argc, char** argv)
 		std::fprintf(stderr, "SDL_Init failed: %s\n", SDL_GetError());
 		return 1;
 	}
+
+	// 优先使用 Ubuntu Mono；找不到字体或未编译 SDL3_ttf 时自动回退点阵字体
+	const bool ttf_font = SdlFont::Init();
 
 	SDL_Window* window = SDL_CreateWindow(
 	    "Thunder Fighter (SDL3)", 800, 432, SDL_WINDOW_RESIZABLE);
@@ -230,10 +234,13 @@ int main(int argc, char** argv)
 
 	if(max_frames > 0)
 	{
-		std::printf("smoke ok: frames=%d steps=%u screen=%d\n", frames,
+		std::printf("smoke ok: frames=%d steps=%u screen=%d font=%s\n", frames,
 		            demo ? demo_step : 0,
-		            static_cast<int>(session.Snapshot().screen));
+		            static_cast<int>(session.Snapshot().screen),
+		            ttf_font ? "ubuntu-mono" : "bitmap");
 	}
+
+	SdlFont::Shutdown();
 
 	if(renderer != nullptr)
 		SDL_DestroyRenderer(renderer);

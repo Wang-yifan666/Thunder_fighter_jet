@@ -120,12 +120,14 @@ option(THUNDER_SDL_CONSOLE "Build the SDL frontend as a console app (for debuggi
 
 if(THUNDER_BUILD_SDL)
     find_package(SDL3 CONFIG QUIET)
+    find_package(SDL3_ttf CONFIG QUIET)
 
     if(SDL3_FOUND)
         add_executable(Thunder_fighter_jet_sdl
             src/sdl/main_sdl.cpp
             src/sdl/sdl_input.cpp
             src/sdl/sdl_render.cpp
+            src/sdl/sdl_font.cpp
             src/sdl/bitmap_font.cpp
         )
 
@@ -138,6 +140,13 @@ if(THUNDER_BUILD_SDL)
             thunder_io
             SDL3::SDL3
         )
+
+        if(SDL3_ttf_FOUND)
+            target_compile_definitions(Thunder_fighter_jet_sdl PRIVATE
+                THUNDER_HAVE_SDL3_TTF=1)
+            target_link_libraries(Thunder_fighter_jet_sdl PRIVATE
+                SDL3_ttf::SDL3_ttf)
+        endif()
 
         target_compile_features(Thunder_fighter_jet_sdl PRIVATE cxx_std_17)
         target_compile_options(Thunder_fighter_jet_sdl PRIVATE ${THUNDER_WARNINGS})
@@ -159,7 +168,22 @@ if(THUNDER_BUILD_SDL)
         install(TARGETS Thunder_fighter_jet_sdl
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-        message(STATUS "SDL3 frontend enabled (SDL3 ${SDL3_VERSION})")
+        # 字体资源随可执行文件一起部署（运行时从 assets/fonts 读取）
+        add_custom_command(TARGET Thunder_fighter_jet_sdl POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+                ${CMAKE_CURRENT_SOURCE_DIR}/assets/fonts
+                $<TARGET_FILE_DIR:Thunder_fighter_jet_sdl>/assets/fonts
+        )
+        install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/assets/fonts
+            DESTINATION ${CMAKE_INSTALL_BINDIR}/assets)
+
+        if(SDL3_ttf_FOUND)
+            message(STATUS "SDL3 frontend enabled (SDL3 ${SDL3_VERSION}, "
+                           "SDL3_ttf ${SDL3_ttf_VERSION})")
+        else()
+            message(STATUS "SDL3 frontend enabled (SDL3 ${SDL3_VERSION}); "
+                           "SDL3_ttf not found: built-in bitmap font will be used")
+        endif()
     else()
         message(STATUS "SDL3 not found: SDL frontend skipped "
                        "(configure with -DCMAKE_PREFIX_PATH=<SDL3 install>)")

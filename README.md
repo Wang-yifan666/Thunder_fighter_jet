@@ -53,6 +53,15 @@ ctest --test-dir build --output-on-failure
 vcpkg install sdl3:x64-mingw-static
 ```
 
+字体（可选，推荐）：安装 SDL3_ttf 后 HUD 与菜单使用 Ubuntu Mono。
+
+```powershell
+vcpkg install sdl3-ttf:x64-mingw-static
+```
+
+未安装 SDL3_ttf 或运行时找不到 `assets/fonts/UbuntuMono-Regular.ttf` 时，
+SDL 版会自动回退到内置 5×7 点阵字体，不影响运行。
+
 之后的构建命令与终端版完全相同，配置阶段会自动启用 SDL 目标：
 
 ```powershell
@@ -150,7 +159,8 @@ SDL3 版键位相同，HUD 使用英文 ASCII 标签。
 - 游戏逻辑（`thunder_logic`）与平台无关：不依赖 FTXUI / SDL3 / windows.h，不读系统时钟
 - 终端前端（`thunder_core`）与 SDL3 前端（`Thunder_fighter_jet_sdl`）共享同一套逻辑
 - 固定 16ms 逻辑步长，SDL 版渲染帧率与显示器刷新率解耦
-- SDL 版使用色块精灵、静态星空与可缩放窗口（内置 5×7 点阵字体，无字体库依赖）
+- SDL 版使用色块精灵、静态星空与可缩放窗口；文字使用 Ubuntu Mono（SDL3_ttf），
+  字体缺失时回退内置 5×7 点阵字体
 
 ---
 
@@ -183,6 +193,7 @@ Thunder_fighter_jet/
 │   ├── def.cpp / main.cpp     # 终端前端
 │   └── cell_grid.cpp 等
 ├── tests/                     # GoogleTest 回归测试
+├── assets/fonts/              # Ubuntu Mono 字体与授权（SDL 版使用）
 ├── docx/                      # 流程图 / 迁移计划 / 界面基线
 ├── build/                     # 构建目录（CMake 生成）
 └── highscore.txt              # 本地排行榜数据

@@ -1,5 +1,5 @@
 // SDL3 前端绘制：全部由 SessionSnapshot 驱动，不接触 GameWorld 内部。
-// 图形为纯色块 + 内置 5x7 点阵字体，不依赖 SDL_ttf。
+// 图形为纯色块；文字优先 Ubuntu Mono（SDL3_ttf），否则回退内置点阵字体。
 
 #include "sdl_render.h"
 
@@ -8,8 +8,8 @@
 #include <sstream>
 #include <string>
 
-#include "bitmap_font.h"
 #include "game/game_config.h"
+#include "sdl_font.h"
 
 namespace
 {
@@ -50,8 +50,8 @@ void Blend(SDL_Renderer* renderer, float x, float y, float w, float h,
 void CenterText(SDL_Renderer* renderer, int width, int y, int scale,
                 const std::string& text, SDL_Color color)
 {
-	const int x = (width - BitmapFont::TextWidth(text, scale)) / 2;
-	BitmapFont::DrawText(renderer, x, y, scale, text, color);
+	const int x = (width - SdlFont::TextWidth(text, scale)) / 2;
+	SdlFont::DrawText(renderer, x, y, scale, text, color);
 }
 
 std::string PaddedNumber(int value, int width)
@@ -209,8 +209,8 @@ void DrawHud(SDL_Renderer* renderer, const thunder::WorldSnapshot& world,
 	    + std::to_string(enemies) + "   BEST " + std::to_string(best)
 	    + "   FPS " + std::to_string(fps);
 
-	BitmapFont::DrawText(renderer, layout.grid_x, 8, 2, line1, kTextAccent);
-	BitmapFont::DrawText(renderer, layout.grid_x, 28, 2, line2, kText);
+	SdlFont::DrawText(renderer, layout.grid_x, 8, 2, line1, kTextAccent);
+	SdlFont::DrawText(renderer, layout.grid_x, 28, 2, line2, kText);
 }
 
 void DrawHint(SDL_Renderer* renderer, const SdlRender::Layout& layout,
@@ -224,7 +224,6 @@ void DrawMenu(SDL_Renderer* renderer, const SdlRender::Layout& layout)
 {
 	CenterText(renderer, layout.window_width, 120, 4, "THUNDER FIGHTER",
 	           kTextAccent);
-	CenterText(renderer, layout.window_width, 176, 2, "SDL3 BUILD", kTextDim);
 
 	CenterText(renderer, layout.window_width, 250, 2, "1  START GAME", kText);
 	CenterText(renderer, layout.window_width, 290, 2, "2  LEADERBOARD", kText);
