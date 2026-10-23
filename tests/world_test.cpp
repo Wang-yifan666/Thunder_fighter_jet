@@ -169,8 +169,10 @@ TEST(WorldPlayer, ClampsToScreenBounds)
 TEST(WorldBullet, HitsEnemyConsumesBulletAndRewards)
 {
 	GameWorld world = MakeIdleWorld();
-	const int player_y = world.Snapshot().player_y;
-	WorldTestAccess::AddEnemy(world, 49, player_y - 8, 0); // 停在玩家上方 8 行
+	const WorldSnapshot start = world.Snapshot();
+	const int player_y = start.player_y;
+	const int bullet_x = start.player_x + 1;
+	WorldTestAccess::AddEnemy(world, bullet_x, player_y - 8, 0); // 玩家上方 8 行
 
 	GameInput fire;
 	fire.fire = true;
@@ -179,7 +181,7 @@ TEST(WorldBullet, HitsEnemyConsumesBulletAndRewards)
 	ASSERT_EQ(WorldTestAccess::BulletCount(world), 1);
 	const WorldSnapshot after_fire = world.Snapshot();
 	ASSERT_EQ(after_fire.bullets.size(), 1u);
-	EXPECT_EQ(after_fire.bullets[0].x, 49);
+	EXPECT_EQ(after_fire.bullets[0].x, bullet_x);
 	EXPECT_EQ(after_fire.bullets[0].y, player_y - 2); // 开火同一帧内已上移一格
 	EXPECT_EQ(after_fire.bullets_remaining,
 	          GameConfig::kEasyBullets - 1);

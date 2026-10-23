@@ -19,24 +19,27 @@ namespace
 
 WorldSnapshot MakeSnapshot()
 {
+	const int player_x = GameConfig::kScreenWidth / 2 - 1;
+	const int player_y = GameConfig::kScreenHeight - 1;
+
 	WorldSnapshot snapshot;
 	snapshot.difficulty = Difficulty::Hard;
-	snapshot.player_x = 48;
-	snapshot.player_y = 39;
+	snapshot.player_x = player_x;
+	snapshot.player_y = player_y;
 	snapshot.life = 3;
 	snapshot.invincible = false;
 
 	snapshot.enemies = {
 	    EntityView{0, 0, 3, 1},
 	    EntityView{10, 5, 3, 1},
-	    EntityView{96, 1, 3, 1}, // 右侧被屏幕裁剪
-	    EntityView{50, 39, 3, 1}, // 与玩家同一行，用于验证绘制顺序
+	    EntityView{GameConfig::kScreenWidth - 2, 1, 3, 1}, // 右侧被裁剪
+	    EntityView{player_x + 2, player_y, 3, 1}, // 与玩家同一行，验证绘制顺序
 	};
 
 	snapshot.bullets = {
-	    EntityView{49, 38, 1, 1},
+	    EntityView{player_x + 1, player_y - 1, 1, 1},
 	    EntityView{-1, 20, 1, 1}, // 越界，忽略
-	    EntityView{98, 20, 1, 1}, // 越界，忽略
+	    EntityView{GameConfig::kScreenWidth, 20, 1, 1}, // 越界，忽略
 	};
 
 	snapshot.score = 123;
@@ -52,7 +55,8 @@ WorldSnapshot MakeSnapshot()
 
 TEST(CellGrid, DrawsEntitiesAndClipsRightEdge)
 {
-	const auto grid = CellGrid::Build(MakeSnapshot(), false,
+	const WorldSnapshot snapshot = MakeSnapshot();
+	const auto grid = CellGrid::Build(snapshot, false,
 	                                  GameConfig::kScreenWidth,
 	                                  GameConfig::kScreenHeight);
 
@@ -64,15 +68,17 @@ TEST(CellGrid, DrawsEntitiesAndClipsRightEdge)
 	EXPECT_EQ(grid[0].substr(0, 3), "$o$");
 	EXPECT_EQ(grid[5].substr(10, 3), "$o$");
 
-	// x=96 时只剩两格（98 宽）
-	EXPECT_EQ(grid[1].substr(96, 2), "$o");
+	// 右侧只剩两格（宽度 - 2 开始）
+	EXPECT_EQ(grid[1].substr(GameConfig::kScreenWidth - 2, 2), "$o");
 
 	// 子弹
-	EXPECT_EQ(grid[38][49], GameConfig::kBulletChar);
+	EXPECT_EQ(grid[snapshot.player_y - 1][snapshot.player_x + 1],
+	          GameConfig::kBulletChar);
 
 	// 玩家先画敌机、再覆盖玩家；同一行:
-	// 48..50 被玩家 "*0*" 覆盖，51..52 保留敌机 "o$"
-	EXPECT_EQ(grid[39].substr(48, 5), "*0*o$");
+	// 玩家 "*0*" 覆盖前三格，后面保留敌机的 "o$"
+	EXPECT_EQ(grid[snapshot.player_y].substr(snapshot.player_x, 5),
+	          "*0*o$");
 
 	// 越界子弹不产生任何字符
 	EXPECT_EQ(grid[20], std::string(GameConfig::kScreenWidth, ' '));
@@ -99,7 +105,11 @@ TEST(CellGrid, PauseOverlayIsCentered)
 	const int px =
 	    (GameConfig::kScreenWidth - static_cast<int>(pause_text.size())) / 2;
 
-	ASSERT_EQ(px, 39);
+	// 居中：左右留白相差不超过 1 格（宽度为奇数时允许偏 1）
+	const int right = GameConfig::kScreenWidth - px
+	    - static_cast<int>(pause_text.size());
+	const int skew = px > right ? px - right : right - px;
+	EXPECT_LE(skew, 1);
 	EXPECT_EQ(grid[py].substr(px, pause_text.size()), pause_text);
 	EXPECT_EQ(grid[py].substr(0, px), std::string(px, ' '));
 	EXPECT_EQ(grid[py].substr(px + pause_text.size(),

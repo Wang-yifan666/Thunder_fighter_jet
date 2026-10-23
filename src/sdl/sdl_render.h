@@ -9,7 +9,7 @@ namespace SdlRender
 
 struct Layout
 {
-	int window_width = 800;
+	int window_width = 832;  // 8px 边距 * 2 + 102 列 * 8px
 	int window_height = 496; // 64px HUD + 48 行 * 8px 棋盘 + 48px 底部提示
 	int cell = 8;
 	int grid_x = 8;
