@@ -66,7 +66,16 @@ cmake --build build
 
 - 未找到 SDL3 时，配置阶段会提示并自动跳过该目标，终端版不受影响；
 - 若 SDL3 不在 vcpkg 中，可用 `-DCMAKE_PREFIX_PATH=<SDL3 安装目录>` 指定；
-- 窗口可缩放（保持 800×432 逻辑比例并留黑边），`F11` 切换全屏。
+- 窗口可缩放（保持 800×432 逻辑比例并留黑边），`F11` 切换全屏；
+- 图形版是 GUI 子系统程序：双击启动不会额外弹出控制台窗口。
+
+无头冒烟（可选，用于 CI）：GUI 子系统程序需要用重定向方式等待退出：
+
+```powershell
+$env:SDL_VIDEODRIVER = 'dummy'
+Start-Process .\build\Thunder_fighter_jet_sdl.exe -ArgumentList '--frames','300','--demo' `
+              -RedirectStandardOutput smoke.txt -Wait
+```
 
 ---
 
