@@ -88,7 +88,7 @@ void GameWorld::Tick(const GameInput& input, steady_clock::duration dt)
 	}
 
 	Level(input);
-	Score();
+	AccrueScore();
 
 	const int player_w = GameConfig::kPlayerWidth;
 	const int player_h = GameConfig::kPlayerHeight;
@@ -169,7 +169,7 @@ void GameWorld::Level(const GameInput& input)
 	enemy_move_interval_ = std::max<int>(enemy_move_interval_, min_interval);
 }
 
-void GameWorld::Score()
+void GameWorld::AccrueScore()
 {
 	if(elapsed_seconds_ > last_score_time_)
 	{

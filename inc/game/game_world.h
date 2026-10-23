@@ -76,7 +76,7 @@ private:
 
 	// ========== update ==========
 	void Level(const GameInput& input);
-	void Score();
+	void AccrueScore();
 	void UpdateBullets();
 	void CheckPlayerCollision();
 
@@ -97,6 +97,9 @@ private:
 	void cheats_addbullters();
 	void cheats_godlike();
 	void kill_self();
+
+	// 测试专用访问器（定义位于 tests/world_test_access.h，不参与生产构建）
+	friend struct WorldTestAccess;
 };
 
 } // namespace thunder
