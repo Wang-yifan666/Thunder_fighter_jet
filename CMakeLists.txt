@@ -25,6 +25,8 @@ add_library(thunder_logic STATIC
     src/game/game_world.cpp
     src/game/game_world_enemy.cpp
     src/game/game_world_cheats.cpp
+    src/game/game_session.cpp
+    src/game/highscore.cpp
 )
 
 target_include_directories(thunder_logic PUBLIC
@@ -35,7 +37,7 @@ target_compile_features(thunder_logic PUBLIC cxx_std_17)
 
 # ============ thunder_io: 文件存取（逻辑层不得依赖） ============
 add_library(thunder_io STATIC
-    src/HighScore.cpp
+    src/io/file_score_store.cpp
 )
 
 target_include_directories(thunder_io PUBLIC

@@ -8,7 +8,8 @@
 #include <fstream>
 #include <string>
 
-#include "HighScore.h"
+#include "game/highscore.h"
+#include "io/file_score_store.h"
 
 namespace
 {
@@ -65,7 +66,8 @@ TEST(HighScore, LoadCreatesZeroWhenFileMissing)
 {
 	TempScoreFile file;
 
-	HighScore hs(file.Path());
+	thunder::FileScoreStore store(file.Path());
+	thunder::HighScore hs(store);
 	hs.Load();
 
 	ASSERT_TRUE(file.Exists());
@@ -81,7 +83,8 @@ TEST(HighScore, LoadKeepsFirstFiveLinesThenSorts)
 	TempScoreFile file;
 	file.Write("30\n90\n10\n70\n50\n20\n");
 
-	HighScore hs(file.Path());
+	thunder::FileScoreStore store(file.Path());
+	thunder::HighScore hs(store);
 	hs.Load();
 
 	// 第 6 行的 20 被丢弃（尽管它比 10 大）
@@ -95,7 +98,8 @@ TEST(HighScore, LoadKeepsTopFiveFromSortedFile)
 	TempScoreFile file;
 	file.Write("90\n70\n50\n30\n20\n10\n");
 
-	HighScore hs(file.Path());
+	thunder::FileScoreStore store(file.Path());
+	thunder::HighScore hs(store);
 	hs.Load();
 
 	const std::vector<int> expected{90, 70, 50, 30, 20};
@@ -107,7 +111,8 @@ TEST(HighScore, SubmitKeepsTopFiveAndPersists)
 {
 	TempScoreFile file;
 
-	HighScore hs(file.Path());
+	thunder::FileScoreStore store(file.Path());
+	thunder::HighScore hs(store);
 	hs.Load();
 
 	for(int score: {30, 10, 50, 20, 40, 5})
@@ -116,7 +121,8 @@ TEST(HighScore, SubmitKeepsTopFiveAndPersists)
 	const std::vector<int> expected{50, 40, 30, 20, 10};
 	EXPECT_EQ(hs.Scores(), expected);
 
-	HighScore reloaded(file.Path());
+	thunder::FileScoreStore reload_store(file.Path());
+	thunder::HighScore reloaded(reload_store);
 	reloaded.Load();
 	EXPECT_EQ(reloaded.Scores(), expected);
 }
@@ -126,7 +132,8 @@ TEST(HighScore, SubmitHonorsMaxKeep)
 {
 	TempScoreFile file;
 
-	HighScore hs(file.Path(), 3);
+	thunder::FileScoreStore store(file.Path());
+	thunder::HighScore hs(store, 3);
 	hs.Load();
 
 	for(int score: {1, 2, 3, 4})
@@ -142,7 +149,8 @@ TEST(HighScore, GetRankCountsHigherScores)
 	TempScoreFile file;
 	file.Write("100\n80\n60\n40\n20\n");
 
-	HighScore hs(file.Path());
+	thunder::FileScoreStore store(file.Path());
+	thunder::HighScore hs(store);
 	hs.Load();
 
 	EXPECT_EQ(hs.GetRank(200), 1);

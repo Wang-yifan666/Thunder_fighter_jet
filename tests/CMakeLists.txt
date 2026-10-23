@@ -8,6 +8,7 @@ add_executable(thunder_logic_tests
     highscore_test.cpp
     world_test.cpp
     rng_test.cpp
+    session_test.cpp
 )
 
 target_include_directories(thunder_logic_tests PRIVATE

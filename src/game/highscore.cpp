@@ -1,11 +1,16 @@
-#include "HighScore.h"
+// 排行榜规则实现。规则与重构前 HighScore 保持一致（含"只取前 max_keep 条再排序"的现状语义），
+// 仅把文件读写替换为注入的 ScoreStore。
+
+#include "game/highscore.h"
 
 #include <algorithm>
-#include <fstream>
 #include <functional>
 
-HighScore::HighScore(std::string file_path, std::size_t max_keep):
-file_path_(std::move(file_path)), max_keep_(max_keep)
+namespace thunder
+{
+
+HighScore::HighScore(ScoreStore& store, std::size_t max_keep):
+store_(store), max_keep_(max_keep)
 {
 }
 
@@ -19,20 +24,9 @@ void HighScore::Load()
 {
 	scores_.clear();
 
-	std::ifstream fin(file_path_);
-	if(!fin)
-	{
-		//文件不存在：创建一个新文件，写入0
-		std::ofstream fout(file_path_);
-		if(fout)
-			fout << 0 << "\n";
-
-		scores_.push_back(0);
-		return;
-	}
-
-	int s = 0;
-	while(fin >> s)
+	// 保持重构前语义：只取存储中的前 max_keep 条，再排序（不是全局 Top N）
+	const std::vector<int> loaded = store_.Load();
+	for(int s: loaded)
 	{
 		scores_.push_back(s);
 		if(scores_.size() >= max_keep_)
@@ -49,12 +43,7 @@ void HighScore::Load()
 
 void HighScore::Save() const
 {
-	std::ofstream fout(file_path_);
-	if(!fout)
-		return;
-
-	for(int s: scores_)
-		fout << s << "\n";
+	store_.Save(scores_);
 }
 
 void HighScore::Submit(int score)
@@ -87,3 +76,5 @@ int HighScore::GetRank(int score) const
 	}
 	return rank;
 }
+
+} // namespace thunder

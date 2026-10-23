@@ -2,11 +2,12 @@
 
 #include <chrono>
 
-#include "HighScore.h"
 #include "game/game_config.h"
 #include "game/game_types.h"
 #include "game/game_world.h"
+#include "game/highscore.h"
 #include "game/input_state.h"
+#include "io/file_score_store.h"
 
 constexpr const char* GAME_NAME = "雷霆战机";
 constexpr const char* GAME_VERSION = "v1.4";
@@ -49,7 +50,8 @@ private:
 
 	// ========== world / storage ==========
 	thunder::GameWorld world_;
-	HighScore highscore_;
+	thunder::FileScoreStore score_store_;
+	thunder::HighScore highscore_;
 
 	// ========== terminal timing / display ==========
 	bool is_paused_ = false;

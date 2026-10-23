@@ -75,7 +75,8 @@ bool Held(const thunder::RawInput& raw, thunder::Key key)
 // ===================================================================
 
 ThunderFighter::ThunderFighter(): test_mode_(false), state_(GameState::Menu),
-                                 running_(true)
+                                 running_(true), score_store_(),
+                                 highscore_(score_store_)
 {
 	ConsoleUtils::HideCursor();
 	ConsoleUtils::ClearScreen();
