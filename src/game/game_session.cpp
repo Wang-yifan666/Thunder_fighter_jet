@@ -185,6 +185,7 @@ SessionSnapshot GameSession::Snapshot() const
 	snapshot.rank = rank_;
 	snapshot.new_record = new_record_;
 	snapshot.entered_top5 = entered_top5_;
+	snapshot.final_score = final_score_;
 	return snapshot;
 }
 

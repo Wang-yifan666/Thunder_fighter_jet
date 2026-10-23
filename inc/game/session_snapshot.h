@@ -33,6 +33,7 @@ struct SessionSnapshot
 	int rank = 0;
 	bool new_record = false;
 	bool entered_top5 = false;
+	int final_score = 0; ///< 结算成绩（含剩余弹药加成），未结算时为 0
 };
 
 } // namespace thunder

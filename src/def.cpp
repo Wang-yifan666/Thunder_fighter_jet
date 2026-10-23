@@ -1,6 +1,6 @@
 // ThunderFighter 终端前端实现。
-// 只负责：采集输入、驱动菜单流程、把 GameWorld 快照渲染成 FTXUI 画面。
-// 对局状态与更新逻辑已迁至 thunder::GameWorld（src/game/）。
+// 单一非阻塞循环：采集输入 → GameSession::Step → 按快照渲染。
+// 菜单流程、暂停、结算都已迁入 thunder::GameSession，本文件不再包含阻塞循环。
 
 #include <ftxui/dom/elements.hpp>
 #include <windows.h>
@@ -19,7 +19,7 @@
 #include "render_console.h"
 #include "game/game_config.h"
 #include "game/input_state.h"
-#include "game/world_snapshot.h"
+#include "game/session_snapshot.h"
 
 using namespace ftxui;
 using namespace std::chrono;
@@ -61,125 +61,83 @@ thunder::RawInput PollRawInput()
 	return raw;
 }
 
-/// 菜单/结算只用按住状态，不推进 InputTracker：
-/// 保持"按住 Q 开局"等既有边界行为不变，边沿只在游戏帧内计算。
-bool Held(const thunder::RawInput& raw, thunder::Key key)
-{
-	return raw.down.test(thunder::KeyIndex(key));
-}
-
 } // namespace
 
 // ===================================================================
 // lifecycle
 // ===================================================================
 
-ThunderFighter::ThunderFighter(): test_mode_(false), state_(GameState::Menu),
-                                 running_(true), score_store_(),
-                                 highscore_(score_store_)
+ThunderFighter::ThunderFighter(): score_store_(), session_(score_store_),
+                                 test_mode_(false), running_(true)
 {
 	ConsoleUtils::HideCursor();
 	ConsoleUtils::ClearScreen();
 
-	last_fps_time_ = steady_clock::now();
-	last_tick_ = last_fps_time_;
-
-	highscore_.Load();
-	// 不在构造期刷怪：开新局由 StartGame() -> GameWorld::Reset() 负责。
+	last_tick_ = steady_clock::now();
+	last_fps_time_ = last_tick_;
 }
 
 void ThunderFighter::Run()
 {
-	if(state_ == GameState::Menu)
+	const auto now = steady_clock::now();
+	const auto dt = now - last_tick_;
+	last_tick_ = now;
+
+	session_.Step(PollRawInput(), dt);
+
+	if(session_.exit_requested())
 	{
-		ShowMenu();
+		running_ = false;
 		return;
 	}
 
-	while(running_ && state_ == GameState::Playing && !ShouldExit())
+	const thunder::SessionSnapshot snapshot = session_.Snapshot();
+
+	if(snapshot.screen == thunder::Screen::Playing)
 	{
-		DrawFrame();
+		if(!snapshot.paused)
+			fps_counter_++;
 
-		if(state_ != GameState::Playing)
-			return;
+		DrawPlaying(snapshot);
+		scene_drawn_ = false; // 离开游戏时要立即重绘场景界面
+	}
+	else
+	{
+		const bool scene_changed =
+		    !scene_drawn_ || snapshot.screen != last_scene_;
+		const bool redraw_due = (now - last_scene_draw_) >= milliseconds(100);
 
-		ConsoleUtils::SleepMs(GameConfig::kFrameDelayMs);
+		if(scene_changed || redraw_due)
+		{
+			DrawScene(snapshot);
+			last_scene_ = snapshot.screen;
+			last_scene_draw_ = now;
+			scene_drawn_ = true;
+		}
 	}
 
-	if(world_.Life() > 0)
+	if(snapshot.screen == thunder::Screen::Playing && !snapshot.paused
+	   && (now - last_fps_time_) >= 1000ms)
 	{
-		return;
+		current_fps_ = fps_counter_;
+		fps_counter_ = 0;
+		last_fps_time_ = now;
 	}
 
-	// 结算
-	const thunder::WorldSnapshot snapshot = world_.Snapshot();
-	const int final_score = snapshot.score
-	    + snapshot.bullets_remaining * GameConfig::kEndGameBulletBonus;
-
-	highscore_.Submit(final_score);
-	const auto& scores = highscore_.Scores();
-
-	int rank = highscore_.GetRank(final_score);
-
-	while(true)
-	{
-		ConsoleUtils::ClearTerminal();
-
-		std::cout << "\n=== 游戏结束 ===\n";
-		std::cout << "本局得分: " << final_score << " 分\n\n";
-
-		std::cout << "=== 历史最高分 TOP 5 ===\n";
-		for(size_t i = 0; i < scores.size(); ++i)
-		{
-			std::cout << (i + 1) << ". " << scores[i] << " 分\n";
-		}
-
-		std::cout << "\n";
-		if(rank == 1)
-			std::cout << "恭喜你！创造了历史最高分！\n";
-		else if(rank <= GameConfig::kMaxHighScores)
-			std::cout << "恭喜你！成为历史第 " << rank << " 名！\n";
-		else
-			std::cout << "本次未进入历史前五名，加油！\n";
-
-		std::cout << "\n-------------------------\n";
-		std::cout << "[R] 返回主菜单\n";
-		std::cout << "[Q] 退出游戏\n";
-
-		const thunder::RawInput raw = PollRawInput();
-
-		if(Held(raw, thunder::Key::Restart))
-		{
-			state_ = GameState::Menu;
-			return;
-		}
-
-		if(Held(raw, thunder::Key::Quit))
-		{
-			state_ = GameState::Exit;
-			running_ = false;
-			return;
-		}
-
-		ConsoleUtils::SleepMs(GameConfig::kMenuSleepMs);
-	}
-}
-
-bool ThunderFighter::IsRunning()
-{
-	return running_;
+	ConsoleUtils::SleepMs(GameConfig::kFrameDelayMs);
 }
 
 // ===================================================================
-// menu / screen flow
+// 场景类界面（菜单 / 难度 / 排行榜 / 结算）
 // ===================================================================
 
-void ThunderFighter::ShowMenu()
+void ThunderFighter::DrawScene(const thunder::SessionSnapshot& snapshot)
 {
-	while(state_ == GameState::Menu)
-	{
-		ConsoleUtils::ClearTerminal();
+	ConsoleUtils::ClearTerminal();
 
+	switch(snapshot.screen)
+	{
+	case thunder::Screen::Menu:
 		std::cout << "\n\n";
 		std::cout << "================================\n";
 		std::cout << "        雷 霆 战 机           \n";
@@ -194,39 +152,9 @@ void ThunderFighter::ShowMenu()
 		std::cout << "  按 1 / 2 / 3 进行选择...\n";
 
 		std::cout << "================================\n\n";
+		break;
 
-		const thunder::RawInput raw = PollRawInput();
-
-		if(Held(raw, thunder::Key::Digit1))
-		{
-			ConsoleUtils::SleepMs(GameConfig::kKeyDebounceMs);
-			ShowDifficultyMenu();
-			return;
-		}
-
-		if(Held(raw, thunder::Key::Digit2))
-		{
-			ConsoleUtils::SleepMs(GameConfig::kKeyDebounceMs);
-			ShowLeaderboard();
-		}
-
-		if(Held(raw, thunder::Key::Digit3))
-		{
-			state_ = GameState::Exit;
-			running_ = false;
-			return;
-		}
-
-		ConsoleUtils::SleepMs(GameConfig::kMenuSleepMs);
-	}
-}
-
-void ThunderFighter::ShowDifficultyMenu()
-{
-	while(state_ == GameState::Menu)
-	{
-		ConsoleUtils::ClearTerminal();
-
+	case thunder::Screen::DifficultySelect:
 		std::cout << "\n\n";
 		std::cout << "================================\n";
 		std::cout << "         选 择 难 度            \n";
@@ -238,178 +166,76 @@ void ThunderFighter::ShowDifficultyMenu()
 
 		std::cout << "  [B] 返回主菜单\n\n";
 		std::cout << "================================\n";
+		break;
 
-		const thunder::RawInput raw = PollRawInput();
-
-		if(Held(raw, thunder::Key::Digit1))
-		{
-			StartGame(Difficulty::Easy);
-			ConsoleUtils::SleepMs(GameConfig::kKeyDebounceMs);
-			return;
-		}
-
-		if(Held(raw, thunder::Key::Digit2))
-		{
-			StartGame(Difficulty::Normal);
-			ConsoleUtils::SleepMs(GameConfig::kKeyDebounceMs);
-			return;
-		}
-
-		if(Held(raw, thunder::Key::Digit3))
-		{
-			StartGame(Difficulty::Hard);
-			ConsoleUtils::SleepMs(GameConfig::kKeyDebounceMs);
-			return;
-		}
-
-		if(Held(raw, thunder::Key::Back))
-		{
-			ConsoleUtils::SleepMs(GameConfig::kKeyDebounceMs);
-			return;
-		}
-
-		ConsoleUtils::SleepMs(GameConfig::kLeaderboardSleepMs);
-	}
-}
-
-void ThunderFighter::ShowLeaderboard()
-{
-	highscore_.Load();
-
-	while(state_ == GameState::Menu)
-	{
-		ConsoleUtils::ClearTerminal();
-
+	case thunder::Screen::Leaderboard:
 		std::cout << "\n\n";
 		std::cout << "================================\n";
 		std::cout << "          排 行 榜 TOP 5         \n";
 		std::cout << "================================\n\n\n";
 
-		const auto& scores = highscore_.Scores();
-
-		for(size_t i = 0; i < scores.size(); ++i)
+		for(size_t i = 0; i < snapshot.leaderboard.size(); ++i)
 		{
-			std::cout << "  " << (i + 1) << ". " << scores[i]
+			std::cout << "  " << (i + 1) << ". " << snapshot.leaderboard[i]
 			          << " 分\n";
 		}
 
 		std::cout << "\n--------------------------------\n";
 		std::cout << "  [B]返回主菜单\n";
 		std::cout << "================================\n";
+		break;
 
-		const thunder::RawInput raw = PollRawInput();
+	case thunder::Screen::GameOver:
+		std::cout << "\n=== 游戏结束 ===\n";
+		std::cout << "本局得分: " << snapshot.final_score << " 分\n\n";
 
-		if(Held(raw, thunder::Key::Back))
+		std::cout << "=== 历史最高分 TOP 5 ===\n";
+		for(size_t i = 0; i < snapshot.leaderboard.size(); ++i)
 		{
-			ConsoleUtils::SleepMs(GameConfig::kKeyDebounceMs);
-			return;
-		}
-		if(Held(raw, thunder::Key::Escape))
-		{
-			state_ = GameState::Exit;
-			running_ = false;
-			return;
+			std::cout << (i + 1) << ". " << snapshot.leaderboard[i]
+			          << " 分\n";
 		}
 
-		ConsoleUtils::SleepMs(GameConfig::kLeaderboardSleepMs);
-	}
-}
-
-void ThunderFighter::Back_to_menu()
-{
-	is_paused_ = false;
-	state_ = GameState::Menu;
-}
-
-void ThunderFighter::StartGame(Difficulty difficulty)
-{
-	world_.Reset(difficulty);
-	is_paused_ = false;
-	last_tick_ = steady_clock::now();
-	state_ = GameState::Playing;
-}
-
-bool ThunderFighter::ShouldExit() const
-{
-	if(world_.Over())
-		return true;
-
-	return ConsoleInput::IsKeyDown(VK_ESCAPE);
-}
-
-thunder::InputState ThunderFighter::PollInput()
-{
-	return input_tracker_.Update(PollRawInput());
-}
-
-// ===================================================================
-// main loop
-// ===================================================================
-
-void ThunderFighter::DrawFrame()
-{
-	const thunder::InputState input = PollInput();
-
-	if(input.Pressed(thunder::Key::Quit))
-	{
-		Back_to_menu();
-		ConsoleUtils::SleepMs(GameConfig::kAntiBounceDelayMs);
-		return;
-	}
-
-	// 暂停逻辑：暂停期间不推进 GameWorld，时间自然冻结。
-	if(input.Down(thunder::Key::Pause))
-	{
-		is_paused_ = !is_paused_;
-		if(is_paused_)
-		{
-			pause_start_time_ = steady_clock::now();
-		}
+		std::cout << "\n";
+		if(snapshot.rank == 1)
+			std::cout << "恭喜你！创造了历史最高分！\n";
+		else if(snapshot.entered_top5)
+			std::cout << "恭喜你！成为历史第 " << snapshot.rank
+			          << " 名！\n";
 		else
-		{
-			auto now = steady_clock::now();
-			last_fps_time_ += (now - pause_start_time_);
-		}
-		ConsoleUtils::SleepMs(200);
+			std::cout << "本次未进入历史前五名，加油！\n";
+
+		std::cout << "\n-------------------------\n";
+		std::cout << "[R] 返回主菜单\n";
+		std::cout << "[Q] 退出游戏\n";
+		break;
+
+	case thunder::Screen::Playing:
+		break;
 	}
 
-	const auto now = steady_clock::now();
-	const auto dt = now - last_tick_;
-	last_tick_ = now;
+	std::cout << std::flush;
+}
 
-	if(!is_paused_)
-	{
-		fps_counter_++;
+// ===================================================================
+// 游戏画面（FTXUI）
+// ===================================================================
 
-		world_.Tick(thunder::GameInput::FromInput(input), dt);
-
-		const auto fps_elapsed = now - last_fps_time_;
-		if(fps_elapsed >= 1000ms)
-		{
-			current_fps_ = fps_counter_;
-			fps_counter_ = 0;
-			last_fps_time_ = now;
-		}
-	}
-
-	if(state_ != GameState::Playing)
-	{
-		return;
-	}
-
+void ThunderFighter::DrawPlaying(const thunder::SessionSnapshot& snapshot)
+{
 	if(!test_mode_)
 	{
 		ConsoleUtils::ClearScreen();
 	}
 
-	const thunder::WorldSnapshot snapshot = world_.Snapshot();
+	const thunder::WorldSnapshot& world = snapshot.world;
 	const std::vector<std::string> screen_buffer =
-	    CellGrid::Build(snapshot, is_paused_, GameConfig::kScreenWidth,
+	    CellGrid::Build(world, snapshot.paused, GameConfig::kScreenWidth,
 	                    GameConfig::kScreenHeight);
 
 	// FTXUI 渲染：将字符缓冲区转换为 Elements
 	Elements lines;
-	bool inv = snapshot.invincible;
+	const bool inv = world.invincible;
 	for(int y = 0; y < GameConfig::kScreenHeight; ++y)
 	{
 		Elements line_chars;
@@ -417,7 +243,7 @@ void ThunderFighter::DrawFrame()
 		{
 			char c = screen_buffer[y][x];
 			line_chars.push_back(RenderConsole::CellToElement(
-			    c, inv, is_paused_, y, GameConfig::kScreenHeight));
+			    c, inv, snapshot.paused, y, GameConfig::kScreenHeight));
 		}
 		lines.push_back(hbox(line_chars));
 	}
@@ -425,12 +251,15 @@ void ThunderFighter::DrawFrame()
 	auto make_life = [&]() {
 		Elements life_elements;
 		life_elements.push_back(
-		    text(RenderConsole::LifeString(snapshot.life,
+		    text(RenderConsole::LifeString(world.life,
 		                                   GameConfig::kMaxLifeDisplay))
 		    | bold
 		    | color(Color::Red));
 		return hbox(life_elements);
 	};
+
+	const int best =
+	    snapshot.leaderboard.empty() ? 0 : snapshot.leaderboard.front();
 
 	auto window =
 	    vbox(
@@ -444,37 +273,36 @@ void ThunderFighter::DrawFrame()
 	                  | bold
 	                  | color(Color::Green),
 	              text(" | 时长: "),
-	              text(std::to_string(snapshot.elapsed_seconds) + " 秒  ")
+	              text(std::to_string(world.elapsed_seconds) + " 秒  ")
 	                  | bold
 	                  | color(Color::BlueLight),
 	              text(" | level: "),
-	              text(std::to_string(snapshot.level))
+	              text(std::to_string(world.level))
 	                  | bold
 	                  | color(Color::Green),
 	              text(" | 剩余敌人: "),
-	              text(std::to_string(snapshot.enemies.size()
-	                                  + snapshot.pending_enemies))
+	              text(std::to_string(world.enemies.size()
+	                                  + world.pending_enemies))
 	                  | bold
 	                  | color(Color::Red),
 	              text(" | 分数: ")
 	                  | bold
 	                  | color(Color::Yellow),
 	              text((std::stringstream()
-	                    << std::setw(10) << std::setfill('0')
-	                    << snapshot.score)
+	                    << std::setw(10) << std::setfill('0') << world.score)
 	                       .str())
 	                  | bold
 	                  | color(Color::YellowLight),
 	              text(" | 最高分: ")
 	                  | bold
 	                  | color(Color::CyanLight),
-	              text(std::to_string(highscore_.Scores().front()))
+	              text(std::to_string(best))
 	                  | bold
 	                  | color(Color::CyanLight)}),
 	         hbox(
 	             {text(
 	                  "按Q退出, P暂停, 按WASD移动, 空格开火  |  子弹: "),
-	              text(std::to_string(snapshot.bullets_remaining))
+	              text(std::to_string(world.bullets_remaining))
 	                  | bold
 	                  | color(Color::White)}),
 	         separator(),

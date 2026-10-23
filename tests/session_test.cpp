@@ -201,6 +201,7 @@ TEST(Session, GameOverSubmitsScoreAndRestarts)
 	EXPECT_EQ(snap.world.life, 0);
 	ASSERT_FALSE(snap.leaderboard.empty());
 	EXPECT_EQ(snap.leaderboard.front(), expected);
+	EXPECT_EQ(snap.final_score, expected);
 	EXPECT_EQ(snap.rank, 1);
 	EXPECT_TRUE(snap.new_record);
 	EXPECT_TRUE(snap.entered_top5);
