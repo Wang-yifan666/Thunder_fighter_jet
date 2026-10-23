@@ -1,4 +1,3 @@
-#define FTXUI_MICROSOFT_TERMINAL_FALLBACK 1
 #include "def.h"
 #include "console_utils.h"
 

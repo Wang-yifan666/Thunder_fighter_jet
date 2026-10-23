@@ -11,14 +11,10 @@ constexpr int kWindowHeight = 50;
 
 // ========== 帧 / 菜单延迟 (ms) ==========
 constexpr int kFrameDelayMs = 16;          // 主循环帧延迟 ~60fps
-constexpr int kMenuSleepMs = 100;          // 菜单轮询间隔
 constexpr int kKeyDebounceMs = 200;        // 按键防抖
-constexpr int kLeaderboardSleepMs = 80;    // 排行榜轮询间隔
 constexpr int kAntiBounceDelayMs = 120;    // 防抖延迟
 
 // ========== 游戏核心数值 ==========
-constexpr int kInitialLife = 5;
-constexpr int kInitialBullets = 200;
 constexpr int kInitialEnemyMoveInterval = 20;
 constexpr int kScorePerSecond = 10;
 constexpr int kScorePerKill = 100;
@@ -36,14 +32,12 @@ constexpr int kHardBullets = 150;
 
 // ========== 敌人 ==========
 constexpr int kEnemyWidth = 3;
-constexpr int kEnemyHeight = 1;
 constexpr int kMinEnemySpeed = 1;
 constexpr int kMaxEnemySpeed = 3;
 constexpr int kMinEnemyMoveInterval = 5;
 constexpr int kMaxEnemyMoveInterval = 20;
 constexpr int kLevelMoveIntervalDivisor = 9;
 constexpr int kLevelUpTime = 10;          // 升级间隔(秒)
-constexpr int kStartToMoveDown = 2;
 constexpr int kStartToMoveLeftRight = 4;
 
 // ========== 刷怪批次 ==========

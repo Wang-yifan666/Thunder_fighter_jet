@@ -1,12 +1,6 @@
 #pragma once
 
-enum class GameState
-{
-	Menu,    // 主菜单
-	Playing, // 游戏中
-	Exit     // 退出程序
-};
-
+/// 难度档位。界面流程状态由 SessionSnapshot 的 Screen 枚举描述。
 enum class Difficulty
 {
 	Easy,

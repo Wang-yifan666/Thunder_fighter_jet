@@ -9,10 +9,16 @@ project(Thunder_fighter_jet VERSION 1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-option(BUILD_SHARED_LIBS "Build libraries as shared" OFF)
 option(THUNDER_STATIC_MINGW "When using MinGW, link the executable statically" OFF)
 option(BUILD_ADDITIONAL_STATIC_EXE "Also build a statically linked exe target alongside the dynamic one" ON)
 option(THUNDER_BUILD_TESTS "Build unit tests (requires GoogleTest from vcpkg)" ON)
+
+# 新代码（逻辑层 / IO 层 / SDL 前端 / 测试）开启警告；终端历史代码暂不开启
+if(MSVC)
+    set(THUNDER_WARNINGS /W4)
+else()
+    set(THUNDER_WARNINGS -Wall -Wextra)
+endif()
 
 enable_testing()
 
@@ -34,6 +40,7 @@ target_include_directories(thunder_logic PUBLIC
 )
 
 target_compile_features(thunder_logic PUBLIC cxx_std_17)
+target_compile_options(thunder_logic PRIVATE ${THUNDER_WARNINGS})
 
 # ============ thunder_io: 文件存取（逻辑层不得依赖） ============
 add_library(thunder_io STATIC
@@ -45,6 +52,7 @@ target_include_directories(thunder_io PUBLIC
 )
 
 target_compile_features(thunder_io PUBLIC cxx_std_17)
+target_compile_options(thunder_io PRIVATE ${THUNDER_WARNINGS})
 
 # ============ thunder_core: 终端前端（FTXUI + Win32 控制台） ============
 set(THUNDER_CORE_SOURCES
@@ -131,6 +139,7 @@ if(THUNDER_BUILD_SDL)
         )
 
         target_compile_features(Thunder_fighter_jet_sdl PRIVATE cxx_std_17)
+        target_compile_options(Thunder_fighter_jet_sdl PRIVATE ${THUNDER_WARNINGS})
 
         if(MINGW)
             target_link_options(Thunder_fighter_jet_sdl PRIVATE

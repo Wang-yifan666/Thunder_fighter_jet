@@ -23,8 +23,6 @@ public:
 
 	bool IsRunning() const { return running_; }
 
-	thunder::Screen GetScreen() const { return session_.screen(); }
-
 private:
 	void DrawPlaying(const thunder::SessionSnapshot& snapshot);
 	void DrawScene(const thunder::SessionSnapshot& snapshot);

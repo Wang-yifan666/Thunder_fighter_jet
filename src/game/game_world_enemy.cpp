@@ -49,7 +49,7 @@ void GameWorld::Make_enermy()
 	                                             GameConfig::kMaxEnemySpeed);
 
 	int base = level_ * 2;
-	int total_to_spawn;
+	int total_to_spawn = base; // Normal 档默认值（switch 已覆盖全部枚举）
 	switch(difficulty_)
 	{
 	case Difficulty::Easy:
@@ -156,31 +156,6 @@ void GameWorld::SpawnEnemiesFromPending()
 	//如果这一波批次刷完了，但 pending 里还有敌人，下一次再进来会重新随机新一波批数
 	if(remaining_rows_in_batch_ < 0)
 		remaining_rows_in_batch_ = 0;
-}
-
-bool GameWorld::IsOverlapping(const Enemy& a, const Enemy& b) const
-{
-	return !(a.x + a.width <= b.x     //
-	         || b.x + b.width <= a.x  //
-	         || a.y + a.height <= b.y //
-	         || b.y + b.height <= a.y);
-}
-
-bool GameWorld::WillOverlap(const Enemy& cur,
-                            const std::vector<Enemy>& enemies, int new_x,
-                            int new_y) const
-{
-	Enemy temp = cur;
-	temp.x = new_x;
-	temp.y = new_y;
-	for(auto& e: enemies)
-	{
-		if(&e == &cur)
-			continue;
-		if(IsOverlapping(temp, e))
-			return true;
-	}
-	return false;
 }
 
 void GameWorld::MoveEnemies(std::vector<Enemy>& active_enemies, int level,

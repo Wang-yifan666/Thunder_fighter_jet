@@ -42,7 +42,6 @@ public:
 	WorldSnapshot Snapshot() const;
 
 	bool Over() const { return life_number <= 0; }
-	int Life() const { return life_number; }
 	int Score() const { return score_; }
 	Difficulty difficulty() const { return difficulty_; }
 
@@ -89,9 +88,6 @@ private:
 	void Make_enermy();
 	void Clear_Current_Enemies();
 	void SpawnEnemiesFromPending();
-	bool IsOverlapping(const Enemy& a, const Enemy& b) const;
-	bool WillOverlap(const Enemy& cur, const std::vector<Enemy>& enemies,
-	                 int new_x, int new_y) const;
 	void MoveEnemies(std::vector<Enemy>& active_enemies, int level,
 	                 int screen_width, int screen_height);
 

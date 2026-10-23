@@ -16,6 +16,7 @@ target_include_directories(thunder_logic_tests PRIVATE
 )
 
 target_compile_features(thunder_logic_tests PRIVATE cxx_std_17)
+target_compile_options(thunder_logic_tests PRIVATE ${THUNDER_WARNINGS})
 
 target_link_libraries(thunder_logic_tests PRIVATE
     GTest::gtest_main
@@ -31,6 +32,7 @@ add_executable(thunder_terminal_tests
 )
 
 target_compile_features(thunder_terminal_tests PRIVATE cxx_std_17)
+target_compile_options(thunder_terminal_tests PRIVATE ${THUNDER_WARNINGS})
 
 target_link_libraries(thunder_terminal_tests PRIVATE
     GTest::gtest_main
