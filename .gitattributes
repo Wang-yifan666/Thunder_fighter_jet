@@ -1,0 +1,4 @@
+# 基线文本按原始字节保存：CRLF 转换会改变 docx/baseline/README.md 中记录的 SHA256。
+docx/baseline/*.txt -text
+
+# 其余文件保持 git 默认的 text=auto 行为。
