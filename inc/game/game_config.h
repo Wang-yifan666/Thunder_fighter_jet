@@ -5,9 +5,9 @@ namespace GameConfig
 
 // ========== 屏幕 / 窗口 ==========
 constexpr int kScreenWidth = 98;
-constexpr int kScreenHeight = 40;
+constexpr int kScreenHeight = 48; // 原 40 行，上下各扩充 4 行
 constexpr int kWindowWidth = 100;
-constexpr int kWindowHeight = 50;
+constexpr int kWindowHeight = 58; // 棋盘 48 行 + HUD/边框余量
 
 // ========== 帧 / 菜单延迟 (ms) ==========
 constexpr int kFrameDelayMs = 16;          // 主循环帧延迟 ~60fps

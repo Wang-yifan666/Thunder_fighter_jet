@@ -189,7 +189,8 @@ void DrawWorld(SDL_Renderer* renderer, const thunder::WorldSnapshot& world,
 		Blend(renderer, static_cast<float>(layout.grid_x),
 		      static_cast<float>(layout.grid_y), static_cast<float>(grid_w),
 		      static_cast<float>(grid_h), kOverlay);
-		CenterText(renderer, layout.window_width, 200, 4, "PAUSED",
+		CenterText(renderer, layout.window_width,
+		           layout.grid_y + grid_h / 2 - 20, 4, "PAUSED",
 		           kTextAccent);
 	}
 }
@@ -222,24 +223,24 @@ void DrawHint(SDL_Renderer* renderer, const SdlRender::Layout& layout,
 
 void DrawMenu(SDL_Renderer* renderer, const SdlRender::Layout& layout)
 {
-	CenterText(renderer, layout.window_width, 120, 4, "THUNDER FIGHTER",
+	CenterText(renderer, layout.window_width, 150, 4, "THUNDER FIGHTER",
 	           kTextAccent);
 
-	CenterText(renderer, layout.window_width, 250, 2, "1  START GAME", kText);
-	CenterText(renderer, layout.window_width, 290, 2, "2  LEADERBOARD", kText);
-	CenterText(renderer, layout.window_width, 330, 2, "3  QUIT", kText);
+	CenterText(renderer, layout.window_width, 300, 2, "1  START GAME", kText);
+	CenterText(renderer, layout.window_width, 344, 2, "2  LEADERBOARD", kText);
+	CenterText(renderer, layout.window_width, 388, 2, "3  QUIT", kText);
 
 	DrawHint(renderer, layout, "PRESS 1 / 2 / 3");
 }
 
 void DrawDifficulty(SDL_Renderer* renderer, const SdlRender::Layout& layout)
 {
-	CenterText(renderer, layout.window_width, 120, 3, "SELECT DIFFICULTY",
+	CenterText(renderer, layout.window_width, 150, 3, "SELECT DIFFICULTY",
 	           kTextAccent);
 
-	CenterText(renderer, layout.window_width, 230, 2, "1  EASY", kText);
-	CenterText(renderer, layout.window_width, 270, 2, "2  NORMAL", kText);
-	CenterText(renderer, layout.window_width, 310, 2, "3  HARD", kText);
+	CenterText(renderer, layout.window_width, 280, 2, "1  EASY", kText);
+	CenterText(renderer, layout.window_width, 330, 2, "2  NORMAL", kText);
+	CenterText(renderer, layout.window_width, 380, 2, "3  HARD", kText);
 
 	DrawHint(renderer, layout, "B  BACK");
 }
@@ -267,17 +268,24 @@ void DrawGameOver(SDL_Renderer* renderer,
                   const thunder::SessionSnapshot& snapshot,
                   const SdlRender::Layout& layout)
 {
-	Blend(renderer, 120, 140, layout.window_width - 240, 200,
-	      SDL_Color{0, 0, 0, 200});
+	const int panel_height = 240;
+	const int panel_y = (layout.window_height - panel_height) / 2;
+	const int panel_x = 120;
 
-	CenterText(renderer, layout.window_width, 160, 4, "GAME OVER",
+	Blend(renderer, static_cast<float>(panel_x),
+	      static_cast<float>(panel_y),
+	      static_cast<float>(layout.window_width - panel_x * 2),
+	      static_cast<float>(panel_height), SDL_Color{0, 0, 0, 200});
+
+	CenterText(renderer, layout.window_width, panel_y + 20, 4, "GAME OVER",
 	           kEnemyBody);
 
 	const std::string score = "SCORE " + std::to_string(snapshot.world.score)
 	    + "  +AMMO " + std::to_string(
 	                         snapshot.world.bullets_remaining
 	                         * GameConfig::kEndGameBulletBonus);
-	CenterText(renderer, layout.window_width, 220, 2, score, kTextAccent);
+	CenterText(renderer, layout.window_width, panel_y + 80, 2, score,
+	           kTextAccent);
 
 	std::string rank_text;
 	if(snapshot.new_record)
@@ -286,10 +294,11 @@ void DrawGameOver(SDL_Renderer* renderer,
 		rank_text = "TOP 5  RANK " + std::to_string(snapshot.rank);
 	else
 		rank_text = "NO TOP 5";
-	CenterText(renderer, layout.window_width, 260, 2, rank_text, kText);
+	CenterText(renderer, layout.window_width, panel_y + 120, 2, rank_text,
+	           kText);
 
-	CenterText(renderer, layout.window_width, 300, 2, "R RESTART   Q QUIT",
-	           kTextDim);
+	CenterText(renderer, layout.window_width, panel_y + 170, 2,
+	           "R RESTART   Q QUIT", kTextDim);
 }
 
 } // namespace

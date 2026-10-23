@@ -97,7 +97,7 @@ int main(int argc, char** argv)
 	const bool ttf_font = SdlFont::Init();
 
 	SDL_Window* window = SDL_CreateWindow(
-	    "Thunder Fighter (SDL3)", 800, 432, SDL_WINDOW_RESIZABLE);
+	    "Thunder Fighter (SDL3)", 800, 496, SDL_WINDOW_RESIZABLE);
 	SDL_Renderer* renderer =
 	    window != nullptr ? SDL_CreateRenderer(window, nullptr) : nullptr;
 
@@ -105,10 +105,10 @@ int main(int argc, char** argv)
 	{
 		// 默认开启垂直同步；--no-vsync 用于取消同步（可配合 --max-fps 限帧）
 		SDL_SetRenderVSync(renderer, no_vsync ? 0 : 1);
-		// 逻辑分辨率固定 800x432；窗口缩放时按比例缩放并留黑边
-		SDL_SetRenderLogicalPresentation(renderer, 800, 432,
+		// 逻辑分辨率固定 800x496；窗口缩放时按比例缩放并留黑边
+		SDL_SetRenderLogicalPresentation(renderer, 800, 496,
 		                                 SDL_LOGICAL_PRESENTATION_LETTERBOX);
-		SDL_SetWindowMinimumSize(window, 400, 216);
+		SDL_SetWindowMinimumSize(window, 400, 248);
 	}
 	else
 	{

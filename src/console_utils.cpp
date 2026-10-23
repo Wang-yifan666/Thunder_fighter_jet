@@ -1,7 +1,10 @@
 #include <windows.h>
 #include <iostream>
+#include <string>
 #include <thread>
 #include <chrono>
+
+#include "game/game_config.h"
 
 namespace ConsoleUtils
 {
@@ -10,7 +13,8 @@ void ClearScreen()
 {
 std::cout << "\033[2J\033[H";
 std::cout << "\033[3J";
-std::cout << "\033[?1049h\033[r\033[50;1H";
+// 光标移到底部，避免窗口高度变化时出现滚动
+std::cout << "\033[?1049h\033[r\033[" << GameConfig::kWindowHeight << ";1H";
 std::cout << std::flush;
 }
 

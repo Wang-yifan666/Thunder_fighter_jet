@@ -169,7 +169,8 @@ TEST(WorldPlayer, ClampsToScreenBounds)
 TEST(WorldBullet, HitsEnemyConsumesBulletAndRewards)
 {
 	GameWorld world = MakeIdleWorld();
-	WorldTestAccess::AddEnemy(world, 49, 30, 0); // 停在 y=30
+	const int player_y = world.Snapshot().player_y;
+	WorldTestAccess::AddEnemy(world, 49, player_y - 8, 0); // 停在玩家上方 8 行
 
 	GameInput fire;
 	fire.fire = true;
@@ -179,11 +180,11 @@ TEST(WorldBullet, HitsEnemyConsumesBulletAndRewards)
 	const WorldSnapshot after_fire = world.Snapshot();
 	ASSERT_EQ(after_fire.bullets.size(), 1u);
 	EXPECT_EQ(after_fire.bullets[0].x, 49);
-	EXPECT_EQ(after_fire.bullets[0].y, 37); // 开火同一帧内已上移一格
+	EXPECT_EQ(after_fire.bullets[0].y, player_y - 2); // 开火同一帧内已上移一格
 	EXPECT_EQ(after_fire.bullets_remaining,
 	          GameConfig::kEasyBullets - 1);
 
-	for(int i = 0; i < 7; ++i)
+	for(int i = 0; i < 6; ++i)
 		world.Tick(GameInput{}, kFrame);
 
 	const WorldSnapshot snap = world.Snapshot();
@@ -204,7 +205,7 @@ TEST(WorldBullet, ExpiresAboveScreenWithoutScore)
 	ASSERT_EQ(WorldTestAccess::BulletCount(world), 1);
 	const int ammo_after_fire = world.Snapshot().bullets_remaining;
 
-	for(int i = 0; i < 40; ++i)
+	for(int i = 0; i < 60; ++i)
 		world.Tick(GameInput{}, kFrame);
 
 	EXPECT_EQ(WorldTestAccess::BulletCount(world), 0);
@@ -219,7 +220,8 @@ TEST(WorldBullet, ExpiresAboveScreenWithoutScore)
 TEST(WorldInvincible, BlocksRepeatedDamageForOneSecond)
 {
 	GameWorld world = MakeIdleWorld();
-	WorldTestAccess::AddEnemy(world, 48, 39, 0); // 与玩家重叠且停住
+	const WorldSnapshot start = world.Snapshot();
+	WorldTestAccess::AddEnemy(world, start.player_x, start.player_y, 0);
 
 	world.Tick(GameInput{}, kFrame);
 	ASSERT_EQ(world.Snapshot().life, GameConfig::kEasyLife - 1);
@@ -239,7 +241,8 @@ TEST(WorldInvincible, BlocksRepeatedDamageForOneSecond)
 TEST(WorldInvincible, CheatInvincibilityPreventsAllDamage)
 {
 	GameWorld world = MakeIdleWorld();
-	WorldTestAccess::AddEnemy(world, 48, 39, 0);
+	const WorldSnapshot start = world.Snapshot();
+	WorldTestAccess::AddEnemy(world, start.player_x, start.player_y, 0);
 
 	GameInput cheat;
 	cheat.digit[5] = true;
