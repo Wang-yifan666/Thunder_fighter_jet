@@ -11,6 +11,14 @@ using namespace std::chrono;
 namespace thunder
 {
 
+GameWorld::GameWorld(std::uint32_t rng_seed)
+{
+	if(rng_seed == 0)
+		rng_.seed(std::random_device{}());
+	else
+		rng_.seed(rng_seed);
+}
+
 void GameWorld::Reset(Difficulty difficulty)
 {
 	difficulty_ = difficulty;

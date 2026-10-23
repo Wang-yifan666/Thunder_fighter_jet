@@ -10,11 +10,6 @@
 
 namespace
 {
-std::mt19937& Rng()
-{ //全局随机数生成器
-	static std::mt19937 rng{std::random_device{}()};
-	return rng;
-}
 
 /// 每批刷怪上限（随难度变化）。
 /// 原实现用命名空间级可变量保存，属于跨调用/跨局共享的隐藏状态；
@@ -69,7 +64,7 @@ void GameWorld::Make_enermy()
 	}
 
 	for(int i = 0; i < total_to_spawn; ++i)
-		pending_enemies_.emplace_back(0, 0, randSpeed(Rng()));
+		pending_enemies_.emplace_back(0, 0, randSpeed(rng_));
 
 	//开启一波新的刷新
 	remaining_rows_in_batch_ = 0;
@@ -100,7 +95,7 @@ void GameWorld::SpawnEnemiesFromPending()
 
 		std::uniform_int_distribution<int> batch_dist(
 		    1, max_possible_batches);
-		remaining_rows_in_batch_ = batch_dist(Rng());
+		remaining_rows_in_batch_ = batch_dist(rng_);
 	}
 
 	//只有当前“顶行完全空”的时候，才生成下一批
@@ -122,7 +117,7 @@ void GameWorld::SpawnEnemiesFromPending()
 
 	int max_in_row = std::min<int>(limits.max_per_batch, remaining);
 	std::uniform_int_distribution<int> count_dist(1, max_in_row);
-	int enemies_in_row = count_dist(Rng());
+	int enemies_in_row = count_dist(rng_);
 
 	std::vector<int> used_x;
 	std::vector<Enemy> spawned_row;
@@ -134,7 +129,7 @@ void GameWorld::SpawnEnemiesFromPending()
 		do
 		{
 			std::uniform_int_distribution<int> x_dist(0, max_x);
-			x = x_dist(Rng());
+			x = x_dist(rng_);
 			attempts++;
 		} while(std::any_of(used_x.begin(), used_x.end(),
 		                    [&](int ux) {
@@ -209,7 +204,8 @@ void GameWorld::MoveEnemies(std::vector<Enemy>& active_enemies, int level,
 			// 水平移动
 			if(level >= GameConfig::kStartToMoveLeftRight)
 			{
-				int dir = rand() % 3 - 1; // -1 左, 0 不动, 1 右
+				std::uniform_int_distribution<int> dir_dist(-1, 1);
+				int dir = dir_dist(rng_); // -1 左, 0 不动, 1 右
 				int new_x = it->x + dir;
 				if(new_x < 0)
 					new_x = 0;

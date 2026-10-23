@@ -1,6 +1,8 @@
 #pragma once
 
 #include <chrono>
+#include <cstdint>
+#include <random>
 #include <vector>
 
 #include "game/enemy.h"
@@ -26,7 +28,8 @@ struct Bullet
 class GameWorld
 {
 public:
-	GameWorld() = default;
+	/// @param rng_seed 0 表示用 random_device 播种；非 0 时用于复现（测试/回放）。
+	explicit GameWorld(std::uint32_t rng_seed = 0);
 
 	/// 开新一局（重构前为 ThunderFighter::ResetGame）。
 	/// 必须在进入 Playing 前调用。
@@ -54,6 +57,9 @@ private:
 	Difficulty difficulty_ = Difficulty::Easy;
 	int level_ = 1;
 	int score_ = 0;
+
+	// ========== randomness ==========
+	std::mt19937 rng_;
 
 	// ========== player ==========
 	int player_x_ = 0;
