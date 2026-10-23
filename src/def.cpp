@@ -46,7 +46,6 @@ enemy_move_counter_(0),
 enemy_move_interval_(GameConfig::kInitialEnemyMoveInterval),
 remaining_rows_in_batch_(0),
 score_(0),
-top_row_clear_(true),
 last_score_time_(0),
 is_paused_(false),
 is_invincible_(false),
@@ -61,7 +60,8 @@ bullets_remaining_(GameConfig::kInitialBullets)
 	last_fps_time_ = steady_clock::now();
 
 	highscore_.Load();
-	Make_enermy();
+	// 不在构造期刷怪：难度尚未选择，刷出的 pending 只会污染初始状态。
+	// 真正开局由 ResetGame() 负责生成第一波敌人。
 }
 
 void ThunderFighter::Run()
@@ -303,6 +303,7 @@ void ThunderFighter::ResetGame()
 
 	start_time_ = std::chrono::steady_clock::now();
 	last_score_time_ = 0;
+	last_level_up_time_ = 0;
 	elapsed_seconds_ = 0;
 
 	enemies_.clear();
@@ -329,12 +330,17 @@ void ThunderFighter::ResetGame()
 	player_y_ = GameConfig::kScreenHeight - 1;
 
 	enemy_move_counter_ = 0;
+	enemy_move_interval_ = GameConfig::kInitialEnemyMoveInterval;
 	remaining_rows_in_batch_ = 0;
 
 	is_invincible_ = false;
 	cheat_invincible_ = false;
 
 	is_paused_ = false;
+
+	// q_was_down_ 是输入沿锁存，不属于对局数据：
+	// 若在这里清零，玩家仍按住 Q 时开局会在第一帧被判定为"刚按下 Q"而立刻弹回菜单。
+	// 它将在 B2 移交 InputTracker 统一管理。
 
 	Make_enermy();
 }
@@ -655,12 +661,12 @@ void ThunderFighter::DrawFrame()
 
 void ThunderFighter::Level()
 {
-	static int last_level_up_time = 0;
-
-	if(elapsed_seconds_ - last_level_up_time >= GameConfig::kLevelUpTime)
+	// 升级计时必须属于本局状态：原实现用函数级 static，导致重置后
+	// 仍沿用上一局的时间戳，第二局无法在 10 秒时正常升级。
+	if(elapsed_seconds_ - last_level_up_time_ >= GameConfig::kLevelUpTime)
 	{
 		level_++;
-		last_level_up_time = elapsed_seconds_;
+		last_level_up_time_ = elapsed_seconds_;
 
 		bullets_remaining_ += GameConfig::kBulletsPerLevelUp;
 

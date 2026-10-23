@@ -40,6 +40,7 @@ private:
 	int score_;
 	int elapsed_seconds_ = 0;
 	int last_score_time_ = 0;
+	int last_level_up_time_ = 0;
 	int frame_count_;
 	int fps_counter_;
 	int current_fps_;
@@ -47,7 +48,6 @@ private:
 	std::chrono::steady_clock::time_point last_fps_time_;
 	std::chrono::steady_clock::time_point pause_start_time_;
 	bool is_paused_ = false;
-	bool top_row_clear_;
 
 	// ========== menu / screen flow ==========
 	void ShowMenu();

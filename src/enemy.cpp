@@ -7,13 +7,37 @@
 
 namespace
 {
-int kMaxBatchCount = GameConfig::kNormalMaxBatchCount;
-int kMaxPerBatch = GameConfig::kNormalMaxPerBatch;
-
 std::mt19937& Rng()
 { //全局随机数生成器
 	static std::mt19937 rng{std::random_device{}()};
 	return rng;
+}
+
+/// 每批刷怪上限（随难度变化）。
+/// 原实现用命名空间级可变量保存，属于跨调用/跨局共享的隐藏状态；
+/// 改为纯函数查表后，任何一局只依赖入参。
+struct BatchLimits
+{
+	int max_batch_count;
+	int max_per_batch;
+};
+
+BatchLimits BatchLimitsFor(Difficulty difficulty)
+{
+	switch(difficulty)
+	{
+	case Difficulty::Easy:
+		return {GameConfig::kEasyMaxBatchCount,
+		        GameConfig::kEasyMaxPerBatch};
+	case Difficulty::Normal:
+		return {GameConfig::kNormalMaxBatchCount,
+		        GameConfig::kNormalMaxPerBatch};
+	case Difficulty::Hard:
+		return {GameConfig::kHardMaxBatchCount,
+		        GameConfig::kHardMaxPerBatch};
+	}
+	return {GameConfig::kNormalMaxBatchCount,
+	        GameConfig::kNormalMaxPerBatch};
 }
 
 } //namespace
@@ -56,28 +80,15 @@ void ThunderFighter::SpawnEnemiesFromPending()
 	if(pending_enemies_.empty())
 		return;
 
-	switch(difficulty_)
-	{
-	case Difficulty::Easy:
-		kMaxBatchCount = GameConfig::kEasyMaxBatchCount;
-		kMaxPerBatch = GameConfig::kEasyMaxPerBatch;
-		break;
-	case Difficulty::Normal:
-		kMaxBatchCount = GameConfig::kNormalMaxBatchCount;
-		kMaxPerBatch = GameConfig::kNormalMaxPerBatch;
-		break;
-	case Difficulty::Hard:
-		kMaxBatchCount = GameConfig::kHardMaxBatchCount;
-		kMaxPerBatch = GameConfig::kHardMaxPerBatch;
-		break;
-	}
+	const BatchLimits limits = BatchLimitsFor(difficulty_);
 
 	//如果当前这一波还没决定“总共有多少批”，在这里随机一个 1~15 批
 	if(remaining_rows_in_batch_ == 0)
 	{
 		//这波最多能有多少批？理论上<=pending 数量，外加上限 15
 		int max_possible_batches = std::min<int>(
-		    kMaxBatchCount, static_cast<int>(pending_enemies_.size()));
+		    limits.max_batch_count,
+		    static_cast<int>(pending_enemies_.size()));
 
 		if(max_possible_batches <= 0)
 			return;
@@ -104,7 +115,7 @@ void ThunderFighter::SpawnEnemiesFromPending()
 	if(remaining <= 0)
 		return;
 
-	int max_in_row = std::min<int>(kMaxPerBatch, remaining);
+	int max_in_row = std::min<int>(limits.max_per_batch, remaining);
 	std::uniform_int_distribution<int> count_dist(1, max_in_row);
 	int enemies_in_row = count_dist(Rng());
 
