@@ -127,4 +127,6 @@ B0 基线 ─► B1 跨局状态修复 ─► B2 纯搬迁 ─► B3 回归测�
 7. **字体与菜单文案**：SDL 版文字改用 Ubuntu Mono（`SDL3_ttf`，可选依赖，
    缺失时回退内置 5×7 点阵）；菜单移除 "SDL3 BUILD" 副标题。
    字体与授权文件见 `assets/fonts/`（Ubuntu Font Licence 1.0）。
+8. **单文件发布**：SDL 目标用 `-static` 完全静态链接，字体在构建时嵌入 exe；
+   发布只需一个 `Thunder_fighter_jet_sdl.exe`（依赖仅剩 Windows 系统 DLL）。
 

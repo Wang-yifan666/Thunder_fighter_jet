@@ -11,6 +11,8 @@
 
 #if defined(THUNDER_HAVE_SDL3_TTF)
 #include <SDL3_ttf/SDL_ttf.h>
+
+#include "font_data.h"
 #endif
 
 namespace
@@ -30,6 +32,22 @@ int ClampScale(int scale)
 int PixelSize(int scale)
 {
 	return 6 * scale + 6; // scale 1..4 -> 12 / 18 / 24 / 30 px
+}
+
+/// 优先使用编译进可执行文件的字体数据（单文件发布）
+TTF_Font* OpenEmbeddedFont(float pixel_size)
+{
+	if(SdlFontData::kUbuntuMonoRegularSize == 0)
+		return nullptr;
+
+	SDL_IOStream* io = SDL_IOFromMem(
+	    const_cast<unsigned char*>(SdlFontData::kUbuntuMonoRegular),
+	    SdlFontData::kUbuntuMonoRegularSize);
+	if(io == nullptr)
+		return nullptr;
+
+	// closeio=true：字体对象接管流的生命周期
+	return TTF_OpenFontIO(io, true, pixel_size);
 }
 
 std::string FindFontFile()
@@ -90,21 +108,20 @@ bool Init()
 	}
 
 	const std::string path = FindFontFile();
-	if(path.empty())
-	{
-		std::fprintf(stderr,
-		             "Ubuntu Mono not found; fallback to built-in bitmap font\n");
-		TTF_Quit();
-		return false;
-	}
 
 	for(int scale = 1; scale <= kMaxScale; ++scale)
 	{
-		TTF_Font* font = TTF_OpenFont(path.c_str(),
-		                              static_cast<float>(PixelSize(scale)));
+		// 优先使用嵌入字体；失败时再尝试磁盘上的字体文件
+		TTF_Font* font =
+		    OpenEmbeddedFont(static_cast<float>(PixelSize(scale)));
+		if(font == nullptr && !path.empty())
+			font = TTF_OpenFont(path.c_str(),
+			                    static_cast<float>(PixelSize(scale)));
+
 		if(font == nullptr)
 		{
-			std::fprintf(stderr, "TTF_OpenFont failed: %s\n", SDL_GetError());
+			std::fprintf(stderr, "TTF font unavailable: %s\n",
+			             SDL_GetError());
 			CloseFonts();
 			TTF_Quit();
 			return false;

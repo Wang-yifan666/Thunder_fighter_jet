@@ -76,6 +76,9 @@ cmake --build build
 - 未找到 SDL3 时，配置阶段会提示并自动跳过该目标，终端版不受影响；
 - 若 SDL3 不在 vcpkg 中，可用 `-DCMAKE_PREFIX_PATH=<SDL3 安装目录>` 指定；
 - 窗口可缩放（逻辑分辨率 832×496，缩放时保持比例并留黑边），`F11` 切换全屏；
+- **单文件发布**：SDL 版完全静态链接（运行库、SDL3、SDL3_ttf 均静态），
+  Ubuntu Mono 字体在构建时嵌入 exe；发布只需 `Thunder_fighter_jet_sdl.exe`，
+  不需要 DLL，也不需要附带 `assets/` 目录；
 - 图形版是 GUI 子系统程序：双击启动不会额外弹出控制台窗口；
 - 需要看调试输出时用 `-DTHUNDER_SDL_CONSOLE=ON` 重新配置，改回控制台子系统；
 - 命令行参数：`--help`、`--frames N`（跑 N 帧后退出）、`--demo`（脚本化输入）、

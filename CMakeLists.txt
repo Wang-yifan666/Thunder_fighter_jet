@@ -146,6 +146,28 @@ if(THUNDER_BUILD_SDL)
                 THUNDER_HAVE_SDL3_TTF=1)
             target_link_libraries(Thunder_fighter_jet_sdl PRIVATE
                 SDL3_ttf::SDL3_ttf)
+
+            # 把 Ubuntu Mono 嵌入可执行文件：发布时只需要一个 exe。
+            set(_font_file
+                "${CMAKE_CURRENT_SOURCE_DIR}/assets/fonts/UbuntuMono-Regular.ttf")
+            if(EXISTS "${_font_file}")
+                file(READ "${_font_file}" _font_hex HEX)
+                string(REGEX REPLACE "([0-9a-f][0-9a-f])" "0x\\1,"
+                       _font_bytes "${_font_hex}")
+                set(_font_cpp
+                    "${CMAKE_CURRENT_BINARY_DIR}/generated/ubuntu_mono_font_data.cpp")
+                file(MAKE_DIRECTORY
+                    "${CMAKE_CURRENT_BINARY_DIR}/generated")
+                file(WRITE "${_font_cpp}"
+                    "#include <cstddef>\n"
+                    "#include \"font_data.h\"\n"
+                    "namespace SdlFontData\n{\n"
+                    "const unsigned char kUbuntuMonoRegular[] = {${_font_bytes}};\n"
+                    "const std::size_t kUbuntuMonoRegularSize = sizeof(kUbuntuMonoRegular);\n"
+                    "} // namespace SdlFontData\n")
+                target_sources(Thunder_fighter_jet_sdl PRIVATE
+                    "${_font_cpp}")
+            endif()
         endif()
 
         target_compile_features(Thunder_fighter_jet_sdl PRIVATE cxx_std_17)
@@ -161,8 +183,9 @@ if(THUNDER_BUILD_SDL)
         endif()
 
         if(MINGW)
+            # -static：连 libwinpthread 一起静态链接，发布只需一个 exe
             target_link_options(Thunder_fighter_jet_sdl PRIVATE
-                -static-libgcc -static-libstdc++)
+                -static-libgcc -static-libstdc++ -static)
         endif()
 
         install(TARGETS Thunder_fighter_jet_sdl

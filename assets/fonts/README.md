@@ -23,7 +23,15 @@ $url = [regex]::Match($css, 'url\((https://[^)]+\.ttf)\)').Groups[1].Value
 Invoke-WebRequest $url -OutFile UbuntuMono-Regular.ttf
 ```
 
-## 回退
+## 嵌入与回退
 
-未编译 `SDL3_ttf`、或运行时找不到该字体文件时，SDL 前端会自动回退到内置的
-5×7 点阵字体（`src/sdl/bitmap_font.cpp`），不影响游戏运行。
+构建时 CMake 会把 `UbuntuMono-Regular.ttf` 转成 C 数组并链接进
+`Thunder_fighter_jet_sdl.exe`（见 `CMakeLists.txt` 中的生成步骤），
+因此发布只需要一个 exe，运行时不需要本目录。
+
+只有在以下情况才会回退：
+
+- 编译时没有 `SDL3_ttf`；或
+- 找不到/无法解析嵌入字体，且磁盘上也找不到这份字体文件
+
+此时自动使用内置的 5×7 点阵字体（`src/sdl/bitmap_font.cpp`），不影响游戏运行。
