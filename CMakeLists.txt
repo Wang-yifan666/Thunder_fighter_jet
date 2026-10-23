@@ -19,14 +19,37 @@ enable_testing()
 # ftxui
 find_package(ftxui CONFIG REQUIRED)
 
-# sources
+# ============ thunder_logic: 平台无关的游戏世界 ============
+# 不允许链接 ftxui / SDL / winmm，也不允许出现 windows.h 等平台头。
+add_library(thunder_logic STATIC
+    src/game/game_world.cpp
+    src/game/game_world_enemy.cpp
+    src/game/game_world_cheats.cpp
+)
+
+target_include_directories(thunder_logic PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/inc
+)
+
+target_compile_features(thunder_logic PUBLIC cxx_std_17)
+
+# ============ thunder_io: 文件存取（逻辑层不得依赖） ============
+add_library(thunder_io STATIC
+    src/HighScore.cpp
+)
+
+target_include_directories(thunder_io PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/inc
+)
+
+target_compile_features(thunder_io PUBLIC cxx_std_17)
+
+# ============ thunder_core: 终端前端（FTXUI + Win32 控制台） ============
 set(THUNDER_CORE_SOURCES
     src/def.cpp
-    src/enemy.cpp
-    src/cheats.cpp
-    src/HighScore.cpp
-    src/input_console.cpp
+    src/cell_grid.cpp
     src/console_utils.cpp
+    src/input_console.cpp
     src/render_console.cpp
 )
 
@@ -38,6 +61,8 @@ target_include_directories(thunder_core PUBLIC
 )
 
 target_link_libraries(thunder_core PUBLIC
+    thunder_logic
+    thunder_io
     ftxui::dom
     ftxui::screen
     ftxui::component

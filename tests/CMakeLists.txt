@@ -1,21 +1,18 @@
-# B0: test harness bootstrap.
-# Only platform-independent code is covered for now (HighScore).
-# From B2 on, these tests will link the extracted thunder_logic library instead.
+# B0：测试链路骨架，目前只覆盖与平台无关的 HighScore。
+# B3 起追加 GameWorld / CellGrid 的回归用例。
 
 find_package(GTest CONFIG REQUIRED)
 
 add_executable(thunder_logic_tests
     highscore_test.cpp
-    ${CMAKE_SOURCE_DIR}/src/HighScore.cpp
-)
-
-target_include_directories(thunder_logic_tests PRIVATE
-    ${CMAKE_SOURCE_DIR}/inc
 )
 
 target_compile_features(thunder_logic_tests PRIVATE cxx_std_17)
 
-target_link_libraries(thunder_logic_tests PRIVATE GTest::gtest_main)
+target_link_libraries(thunder_logic_tests PRIVATE
+    GTest::gtest_main
+    thunder_io
+)
 
 include(GoogleTest)
 gtest_discover_tests(thunder_logic_tests DISCOVERY_TIMEOUT 60)

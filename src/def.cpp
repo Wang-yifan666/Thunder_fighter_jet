@@ -1,67 +1,90 @@
-// ThunderFighter 实现
-// ========== lifecycle ==========
-// ========== menu / screen flow ==========
-// ========== main loop helpers ==========
-// ========== player ==========
-// ========== bullets ==========
-// ========== enemies ==========
-// ========== console helpers ==========
-// ========== cheats ==========
+// ThunderFighter 终端前端实现。
+// 只负责：采集输入、驱动菜单流程、把 GameWorld 快照渲染成 FTXUI 画面。
+// 对局状态与更新逻辑已迁至 thunder::GameWorld（src/game/）。
 
 #include <ftxui/dom/elements.hpp>
 #include <windows.h>
-#include <iostream>
-#include <thread>
+
 #include <chrono>
-#include <algorithm>
 #include <iomanip>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <vector>
 
 #include "def.h"
-#include "game_config.h"
+#include "cell_grid.h"
 #include "console_utils.h"
 #include "input_console.h"
 #include "render_console.h"
+#include "game/game_config.h"
+#include "game/input_state.h"
+#include "game/world_snapshot.h"
 
 using namespace ftxui;
 using namespace std::chrono;
 using namespace std::chrono_literals;
 
+namespace
+{
+
+thunder::RawInput PollRawInput()
+{
+	thunder::RawInput raw;
+
+	auto set = [&raw](thunder::Key key, int vk_code) {
+		raw.down.set(thunder::KeyIndex(key),
+		             ConsoleInput::IsKeyDown(vk_code));
+	};
+
+	set(thunder::Key::Up, 'W');
+	set(thunder::Key::Down, 'S');
+	set(thunder::Key::Left, 'A');
+	set(thunder::Key::Right, 'D');
+	set(thunder::Key::Fire, VK_SPACE);
+	set(thunder::Key::Pause, 'P');
+	set(thunder::Key::Quit, 'Q');
+	set(thunder::Key::Back, 'B');
+	set(thunder::Key::Restart, 'R');
+	set(thunder::Key::Escape, VK_ESCAPE);
+
+	set(thunder::Key::Digit1, '1');
+	set(thunder::Key::Digit2, '2');
+	set(thunder::Key::Digit3, '3');
+	set(thunder::Key::Digit4, '4');
+	set(thunder::Key::Digit5, '5');
+	set(thunder::Key::Digit6, '6');
+	set(thunder::Key::Digit7, '7');
+	set(thunder::Key::Digit8, '8');
+	set(thunder::Key::Digit9, '9');
+
+	return raw;
+}
+
+/// 菜单/结算只用按住状态，不推进 InputTracker：
+/// 保持"按住 Q 开局"等既有边界行为不变，边沿只在游戏帧内计算。
+bool Held(const thunder::RawInput& raw, thunder::Key key)
+{
+	return raw.down.test(thunder::KeyIndex(key));
+}
+
+} // namespace
+
 // ===================================================================
 // lifecycle
 // ===================================================================
 
-ThunderFighter::ThunderFighter():
-test_mode_(false),
-state_(GameState::Menu),
-frame_count_(0),
-running_(true),
-fps_counter_(0),
-current_fps_(0),
-player_x_(48),
-player_y_(GameConfig::kScreenHeight - 1),
-life_number(GameConfig::kInitialLife),
-level_(1),
-start_time_(steady_clock::now()),
-enemy_move_counter_(0),
-enemy_move_interval_(GameConfig::kInitialEnemyMoveInterval),
-remaining_rows_in_batch_(0),
-score_(0),
-last_score_time_(0),
-is_paused_(false),
-is_invincible_(false),
-q_was_down_(false),
-invincible_until_(start_time_),
-cheat_invincible_(false),
-bullets_remaining_(GameConfig::kInitialBullets)
+ThunderFighter::ThunderFighter(): test_mode_(false), state_(GameState::Menu),
+                                 running_(true)
 {
-	HideCursor();
-	ClearScreen();
+	ConsoleUtils::HideCursor();
+	ConsoleUtils::ClearScreen();
 
 	last_fps_time_ = steady_clock::now();
+	last_tick_ = last_fps_time_;
 
 	highscore_.Load();
-	// 不在构造期刷怪：难度尚未选择，刷出的 pending 只会污染初始状态。
-	// 真正开局由 ResetGame() 负责生成第一波敌人。
+	// 不在构造期刷怪：开新局由 StartGame() -> GameWorld::Reset() 负责。
 }
 
 void ThunderFighter::Run()
@@ -82,25 +105,27 @@ void ThunderFighter::Run()
 		ConsoleUtils::SleepMs(GameConfig::kFrameDelayMs);
 	}
 
-	if(life_number > 0)
+	if(world_.Life() > 0)
 	{
 		return;
 	}
 
 	// 结算
-	score_ += bullets_remaining_ * GameConfig::kEndGameBulletBonus;
+	const thunder::WorldSnapshot snapshot = world_.Snapshot();
+	const int final_score = snapshot.score
+	    + snapshot.bullets_remaining * GameConfig::kEndGameBulletBonus;
 
-	highscore_.Submit(score_);
+	highscore_.Submit(final_score);
 	const auto& scores = highscore_.Scores();
 
-	int rank = highscore_.GetRank(score_);
+	int rank = highscore_.GetRank(final_score);
 
 	while(true)
 	{
 		ConsoleUtils::ClearTerminal();
 
 		std::cout << "\n=== 游戏结束 ===\n";
-		std::cout << "本局得分: " << score_ << " 分\n\n";
+		std::cout << "本局得分: " << final_score << " 分\n\n";
 
 		std::cout << "=== 历史最高分 TOP 5 ===\n";
 		for(size_t i = 0; i < scores.size(); ++i)
@@ -120,13 +145,15 @@ void ThunderFighter::Run()
 		std::cout << "[R] 返回主菜单\n";
 		std::cout << "[Q] 退出游戏\n";
 
-		if(ConsoleInput::IsKeyDown('R'))
+		const thunder::RawInput raw = PollRawInput();
+
+		if(Held(raw, thunder::Key::Restart))
 		{
 			state_ = GameState::Menu;
 			return;
 		}
 
-		if(ConsoleInput::IsKeyDown('Q'))
+		if(Held(raw, thunder::Key::Quit))
 		{
 			state_ = GameState::Exit;
 			running_ = false;
@@ -167,20 +194,22 @@ void ThunderFighter::ShowMenu()
 
 		std::cout << "================================\n\n";
 
-		if(ConsoleInput::IsKeyDown('1'))
+		const thunder::RawInput raw = PollRawInput();
+
+		if(Held(raw, thunder::Key::Digit1))
 		{
 			ConsoleUtils::SleepMs(GameConfig::kKeyDebounceMs);
 			ShowDifficultyMenu();
 			return;
 		}
 
-		if(ConsoleInput::IsKeyDown('2'))
+		if(Held(raw, thunder::Key::Digit2))
 		{
 			ConsoleUtils::SleepMs(GameConfig::kKeyDebounceMs);
 			ShowLeaderboard();
 		}
 
-		if(ConsoleInput::IsKeyDown('3'))
+		if(Held(raw, thunder::Key::Digit3))
 		{
 			state_ = GameState::Exit;
 			running_ = false;
@@ -209,34 +238,30 @@ void ThunderFighter::ShowDifficultyMenu()
 		std::cout << "  [B] 返回主菜单\n\n";
 		std::cout << "================================\n";
 
-		if(ConsoleInput::IsKeyDown('1'))
+		const thunder::RawInput raw = PollRawInput();
+
+		if(Held(raw, thunder::Key::Digit1))
 		{
-			difficulty_ = Difficulty::Easy;
-			ResetGame();
-			state_ = GameState::Playing;
+			StartGame(Difficulty::Easy);
 			ConsoleUtils::SleepMs(GameConfig::kKeyDebounceMs);
 			return;
 		}
 
-		if(ConsoleInput::IsKeyDown('2'))
+		if(Held(raw, thunder::Key::Digit2))
 		{
-			difficulty_ = Difficulty::Normal;
-			ResetGame();
-			state_ = GameState::Playing;
+			StartGame(Difficulty::Normal);
 			ConsoleUtils::SleepMs(GameConfig::kKeyDebounceMs);
 			return;
 		}
 
-		if(ConsoleInput::IsKeyDown('3'))
+		if(Held(raw, thunder::Key::Digit3))
 		{
-			difficulty_ = Difficulty::Hard;
-			ResetGame();
-			state_ = GameState::Playing;
+			StartGame(Difficulty::Hard);
 			ConsoleUtils::SleepMs(GameConfig::kKeyDebounceMs);
 			return;
 		}
 
-		if(ConsoleInput::IsKeyDown('B'))
+		if(Held(raw, thunder::Key::Back))
 		{
 			ConsoleUtils::SleepMs(GameConfig::kKeyDebounceMs);
 			return;
@@ -271,12 +296,14 @@ void ThunderFighter::ShowLeaderboard()
 		std::cout << "  [B]返回主菜单\n";
 		std::cout << "================================\n";
 
-		if(ConsoleInput::IsKeyDown('B'))
+		const thunder::RawInput raw = PollRawInput();
+
+		if(Held(raw, thunder::Key::Back))
 		{
 			ConsoleUtils::SleepMs(GameConfig::kKeyDebounceMs);
 			return;
 		}
-		if(ConsoleInput::IsKeyDown(VK_ESCAPE))
+		if(Held(raw, thunder::Key::Escape))
 		{
 			state_ = GameState::Exit;
 			running_ = false;
@@ -290,89 +317,47 @@ void ThunderFighter::ShowLeaderboard()
 void ThunderFighter::Back_to_menu()
 {
 	is_paused_ = false;
-	is_invincible_ = false;
-	cheat_invincible_ = false;
-
 	state_ = GameState::Menu;
 }
 
-void ThunderFighter::ResetGame()
+void ThunderFighter::StartGame(Difficulty difficulty)
 {
-	score_ = 0;
-	level_ = 1;
-
-	start_time_ = std::chrono::steady_clock::now();
-	last_score_time_ = 0;
-	last_level_up_time_ = 0;
-	elapsed_seconds_ = 0;
-
-	enemies_.clear();
-	pending_enemies_.clear();
-	bullets_.clear();
-
-	switch(difficulty_)
-	{
-	case Difficulty::Easy:
-		life_number = GameConfig::kEasyLife;
-		bullets_remaining_ = GameConfig::kEasyBullets;
-		break;
-	case Difficulty::Normal:
-		life_number = GameConfig::kNormalLife;
-		bullets_remaining_ = GameConfig::kNormalBullets;
-		break;
-	case Difficulty::Hard:
-		life_number = GameConfig::kHardLife;
-		bullets_remaining_ = GameConfig::kHardBullets;
-		break;
-	}
-
-	player_x_ = GameConfig::kScreenWidth / 2 - 1;
-	player_y_ = GameConfig::kScreenHeight - 1;
-
-	enemy_move_counter_ = 0;
-	enemy_move_interval_ = GameConfig::kInitialEnemyMoveInterval;
-	remaining_rows_in_batch_ = 0;
-
-	is_invincible_ = false;
-	cheat_invincible_ = false;
-
+	world_.Reset(difficulty);
 	is_paused_ = false;
-
-	// q_was_down_ 是输入沿锁存，不属于对局数据：
-	// 若在这里清零，玩家仍按住 Q 时开局会在第一帧被判定为"刚按下 Q"而立刻弹回菜单。
-	// 它将在 B2 移交 InputTracker 统一管理。
-
-	Make_enermy();
+	last_tick_ = steady_clock::now();
+	state_ = GameState::Playing;
 }
 
 bool ThunderFighter::ShouldExit() const
 {
-	if(life_number <= 0)
-	{
+	if(world_.Over())
 		return true;
-	}
 
 	return ConsoleInput::IsKeyDown(VK_ESCAPE);
 }
 
+thunder::InputState ThunderFighter::PollInput()
+{
+	return input_tracker_.Update(PollRawInput());
+}
+
 // ===================================================================
-// main loop helpers
+// main loop
 // ===================================================================
 
 void ThunderFighter::DrawFrame()
 {
-	bool q_down = ConsoleInput::IsKeyDown('Q');
-	if(q_down && !q_was_down_)
+	const thunder::InputState input = PollInput();
+
+	if(input.Pressed(thunder::Key::Quit))
 	{
 		Back_to_menu();
-		q_was_down_ = true;
 		ConsoleUtils::SleepMs(GameConfig::kAntiBounceDelayMs);
 		return;
 	}
-	q_was_down_ = q_down;
 
-	// 暂停逻辑
-	if(ConsoleInput::IsKeyDown('P'))
+	// 暂停逻辑：暂停期间不推进 GameWorld，时间自然冻结。
+	if(input.Down(thunder::Key::Pause))
 	{
 		is_paused_ = !is_paused_;
 		if(is_paused_)
@@ -382,123 +367,28 @@ void ThunderFighter::DrawFrame()
 		else
 		{
 			auto now = steady_clock::now();
-			auto duration = now - pause_start_time_;
-			start_time_ += duration;
-			last_fps_time_ += duration;
-			if(is_invincible_)
-				invincible_until_ += duration;
+			last_fps_time_ += (now - pause_start_time_);
 		}
 		ConsoleUtils::SleepMs(200);
 	}
 
+	const auto now = steady_clock::now();
+	const auto dt = now - last_tick_;
+	last_tick_ = now;
+
 	if(!is_paused_)
 	{
-		frame_count_++;
 		fps_counter_++;
-		enemy_move_counter_++;
 
-		auto now2 = steady_clock::now();
-		elapsed_seconds_ =
-		    duration_cast<seconds>(now2 - start_time_).count();
+		world_.Tick(thunder::GameInput::FromInput(input), dt);
 
-		if(is_invincible_
-		   && now2 >= invincible_until_)
-		{
-			is_invincible_ = false;
-		}
-
-		if(enemy_move_counter_ >= enemy_move_interval_)
-		{
-			MoveEnemies(enemies_, level_, GameConfig::kScreenWidth,
-			            GameConfig::kScreenHeight);
-			enemy_move_counter_ = 0;
-		}
-
-		if(!pending_enemies_.empty())
-		{
-			SpawnEnemiesFromPending();
-		}
-
-		Level();
-		score();
-
-		auto now = steady_clock::now();
-		auto elapsed =
-		    duration_cast<milliseconds>(now - last_fps_time_);
-		if(elapsed >= 1000ms)
+		const auto fps_elapsed = now - last_fps_time_;
+		if(fps_elapsed >= 1000ms)
 		{
 			current_fps_ = fps_counter_;
 			fps_counter_ = 0;
 			last_fps_time_ = now;
 		}
-
-		const int player_w = GameConfig::kPlayerWidth;
-		const int player_h = GameConfig::kPlayerHeight;
-
-		if(ConsoleInput::IsKeyDown(VK_SPACE)
-		   && bullets_remaining_ > 0)
-		{
-			int bx = player_x_ + 1;
-			int by = player_y_ - 1;
-
-			if(by < 0)
-				by = 0;
-
-			bullets_.emplace_back(bx, by);
-			bullets_remaining_--;
-		}
-
-		if(ConsoleInput::IsKeyDown('A'))
-			player_x_--;
-		if(ConsoleInput::IsKeyDown('D'))
-			player_x_++;
-		if(ConsoleInput::IsKeyDown('W'))
-			player_y_--;
-		if(ConsoleInput::IsKeyDown('S'))
-			player_y_++;
-
-		if(ConsoleInput::IsKeyDown('8'))
-		{
-			Clear_Current_Enemies();
-		}
-		if(ConsoleInput::IsKeyDown('7'))
-		{
-			cheats_kills();
-		}
-		if(ConsoleInput::IsKeyDown('6'))
-		{
-			cheats_life();
-		}
-		if(ConsoleInput::IsKeyDown('5'))
-		{
-			cheats_invincible();
-		}
-		if(ConsoleInput::IsKeyDown('4'))
-		{
-			cheats_addscore();
-		}
-		if(ConsoleInput::IsKeyDown('3'))
-		{
-			cheats_addbullters();
-		}
-		if(ConsoleInput::IsKeyDown('2'))
-		{
-			kill_self();
-		}
-
-		if(ConsoleInput::IsKeyDown('1'))
-		{
-			cheats_godlike();
-		}
-
-		player_x_ = std::clamp(player_x_, 0,
-		                       GameConfig::kScreenWidth - player_w);
-		player_y_ = std::clamp(player_y_, 0,
-		                       GameConfig::kScreenHeight - player_h);
-
-		CheckPlayerCollision();
-
-		UpdateBullets();
 	}
 
 	if(state_ != GameState::Playing)
@@ -508,71 +398,17 @@ void ThunderFighter::DrawFrame()
 
 	if(!test_mode_)
 	{
-		ClearScreen();
+		ConsoleUtils::ClearScreen();
 	}
 
-	// 创建字符缓冲区
-	std::vector<std::string> screen_buffer(
-	    GameConfig::kScreenHeight,
-	    std::string(GameConfig::kScreenWidth, ' '));
-
-	// 绘制敌人
-	alive_enemies_count = 0;
-	for(auto& e: enemies_)
-	{
-		if(!e.alive)
-			continue;
-
-		int draw_y = static_cast<int>(e.y);
-
-		if(draw_y < 0 || draw_y >= GameConfig::kScreenHeight)
-			continue;
-
-		for(int i = 0;
-		    i < GameConfig::kEnemyWidth && e.x + i < GameConfig::kScreenWidth;
-		    i++)
-		{
-			if(e.x + i >= 0)
-				screen_buffer[draw_y][e.x + i] = "$o$"[i];
-		}
-
-		alive_enemies_count++;
-	}
-
-	// 绘制子弹
-	for(const auto& b: bullets_)
-	{
-		if(b.y >= 0 && b.y < GameConfig::kScreenHeight && b.x >= 0
-		   && b.x < GameConfig::kScreenWidth)
-		{
-			screen_buffer[b.y][b.x] = GameConfig::kBulletChar;
-		}
-	}
-
-	// 绘制玩家
-	std::string player_str = "*0*";
-	for(int i = 0;
-	    i < GameConfig::kPlayerWidth && player_x_ + i < GameConfig::kScreenWidth;
-	    ++i)
-		screen_buffer[player_y_][player_x_ + i] = player_str[i];
-
-	// 暂停状态时显示暂停文字
-	if(is_paused_)
-	{
-		std::string pause_txt = "=== P A U S E D ===";
-		int py = GameConfig::kScreenHeight / 2;
-		int px =
-		    (GameConfig::kScreenWidth - (int)pause_txt.size()) / 2;
-		for(int i = 0; i < (int)pause_txt.size(); ++i)
-		{
-			if(px + i >= 0 && px + i < GameConfig::kScreenWidth)
-				screen_buffer[py][px + i] = pause_txt[i];
-		}
-	}
+	const thunder::WorldSnapshot snapshot = world_.Snapshot();
+	const std::vector<std::string> screen_buffer =
+	    CellGrid::Build(snapshot, is_paused_, GameConfig::kScreenWidth,
+	                    GameConfig::kScreenHeight);
 
 	// FTXUI 渲染：将字符缓冲区转换为 Elements
 	Elements lines;
-	bool inv = is_invincible_ || cheat_invincible_;
+	bool inv = snapshot.invincible;
 	for(int y = 0; y < GameConfig::kScreenHeight; ++y)
 	{
 		Elements line_chars;
@@ -580,8 +416,7 @@ void ThunderFighter::DrawFrame()
 		{
 			char c = screen_buffer[y][x];
 			line_chars.push_back(RenderConsole::CellToElement(
-			    c, inv, is_paused_, y,
-			    GameConfig::kScreenHeight));
+			    c, inv, is_paused_, y, GameConfig::kScreenHeight));
 		}
 		lines.push_back(hbox(line_chars));
 	}
@@ -589,7 +424,7 @@ void ThunderFighter::DrawFrame()
 	auto make_life = [&]() {
 		Elements life_elements;
 		life_elements.push_back(
-		    text(RenderConsole::LifeString(life_number,
+		    text(RenderConsole::LifeString(snapshot.life,
 		                                   GameConfig::kMaxLifeDisplay))
 		    | bold
 		    | color(Color::Red));
@@ -608,23 +443,24 @@ void ThunderFighter::DrawFrame()
 	                  | bold
 	                  | color(Color::Green),
 	              text(" | 时长: "),
-	              text(std::to_string(elapsed_seconds_) + " 秒  ")
+	              text(std::to_string(snapshot.elapsed_seconds) + " 秒  ")
 	                  | bold
 	                  | color(Color::BlueLight),
 	              text(" | level: "),
-	              text(std::to_string(level_))
+	              text(std::to_string(snapshot.level))
 	                  | bold
 	                  | color(Color::Green),
 	              text(" | 剩余敌人: "),
-	              text(std::to_string(enemies_.size()
-	                                  + pending_enemies_.size()))
+	              text(std::to_string(snapshot.enemies.size()
+	                                  + snapshot.pending_enemies))
 	                  | bold
 	                  | color(Color::Red),
 	              text(" | 分数: ")
 	                  | bold
 	                  | color(Color::Yellow),
 	              text((std::stringstream()
-	                    << std::setw(10) << std::setfill('0') << score_)
+	                    << std::setw(10) << std::setfill('0')
+	                    << snapshot.score)
 	                       .str())
 	                  | bold
 	                  | color(Color::YellowLight),
@@ -637,7 +473,7 @@ void ThunderFighter::DrawFrame()
 	         hbox(
 	             {text(
 	                  "按Q退出, P暂停, 按WASD移动, 空格开火  |  子弹: "),
-	              text(std::to_string(bullets_remaining_))
+	              text(std::to_string(snapshot.bullets_remaining))
 	                  | bold
 	                  | color(Color::White)}),
 	         separator(),
@@ -657,189 +493,4 @@ void ThunderFighter::DrawFrame()
 	Render(screen, window);
 	screen.Print();
 	std::cout << std::flush;
-}
-
-void ThunderFighter::Level()
-{
-	// 升级计时必须属于本局状态：原实现用函数级 static，导致重置后
-	// 仍沿用上一局的时间戳，第二局无法在 10 秒时正常升级。
-	if(elapsed_seconds_ - last_level_up_time_ >= GameConfig::kLevelUpTime)
-	{
-		level_++;
-		last_level_up_time_ = elapsed_seconds_;
-
-		bullets_remaining_ += GameConfig::kBulletsPerLevelUp;
-
-		Make_enermy();
-	}
-
-	if(ConsoleInput::IsKeyDown('9'))
-	{
-		level_++;
-		Make_enermy();
-		bullets_remaining_ += GameConfig::kBulletsPerLevelUp;
-	}
-
-	int min_interval = GameConfig::kMinEnemyMoveInterval;
-	int max_interval = GameConfig::kMaxEnemyMoveInterval;
-	enemy_move_interval_ =
-	    max_interval
-	    - (level_ - 1) * (max_interval - min_interval)
-	          / GameConfig::kLevelMoveIntervalDivisor;
-	enemy_move_interval_ =
-	    std::max<int>(enemy_move_interval_, min_interval);
-}
-
-void ThunderFighter::score()
-{
-	auto now2 = steady_clock::now();
-	elapsed_seconds_ =
-	    duration_cast<seconds>(now2 - start_time_).count();
-
-	if(elapsed_seconds_ > last_score_time_)
-	{
-		score_ += GameConfig::kScorePerSecond;
-		last_score_time_ = elapsed_seconds_;
-	}
-}
-
-// ===================================================================
-// player
-// ===================================================================
-
-void ThunderFighter::Life()
-{
-	life_number = GameConfig::kInitialLife;
-}
-
-void ThunderFighter::CheckPlayerCollision()
-{
-	if(is_invincible_ || cheat_invincible_)
-		return;
-
-	const int player_w = GameConfig::kPlayerWidth;
-	const int player_h = GameConfig::kPlayerHeight;
-
-	int px = player_x_;
-	int py = player_y_;
-
-	for(auto& e: enemies_)
-	{
-		if(!e.alive)
-			continue;
-
-		int ex = e.x;
-		int ey = static_cast<int>(e.y);
-		int ew = e.width;
-		int eh = e.height;
-
-		bool no_overlap = (px + player_w <= ex)
-		    || (ex + ew <= px)
-		    || (py + player_h <= ey)
-		    || (ey + eh <= py);
-
-		if(no_overlap)
-			continue;
-
-		life_number--;
-		is_invincible_ = true;
-		invincible_until_ = steady_clock::now()
-		                    + std::chrono::seconds(
-		                        GameConfig::kInvincibleDurationSec);
-
-		if(life_number < 0)
-			life_number = 0;
-
-		break;
-	}
-}
-
-// ===================================================================
-// bullets
-// ===================================================================
-
-void ThunderFighter::UpdateBullets()
-{
-	if(bullets_.empty())
-		return;
-
-	for(auto& b: bullets_)
-	{
-		b.y -= 1;
-	}
-
-	bullets_.erase(std::remove_if
-	               (bullets_.begin(),
-	                bullets_.end(),
-	                [](const Bullet& b)
-	                {
-		                return b.y < 0;
-	                }),
-	               bullets_.end());
-
-	for(auto b_it = bullets_.begin(); b_it != bullets_.end();)
-	{
-		bool bullet_consumed = false;
-
-		for(auto e_it = enemies_.begin(); e_it != enemies_.end();)
-		{
-			Enemy& e = *e_it;
-			if(!e.alive)
-			{
-				e_it = enemies_.erase(e_it);
-				continue;
-			}
-
-			int ex = e.x;
-			int ey = e.y;
-			int ew = e.width;
-			int eh = e.height;
-
-			bool hit = (b_it->y >= ey)
-			    && (b_it->y < ey + eh)
-			    && (b_it->x >= ex)
-			    && (b_it->x < ex + ew);
-
-			if(hit)
-			{
-				e_it = enemies_.erase(e_it);
-				score_ += GameConfig::kScorePerKill;
-				bullet_consumed = true;
-				bullets_remaining_ += GameConfig::kBulletsPerKill;
-				break;
-			}
-			else
-			{
-				e_it++;
-			}
-		}
-
-		if(bullet_consumed)
-		{
-			b_it = bullets_.erase(b_it);
-		}
-		else
-		{
-			b_it++;
-		}
-	}
-}
-
-// ===================================================================
-// console helpers
-// ===================================================================
-
-void ThunderFighter::ClearScreen() const
-{
-	ConsoleUtils::ClearScreen();
-}
-
-void ThunderFighter::HideCursor() const
-{
-	ConsoleUtils::HideCursor();
-}
-
-void ThunderFighter::ShowCursor() const
-{
-	ConsoleUtils::ShowCursor();
 }

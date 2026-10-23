@@ -1,17 +1,18 @@
 #pragma once
 
-#include <ftxui/dom/elements.hpp>
-#include <ftxui/screen/screen.hpp>
 #include <chrono>
-#include <vector>
 
-#include "enemy.h"
 #include "HighScore.h"
-#include "game_types.h"
+#include "game/game_config.h"
+#include "game/game_types.h"
+#include "game/game_world.h"
+#include "game/input_state.h"
 
 constexpr const char* GAME_NAME = "雷霆战机";
 constexpr const char* GAME_VERSION = "v1.4";
 
+/// 终端前端：输入采集、流程菜单与 FTXUI 渲染。
+/// 对局状态与更新逻辑在 thunder::GameWorld 中，菜单流程仍在终端层（B5 起抽到 GameSession）。
 class ThunderFighter
 {
 public:
@@ -19,105 +20,45 @@ public:
 	ThunderFighter();
 	~ThunderFighter() = default;
 
-	void Run();          // 主循环
-	bool IsRunning();    // 检查游戏是否在运行
+	void Run();       // 主循环
+	bool IsRunning(); // 检查游戏是否在运行
 
 	// ========== test helpers ==========
 	GameState GetState() const { return state_; }
-	int GetLife() const  { return life_number; }
-	int GetScore() const { return score_; }
+	int GetLife() const { return world_.Life(); }
+	int GetScore() const { return world_.Score(); }
 	bool IsRunning() const { return running_; }
 
 private:
-	// ========== state ==========
-	bool test_mode_;
-	GameState state_;
-	bool running_;
-
-	// ========== state: difficulty / level / score / time ==========
-	Difficulty difficulty_ = Difficulty::Easy;
-	int level_;
-	int score_;
-	int elapsed_seconds_ = 0;
-	int last_score_time_ = 0;
-	int last_level_up_time_ = 0;
-	int frame_count_;
-	int fps_counter_;
-	int current_fps_;
-	std::chrono::steady_clock::time_point start_time_;
-	std::chrono::steady_clock::time_point last_fps_time_;
-	std::chrono::steady_clock::time_point pause_start_time_;
-	bool is_paused_ = false;
-
 	// ========== menu / screen flow ==========
 	void ShowMenu();
 	void ShowDifficultyMenu();
 	void ShowLeaderboard();
 	void Back_to_menu();
-	void ResetGame();
+	void StartGame(Difficulty difficulty);
 	bool ShouldExit() const;
 
-	// ========== main loop helpers ==========
+	// ========== main loop ==========
 	void DrawFrame();
-	void Level();
-	void score();
+	thunder::InputState PollInput();
 
-	// ========== player ==========
-	int player_x_;
-	int player_y_;
-	int life_number;
+	// ========== state ==========
+	bool test_mode_;
+	GameState state_;
+	bool running_;
 
-	bool is_invincible_ = false;
-	bool cheat_invincible_ = false;
-	bool q_was_down_ = false;
-	std::chrono::steady_clock::time_point invincible_until_;
-
-	void Life();
-	void CheckPlayerCollision();
-
-	// ========== bullets ==========
-	struct Bullet
-	{
-		int x;
-		int y;
-		Bullet(int _x = 0, int _y = 0): x(_x), y(_y) {}
-	};
-	std::vector<Bullet> bullets_;
-	int bullets_remaining_;
-	void UpdateBullets();
-
-	// ========== enemies ==========
-	std::vector<Enemy> enemies_;
-	std::vector<Enemy> pending_enemies_;
-	int alive_enemies_count = 0;
-	int enemy_move_counter_;
-	int enemy_move_interval_;
-	int remaining_rows_in_batch_;
-
-	void Make_enermy();
-	void Clear_Current_Enemies();
-	void SpawnEnemiesFromPending();
-	bool IsOverlapping(const Enemy& a, const Enemy& b);
-	bool WillOverlap(const Enemy& cur,
-	                 const std::vector<Enemy>& enemies, int new_x,
-	                 int new_y);
-	void MoveEnemies(std::vector<Enemy>& active_enemies, int level,
-	                 int screen_width, int screen_height);
-
-	// ========== high score ==========
+	// ========== world / storage ==========
+	thunder::GameWorld world_;
 	HighScore highscore_;
 
-	// ========== console / rendering helpers ==========
-	void ClearScreen() const;
-	void HideCursor() const;
-	void ShowCursor() const;
+	// ========== terminal timing / display ==========
+	bool is_paused_ = false;
+	std::chrono::steady_clock::time_point pause_start_time_;
+	std::chrono::steady_clock::time_point last_tick_;
+	std::chrono::steady_clock::time_point last_fps_time_;
+	int fps_counter_ = 0;
+	int current_fps_ = 0;
 
-	// ========== cheats ==========
-	void cheats_kills();
-	void cheats_life();
-	void cheats_invincible();
-	void cheats_addscore();
-	void cheats_addbullters();
-	void cheats_godlike();
-	void kill_self();
+	// ========== input ==========
+	thunder::InputTracker input_tracker_;
 };

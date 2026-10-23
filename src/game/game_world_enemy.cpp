@@ -1,8 +1,11 @@
-#include "def.h"
-#include "game_config.h"
+// GameWorld 的敌机部分：刷新、批次生成、移动、重叠判定。
+// 内容来自重构前的 enemy.cpp，仅把类名改为 GameWorld 并移入 thunder 命名空间。
 
-#include <windows.h>
+#include "game/game_world.h"
+#include "game/game_config.h"
+
 #include <algorithm>
+#include <cstdlib>
 #include <random>
 
 namespace
@@ -42,7 +45,10 @@ BatchLimits BatchLimitsFor(Difficulty difficulty)
 
 } //namespace
 
-void ThunderFighter::Make_enermy()
+namespace thunder
+{
+
+void GameWorld::Make_enermy()
 {
 	std::uniform_int_distribution<int> randSpeed(GameConfig::kMinEnemySpeed,
 	                                             GameConfig::kMaxEnemySpeed);
@@ -69,13 +75,12 @@ void ThunderFighter::Make_enermy()
 	remaining_rows_in_batch_ = 0;
 }
 
-void ThunderFighter::Clear_Current_Enemies()
+void GameWorld::Clear_Current_Enemies()
 {
 	enemies_.clear();
-	alive_enemies_count = 0;
 }
 
-void ThunderFighter::SpawnEnemiesFromPending()
+void GameWorld::SpawnEnemiesFromPending()
 {
 	if(pending_enemies_.empty())
 		return;
@@ -158,7 +163,7 @@ void ThunderFighter::SpawnEnemiesFromPending()
 		remaining_rows_in_batch_ = 0;
 }
 
-bool ThunderFighter::IsOverlapping(const Enemy& a, const Enemy& b)
+bool GameWorld::IsOverlapping(const Enemy& a, const Enemy& b) const
 {
 	return !(a.x + a.width <= b.x     //
 	         || b.x + b.width <= a.x  //
@@ -166,9 +171,9 @@ bool ThunderFighter::IsOverlapping(const Enemy& a, const Enemy& b)
 	         || b.y + b.height <= a.y);
 }
 
-bool ThunderFighter::WillOverlap(const Enemy& cur,
-                                 const std::vector<Enemy>& enemies,
-                                 int new_x, int new_y)
+bool GameWorld::WillOverlap(const Enemy& cur,
+                            const std::vector<Enemy>& enemies, int new_x,
+                            int new_y) const
 {
 	Enemy temp = cur;
 	temp.x = new_x;
@@ -183,9 +188,8 @@ bool ThunderFighter::WillOverlap(const Enemy& cur,
 	return false;
 }
 
-void ThunderFighter::MoveEnemies(std::vector<Enemy>& active_enemies,
-                                 int level, int screen_width,
-                                 int screen_height)
+void GameWorld::MoveEnemies(std::vector<Enemy>& active_enemies, int level,
+                            int screen_width, int screen_height)
 {
 	std::vector<Enemy> to_pending; // 到底部的敌人
 
@@ -221,3 +225,5 @@ void ThunderFighter::MoveEnemies(std::vector<Enemy>& active_enemies,
 	pending_enemies_.insert(pending_enemies_.end(), to_pending.begin(),
 	                        to_pending.end());
 }
+
+} // namespace thunder
