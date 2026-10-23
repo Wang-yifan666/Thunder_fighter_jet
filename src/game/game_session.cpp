@@ -120,6 +120,13 @@ void GameSession::StepPlaying(const InputState& input, bool input_ready,
 		return;
 	}
 
+	if(input_ready && input.Pressed(Key::Escape))
+	{
+		// 与 README 一致：游戏中 Esc 直接退出程序
+		exit_requested_ = true;
+		return;
+	}
+
 	// 暂停键：按下沿触发（长按只切换一次）。
 	// 重构前的实现是电平触发，按住会以 200ms 为周期反复翻转。
 	if(input_ready && input.Pressed(Key::Pause))
@@ -130,8 +137,6 @@ void GameSession::StepPlaying(const InputState& input, bool input_ready,
 	// 暂停期间不推进世界（时间自然冻结）
 	if(paused_)
 		return;
-
-	// 注意：当前版本 Esc 在游戏中不生效，与重构前一致；B7 单独修复。
 
 	world_.Tick(GameInput::FromInput(input), dt);
 

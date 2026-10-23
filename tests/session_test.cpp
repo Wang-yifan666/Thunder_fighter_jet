@@ -156,16 +156,30 @@ TEST(Session, QuitReturnsToMenu)
 	EXPECT_FALSE(session.Snapshot().paused);
 }
 
-// 现状语义：重构前 Esc 在游戏中不生效（B7 单独修复）
-TEST(Session, EscapeInGameIsIgnoredForNow)
+// Esc 在游戏中直接退出程序（与 README 一致）
+TEST(Session, EscapeRequestsExit)
 {
 	MemoryScoreStore store;
 	GameSession session(store, 7);
 
 	StartEasy(session);
+	ASSERT_EQ(session.screen(), Screen::Playing);
+
 	StepMs(session, 16, Hold(Key::Escape));
-	EXPECT_EQ(session.screen(), Screen::Playing);
-	EXPECT_FALSE(session.exit_requested());
+	EXPECT_TRUE(session.exit_requested());
+}
+
+TEST(Session, EscapeWorksWhilePaused)
+{
+	MemoryScoreStore store;
+	GameSession session(store, 7);
+
+	StartEasy(session);
+	StepMs(session, 16, Hold(Key::Pause));
+	ASSERT_TRUE(session.Snapshot().paused);
+
+	StepMs(session, 16, Hold(Key::Escape));
+	EXPECT_TRUE(session.exit_requested());
 }
 
 TEST(Session, GameOverSubmitsScoreAndRestarts)
