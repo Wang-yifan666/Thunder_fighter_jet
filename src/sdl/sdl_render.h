@@ -17,7 +17,8 @@ struct Layout
 };
 
 /// 按 SessionSnapshot 绘制一帧（菜单 / 难度 / 排行榜 / 游戏 / 结算）。
+/// seconds 为程序运行秒数，仅用于纯视觉动画（星空滚动、无敌闪烁）。
 void Draw(SDL_Renderer* renderer, const thunder::SessionSnapshot& snapshot,
-          int fps);
+          int fps, double seconds = 0.0);
 
 } // namespace SdlRender

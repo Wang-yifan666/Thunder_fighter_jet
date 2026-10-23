@@ -3,6 +3,7 @@
 
 #include "sdl_render.h"
 
+#include <cmath>
 #include <iomanip>
 #include <sstream>
 #include <string>
@@ -60,21 +61,27 @@ std::string PaddedNumber(int value, int width)
 	return out.str();
 }
 
-void DrawStars(SDL_Renderer* renderer, const SdlRender::Layout& layout)
+void DrawStars(SDL_Renderer* renderer, const SdlRender::Layout& layout,
+               double seconds)
 {
 	const int grid_w = GameConfig::kScreenWidth * layout.cell;
 	const int grid_h = GameConfig::kScreenHeight * layout.cell;
 
 	for(int i = 0; i < 72; ++i)
 	{
-		// 固定散列保证星星位置稳定（不依赖游戏随机数）
+		// 固定散列保证初始位置稳定；按深度不同速度缓慢下落，形成视差
 		const std::uint32_t hash =
 		    static_cast<std::uint32_t>(i) * 2654435761u;
 		const int x = layout.grid_x
 		    + static_cast<int>(hash % static_cast<std::uint32_t>(grid_w));
-		const int y = layout.grid_y + static_cast<int>(
-		                                  (hash / 7919u)
-		                                  % static_cast<std::uint32_t>(grid_h));
+		const int depth = (i % 3) + 1;
+		const double speed = 8.0 * depth;
+		const double base_y = static_cast<double>(
+		    static_cast<int>(hash / 7919u)
+		    % static_cast<std::uint32_t>(grid_h));
+		const int y = layout.grid_y
+		    + static_cast<int>(std::fmod(base_y + seconds * speed,
+		                                 static_cast<double>(grid_h)));
 		const bool bright = (i % 9) == 0;
 		const float size = bright ? 2.0f : 1.0f;
 
@@ -115,8 +122,12 @@ void DrawBullet(SDL_Renderer* renderer, const SdlRender::Layout& layout,
 }
 
 void DrawPlayer(SDL_Renderer* renderer, const SdlRender::Layout& layout,
-                const thunder::WorldSnapshot& world)
+                const thunder::WorldSnapshot& world, double seconds)
 {
+	// 无敌期间闪烁（纯视觉；不影响碰撞判定）
+	if(world.invincible && std::fmod(seconds, 0.24) >= 0.16)
+		return;
+
 	const float cell = static_cast<float>(layout.cell);
 	const float x = static_cast<float>(layout.grid_x)
 	    + world.player_x * cell;
@@ -137,7 +148,7 @@ void DrawPlayer(SDL_Renderer* renderer, const SdlRender::Layout& layout,
 }
 
 void DrawWorld(SDL_Renderer* renderer, const thunder::WorldSnapshot& world,
-               const SdlRender::Layout& layout, bool paused)
+               const SdlRender::Layout& layout, bool paused, double seconds)
 {
 	const int cell = layout.cell;
 	const int grid_w = GameConfig::kScreenWidth * cell;
@@ -147,7 +158,7 @@ void DrawWorld(SDL_Renderer* renderer, const thunder::WorldSnapshot& world,
 	     static_cast<float>(layout.grid_y), static_cast<float>(grid_w),
 	     static_cast<float>(grid_h), kGridBg);
 
-	DrawStars(renderer, layout);
+	DrawStars(renderer, layout, seconds);
 
 	// 网格线
 	SDL_SetRenderDrawColor(renderer, kGridLine.r, kGridLine.g, kGridLine.b,
@@ -171,7 +182,7 @@ void DrawWorld(SDL_Renderer* renderer, const thunder::WorldSnapshot& world,
 	for(const auto& bullet: world.bullets)
 		DrawBullet(renderer, layout, bullet);
 
-	DrawPlayer(renderer, layout, world);
+	DrawPlayer(renderer, layout, world, seconds);
 
 	if(paused)
 	{
@@ -288,7 +299,7 @@ namespace SdlRender
 {
 
 void Draw(SDL_Renderer* renderer, const thunder::SessionSnapshot& snapshot,
-          int fps)
+          int fps, double seconds)
 {
 	const Layout layout;
 
@@ -314,14 +325,14 @@ void Draw(SDL_Renderer* renderer, const thunder::SessionSnapshot& snapshot,
 		break;
 
 	case thunder::Screen::Playing:
-		DrawWorld(renderer, snapshot.world, layout, snapshot.paused);
+		DrawWorld(renderer, snapshot.world, layout, snapshot.paused, seconds);
 		DrawHud(renderer, snapshot.world, best, fps, layout);
 		DrawHint(renderer, layout,
 		         "WASD MOVE   SPACE FIRE   P PAUSE   Q MENU   F11 FULLSCREEN   ESC QUIT");
 		break;
 
 	case thunder::Screen::GameOver:
-		DrawWorld(renderer, snapshot.world, layout, false);
+		DrawWorld(renderer, snapshot.world, layout, false, seconds);
 		DrawHud(renderer, snapshot.world, best, fps, layout);
 		DrawGameOver(renderer, snapshot, layout);
 		break;

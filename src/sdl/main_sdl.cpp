@@ -68,6 +68,17 @@ thunder::RawInput DemoInput(unsigned int step)
 
 int main(int argc, char** argv)
 {
+	if(HasFlag(argc, argv, "--help"))
+	{
+		std::printf("Thunder Fighter (SDL3)\n"
+		            "  --frames N   run N frames then exit (headless smoke)\n"
+		            "  --demo       feed scripted input (menu -> difficulty -> play)\n"
+		            "  --help       show this help\n"
+		            "In-game: WASD move, SPACE fire, P pause, Q menu, "
+		            "F11 fullscreen, ESC quit\n");
+		return 0;
+	}
+
 	const int max_frames = ParseFrameLimit(argc, argv);
 	const bool demo = HasFlag(argc, argv, "--demo");
 
@@ -175,7 +186,8 @@ int main(int argc, char** argv)
 		{
 			SDL_SetRenderDrawColor(renderer, 12, 12, 16, 255);
 			SDL_RenderClear(renderer);
-			SdlRender::Draw(renderer, snapshot, fps);
+			SdlRender::Draw(renderer, snapshot, fps,
+			                static_cast<double>(now_ns) / 1.0e9);
 			SDL_RenderPresent(renderer);
 		}
 		else if(max_frames == 0)

@@ -120,5 +120,8 @@ B0 基线 ─► B1 跨局状态修复 ─► B2 纯搬迁 ─► B3 回归测�
 4. **SDL 润色**（提交 `6acf39c`）：窗口可缩放、F11 全屏、组合色块精灵与静态星空；
    逻辑与终端版不受影响。
 5. **GUI 子系统**：SDL 版以 `WIN32_EXECUTABLE` 构建，双击不再附带控制台窗口；
+   调试可用 `-DTHUNDER_SDL_CONSOLE=ON` 改回控制台子系统；
    无头冒烟需用 `Start-Process -Wait -RedirectStandardOutput` 等待并取回输出。
+6. **视觉动画**：星空按深度缓慢滚动、无敌期间玩家闪烁（纯绘制层，不影响判定）；
+   新增 `--help`。
 
