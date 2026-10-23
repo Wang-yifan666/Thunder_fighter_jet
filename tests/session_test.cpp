@@ -121,6 +121,28 @@ TEST(Session, PauseFreezesWorldTime)
 	EXPECT_EQ(session.Snapshot().world.elapsed_seconds, 2);
 }
 
+TEST(Session, PauseTogglesOnlyOnceWhileHeld)
+{
+	MemoryScoreStore store;
+	GameSession session(store, 7);
+
+	StartEasy(session);
+	ASSERT_EQ(session.screen(), Screen::Playing);
+
+	StepMs(session, 16, Hold(Key::Pause));
+	ASSERT_TRUE(session.Snapshot().paused);
+
+	// 持续按住不应反复翻转（重构前会以 200ms 为周期抖动）
+	for(int i = 0; i < 20; ++i)
+		StepMs(session, 16, Hold(Key::Pause));
+	EXPECT_TRUE(session.Snapshot().paused);
+
+	// 松开后再按才切换
+	StepMs(session, 16);
+	StepMs(session, 16, Hold(Key::Pause));
+	EXPECT_FALSE(session.Snapshot().paused);
+}
+
 TEST(Session, QuitReturnsToMenu)
 {
 	MemoryScoreStore store;

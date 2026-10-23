@@ -16,8 +16,6 @@ steady_clock::duration ToDuration(milliseconds ms)
 	return duration_cast<steady_clock::duration>(ms);
 }
 
-constexpr int kPauseCooldownMs = 200; // 对应重构前 DrawFrame 里 200ms 的等待
-
 } // namespace
 
 GameSession::GameSession(ScoreStore& store, std::uint32_t rng_seed):
@@ -122,11 +120,11 @@ void GameSession::StepPlaying(const InputState& input, bool input_ready,
 		return;
 	}
 
-	// 暂停键沿用重构前的电平触发 + 200ms 冷却（B6 单独改为按下沿触发）
-	if(input_ready && input.Down(Key::Pause))
+	// 暂停键：按下沿触发（长按只切换一次）。
+	// 重构前的实现是电平触发，按住会以 200ms 为周期反复翻转。
+	if(input_ready && input.Pressed(Key::Pause))
 	{
 		paused_ = !paused_;
-		cooldown_ = ToDuration(milliseconds(kPauseCooldownMs));
 	}
 
 	// 暂停期间不推进世界（时间自然冻结）
