@@ -116,6 +116,7 @@ install(TARGETS thunder_core Thunder_fighter_jet
 
 # ============ SDL3 前端（可选，独立可执行文件） ============
 option(THUNDER_BUILD_SDL "Build the SDL3 frontend when SDL3 is available" ON)
+option(THUNDER_SDL_CONSOLE "Build the SDL frontend as a console app (for debugging)" OFF)
 
 if(THUNDER_BUILD_SDL)
     find_package(SDL3 CONFIG QUIET)
@@ -141,11 +142,14 @@ if(THUNDER_BUILD_SDL)
         target_compile_features(Thunder_fighter_jet_sdl PRIVATE cxx_std_17)
         target_compile_options(Thunder_fighter_jet_sdl PRIVATE ${THUNDER_WARNINGS})
 
-        # 图形版是 GUI 子系统程序：双击启动时不应额外弹出控制台窗口。
+        # 图形版默认是 GUI 子系统程序：双击启动时不应额外弹出控制台窗口。
+        # 调试时可 -DTHUNDER_SDL_CONSOLE=ON 改回控制台子系统以便看日志。
         # 终端版（Thunder_fighter_jet*）保持控制台子系统不变。
-        set_target_properties(Thunder_fighter_jet_sdl PROPERTIES
-            WIN32_EXECUTABLE ON
-        )
+        if(NOT THUNDER_SDL_CONSOLE)
+            set_target_properties(Thunder_fighter_jet_sdl PROPERTIES
+                WIN32_EXECUTABLE ON
+            )
+        endif()
 
         if(MINGW)
             target_link_options(Thunder_fighter_jet_sdl PRIVATE
