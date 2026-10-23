@@ -16,10 +16,16 @@ namespace
 constexpr SDL_Color kBg{12, 12, 16, 255};
 constexpr SDL_Color kGridBg{18, 18, 24, 255};
 constexpr SDL_Color kGridLine{30, 30, 40, 255};
+constexpr SDL_Color kStar{58, 58, 76, 255};
+constexpr SDL_Color kStarBright{96, 96, 120, 255};
 constexpr SDL_Color kPlayer{250, 210, 70, 255};
+constexpr SDL_Color kPlayerWing{196, 148, 32, 255};
 constexpr SDL_Color kPlayerCore{40, 40, 48, 255};
-constexpr SDL_Color kEnemy{220, 60, 60, 255};
+constexpr SDL_Color kEnemyBody{220, 60, 60, 255};
+constexpr SDL_Color kEnemyWing{150, 34, 42, 255};
+constexpr SDL_Color kEnemyCore{255, 150, 90, 255};
 constexpr SDL_Color kBullet{255, 120, 200, 255};
+constexpr SDL_Color kBulletCore{255, 240, 250, 255};
 constexpr SDL_Color kText{235, 235, 240, 255};
 constexpr SDL_Color kTextDim{150, 150, 165, 255};
 constexpr SDL_Color kTextAccent{255, 214, 64, 255};
@@ -54,6 +60,82 @@ std::string PaddedNumber(int value, int width)
 	return out.str();
 }
 
+void DrawStars(SDL_Renderer* renderer, const SdlRender::Layout& layout)
+{
+	const int grid_w = GameConfig::kScreenWidth * layout.cell;
+	const int grid_h = GameConfig::kScreenHeight * layout.cell;
+
+	for(int i = 0; i < 72; ++i)
+	{
+		// 固定散列保证星星位置稳定（不依赖游戏随机数）
+		const std::uint32_t hash =
+		    static_cast<std::uint32_t>(i) * 2654435761u;
+		const int x = layout.grid_x
+		    + static_cast<int>(hash % static_cast<std::uint32_t>(grid_w));
+		const int y = layout.grid_y + static_cast<int>(
+		                                  (hash / 7919u)
+		                                  % static_cast<std::uint32_t>(grid_h));
+		const bool bright = (i % 9) == 0;
+		const float size = bright ? 2.0f : 1.0f;
+
+		Fill(renderer, static_cast<float>(x), static_cast<float>(y), size,
+		     size, bright ? kStarBright : kStar);
+	}
+}
+
+void DrawEnemy(SDL_Renderer* renderer, const SdlRender::Layout& layout,
+               const thunder::EntityView& enemy)
+{
+	const float cell = static_cast<float>(layout.cell);
+	const float x = static_cast<float>(layout.grid_x) + enemy.x * cell;
+	const float y = static_cast<float>(layout.grid_y) + enemy.y * cell;
+	const float w = enemy.width * cell - 1.0f;
+	const float h = enemy.height * cell - 1.0f;
+
+	// 机身 + 左右翼 + 引擎光点
+	Fill(renderer, x + 3.0f, y + 1.0f, w - 6.0f, h - 1.0f, kEnemyBody);
+	Fill(renderer, x, y + h * 0.45f, 3.0f, h * 0.55f, kEnemyWing);
+	Fill(renderer, x + w - 3.0f, y + h * 0.45f, 3.0f, h * 0.55f,
+	     kEnemyWing);
+	Fill(renderer, x + w * 0.5f - 1.0f, y + h - 2.0f, 2.0f, 2.0f,
+	     kEnemyCore);
+}
+
+void DrawBullet(SDL_Renderer* renderer, const SdlRender::Layout& layout,
+                const thunder::EntityView& bullet)
+{
+	const float cell = static_cast<float>(layout.cell);
+	const float cx = static_cast<float>(layout.grid_x)
+	    + bullet.x * cell + cell * 0.5f;
+	const float cy = static_cast<float>(layout.grid_y)
+	    + bullet.y * cell + cell * 0.5f;
+
+	Fill(renderer, cx - 2.0f, cy - 4.0f, 4.0f, 8.0f, kBullet);
+	Fill(renderer, cx - 1.0f, cy - 3.0f, 2.0f, 5.0f, kBulletCore);
+}
+
+void DrawPlayer(SDL_Renderer* renderer, const SdlRender::Layout& layout,
+                const thunder::WorldSnapshot& world)
+{
+	const float cell = static_cast<float>(layout.cell);
+	const float x = static_cast<float>(layout.grid_x)
+	    + world.player_x * cell;
+	const float y = static_cast<float>(layout.grid_y)
+	    + world.player_y * cell;
+	const float w = GameConfig::kPlayerWidth * cell - 1.0f;
+	const float h = cell - 1.0f;
+
+	const SDL_Color body = world.invincible ? kTextDim : kPlayer;
+	const SDL_Color wing = world.invincible ? kTextDim : kPlayerWing;
+
+	// 主体（中间一格）+ 两侧机翼 + 驾驶舱
+	Fill(renderer, x + w / 3.0f, y, w / 3.0f, h, body);
+	Fill(renderer, x, y + h * 0.55f, w / 3.0f, h * 0.45f, wing);
+	Fill(renderer, x + w * 2.0f / 3.0f, y + h * 0.55f, w / 3.0f,
+	     h * 0.45f, wing);
+	Fill(renderer, x + w / 2.0f - 1.0f, y + 1.0f, 2.0f, 2.0f, kPlayerCore);
+}
+
 void DrawWorld(SDL_Renderer* renderer, const thunder::WorldSnapshot& world,
                const SdlRender::Layout& layout, bool paused)
 {
@@ -64,6 +146,8 @@ void DrawWorld(SDL_Renderer* renderer, const thunder::WorldSnapshot& world,
 	Fill(renderer, static_cast<float>(layout.grid_x),
 	     static_cast<float>(layout.grid_y), static_cast<float>(grid_w),
 	     static_cast<float>(grid_h), kGridBg);
+
+	DrawStars(renderer, layout);
 
 	// 网格线
 	SDL_SetRenderDrawColor(renderer, kGridLine.r, kGridLine.g, kGridLine.b,
@@ -81,34 +165,13 @@ void DrawWorld(SDL_Renderer* renderer, const thunder::WorldSnapshot& world,
 		               static_cast<float>(layout.grid_x + grid_w), py);
 	}
 
-	// 敌机
 	for(const auto& enemy: world.enemies)
-	{
-		Fill(renderer,
-		     static_cast<float>(layout.grid_x + enemy.x * cell),
-		     static_cast<float>(layout.grid_y + enemy.y * cell),
-		     static_cast<float>(enemy.width * cell - 1),
-		     static_cast<float>(enemy.height * cell - 1), kEnemy);
-	}
+		DrawEnemy(renderer, layout, enemy);
 
-	// 子弹
 	for(const auto& bullet: world.bullets)
-	{
-		const float size = 4.0f;
-		Fill(renderer,
-		     static_cast<float>(layout.grid_x + bullet.x * cell) + (cell - size) / 2.0f,
-		     static_cast<float>(layout.grid_y + bullet.y * cell) + (cell - size) / 2.0f,
-		     size, size, kBullet);
-	}
+		DrawBullet(renderer, layout, bullet);
 
-	// 玩家：3 格机身 + 中央驾驶舱
-	const float px = static_cast<float>(layout.grid_x + world.player_x * cell);
-	const float py = static_cast<float>(layout.grid_y + world.player_y * cell);
-	const float pw = static_cast<float>(GameConfig::kPlayerWidth * cell - 1);
-	const float ph = static_cast<float>(cell - 1);
-	Fill(renderer, px, py, pw, ph, world.invincible ? kTextDim : kPlayer);
-	Fill(renderer, px + pw / 3.0f, py + 1.0f, pw / 3.0f, ph - 2.0f,
-	     kPlayerCore);
+	DrawPlayer(renderer, layout, world);
 
 	if(paused)
 	{
@@ -197,7 +260,8 @@ void DrawGameOver(SDL_Renderer* renderer,
 	Blend(renderer, 120, 140, layout.window_width - 240, 200,
 	      SDL_Color{0, 0, 0, 200});
 
-	CenterText(renderer, layout.window_width, 160, 4, "GAME OVER", kEnemy);
+	CenterText(renderer, layout.window_width, 160, 4, "GAME OVER",
+	           kEnemyBody);
 
 	const std::string score = "SCORE " + std::to_string(snapshot.world.score)
 	    + "  +AMMO " + std::to_string(
@@ -253,7 +317,7 @@ void Draw(SDL_Renderer* renderer, const thunder::SessionSnapshot& snapshot,
 		DrawWorld(renderer, snapshot.world, layout, snapshot.paused);
 		DrawHud(renderer, snapshot.world, best, fps, layout);
 		DrawHint(renderer, layout,
-		         "WASD MOVE   SPACE FIRE   P PAUSE   Q MENU   ESC QUIT");
+		         "WASD MOVE   SPACE FIRE   P PAUSE   Q MENU   F11 FULLSCREEN   ESC QUIT");
 		break;
 
 	case thunder::Screen::GameOver:

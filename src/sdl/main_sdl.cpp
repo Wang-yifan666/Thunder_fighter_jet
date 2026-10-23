@@ -77,14 +77,18 @@ int main(int argc, char** argv)
 		return 1;
 	}
 
-	SDL_Window* window =
-	    SDL_CreateWindow("Thunder Fighter (SDL3)", 800, 432, 0);
+	SDL_Window* window = SDL_CreateWindow(
+	    "Thunder Fighter (SDL3)", 800, 432, SDL_WINDOW_RESIZABLE);
 	SDL_Renderer* renderer =
 	    window != nullptr ? SDL_CreateRenderer(window, nullptr) : nullptr;
 
 	if(renderer != nullptr)
 	{
 		SDL_SetRenderVSync(renderer, 1);
+		// 逻辑分辨率固定 800x432；窗口缩放时按比例缩放并留黑边
+		SDL_SetRenderLogicalPresentation(renderer, 800, 432,
+		                                 SDL_LOGICAL_PRESENTATION_LETTERBOX);
+		SDL_SetWindowMinimumSize(window, 400, 216);
 	}
 	else
 	{
@@ -103,6 +107,7 @@ int main(int argc, char** argv)
 	int fps = 0;
 	int frames = 0;
 	unsigned int demo_step = 0;
+	bool fullscreen = false;
 	bool running = true;
 
 	while(running)
@@ -112,6 +117,14 @@ int main(int argc, char** argv)
 		{
 			if(event.type == SDL_EVENT_QUIT)
 				running = false;
+
+			if(event.type == SDL_EVENT_KEY_DOWN && !event.key.repeat
+			   && event.key.scancode == SDL_SCANCODE_F11
+			   && window != nullptr)
+			{
+				fullscreen = !fullscreen;
+				SDL_SetWindowFullscreen(window, fullscreen);
+			}
 			input.HandleEvent(event);
 		}
 
