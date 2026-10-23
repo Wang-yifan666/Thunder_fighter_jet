@@ -109,11 +109,14 @@ B0 基线 ─► B1 跨局状态修复 ─► B2 纯搬迁 ─► B3 回归测�
 
 ### 与计划的偏差
 
-1. **vcpkg Manifest Mode 暂未采用**：vcpkg 自举需要从 GitHub Releases 下载
-   ninja 1.13.1 与 7-Zip 25.01，开发机网络对这些资源超时；改为本地构建 SDL3，
-   全局 vcpkg 环境未改动。
-2. **SDL3 依赖位置**：`%TEMP%/tf-sdl3-prefix`（本次验证用），构建 SDL 前端需要
-   `-DCMAKE_PREFIX_PATH=<SDL3 安装目录>`；网络恢复后建议回到 `vcpkg install sdl3`。
+1. **vcpkg Manifest Mode 仍未采用**：vcpkg 自举需要从 GitHub Releases 下载
+   ninja 1.13.1 与 7-Zip 25.01，开发机上 WinHTTP 下载时好时坏；经典模式可用，
+   Manifest Mode 试验在依赖引导阶段失败，待下载通道稳定后再评估。
+2. **SDL3 已回到 vcpkg**：`vcpkg install sdl3:x64-mingw-static`（3.2.24）安装成功，
+   CMake 直接 `find_package(SDL3 CONFIG)`，不再需要 `CMAKE_PREFIX_PATH`；
+   过渡期使用的 `%TEMP%/tf-sdl3-prefix` 本地构建不再必需。
 3. **版本号**：游戏内 HUD 版本串由 `v1.4` 提升到 `v1.6`，与 README 对齐（有意变更，
-   菜单基线不受影响）。
+   菜单基线不受影响）；已打 annotated tag `v1.6`。
+4. **SDL 润色**（提交 `6acf39c`）：窗口可缩放、F11 全屏、组合色块精灵与静态星空；
+   逻辑与终端版不受影响。
 

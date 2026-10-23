@@ -47,19 +47,26 @@ ctest --test-dir build --output-on-failure
 
 ### 构建 SDL3 图形版（可选）
 
-需要可被 CMake 找到的 SDL3（`SDL3Config.cmake`）。配置时提供安装前缀：
+先安装 SDL3（与 ftxui / gtest 使用同一个 triplet）：
+
+```powershell
+vcpkg install sdl3:x64-mingw-static
+```
+
+之后的构建命令与终端版完全相同，配置阶段会自动启用 SDL 目标：
 
 ```powershell
 cmake -S . -B build -G "MinGW Makefiles" `
       -DCMAKE_TOOLCHAIN_FILE=<vcpkg>/scripts/buildsystems/vcpkg.cmake `
-      -DVCPKG_TARGET_TRIPLET=x64-mingw-static `
-      -DCMAKE_PREFIX_PATH=<SDL3 安装目录>
+      -DVCPKG_TARGET_TRIPLET=x64-mingw-static
 cmake --build build
 ```
 
 产物：`build/Thunder_fighter_jet_sdl.exe`。
 
-未找到 SDL3 时，配置阶段会提示并自动跳过该目标，终端版不受影响。
+- 未找到 SDL3 时，配置阶段会提示并自动跳过该目标，终端版不受影响；
+- 若 SDL3 不在 vcpkg 中，可用 `-DCMAKE_PREFIX_PATH=<SDL3 安装目录>` 指定；
+- 窗口可缩放（保持 800×432 逻辑比例并留黑边），`F11` 切换全屏。
 
 ---
 
@@ -122,6 +129,7 @@ SDL3 版键位相同，HUD 使用英文 ASCII 标签。
 - 游戏逻辑（`thunder_logic`）与平台无关：不依赖 FTXUI / SDL3 / windows.h，不读系统时钟
 - 终端前端（`thunder_core`）与 SDL3 前端（`Thunder_fighter_jet_sdl`）共享同一套逻辑
 - 固定 16ms 逻辑步长，SDL 版渲染帧率与显示器刷新率解耦
+- SDL 版使用色块精灵、静态星空与可缩放窗口（内置 5×7 点阵字体，无字体库依赖）
 
 ---
 

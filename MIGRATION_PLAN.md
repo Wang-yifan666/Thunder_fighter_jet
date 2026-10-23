@@ -57,9 +57,12 @@ Stage 2 (logic / platform separation) is **complete**.
 
 ## Next Steps (not part of Stage 2)
 
-- Revisit vcpkg Manifest Mode when GitHub release assets are reachable
-  (vcpkg currently cannot bootstrap 7-Zip / ninja on the development machine)
-- SDL frontend polish: sprites, audio, window scaling, leaderboard parity checks
+- SDL3 is now installed through vcpkg (classic mode): `vcpkg install sdl3:x64-mingw-static`
+- vcpkg Manifest Mode is still not adopted: vcpkg's own tool bootstrap (ninja / 7-Zip
+  downloads through WinHTTP) is unstable on the development machine. Revisit when that
+  download path is reliable; the project already works with classic mode.
+- SDL frontend polish: sprites are in place; audio, menu animations and leaderboard
+  parity checks are still open
 - Separate platform services further if more frontends are added
 
 ## Notes for Future Work
