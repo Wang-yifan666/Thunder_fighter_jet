@@ -106,6 +106,47 @@ install(TARGETS thunder_core Thunder_fighter_jet
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
+# ============ SDL3 前端（可选，独立可执行文件） ============
+option(THUNDER_BUILD_SDL "Build the SDL3 frontend when SDL3 is available" ON)
+
+if(THUNDER_BUILD_SDL)
+    find_package(SDL3 CONFIG QUIET)
+
+    if(SDL3_FOUND)
+        add_executable(Thunder_fighter_jet_sdl
+            src/sdl/main_sdl.cpp
+            src/sdl/sdl_input.cpp
+            src/sdl/sdl_render.cpp
+            src/sdl/bitmap_font.cpp
+        )
+
+        target_include_directories(Thunder_fighter_jet_sdl PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/sdl
+        )
+
+        target_link_libraries(Thunder_fighter_jet_sdl PRIVATE
+            thunder_logic
+            thunder_io
+            SDL3::SDL3
+        )
+
+        target_compile_features(Thunder_fighter_jet_sdl PRIVATE cxx_std_17)
+
+        if(MINGW)
+            target_link_options(Thunder_fighter_jet_sdl PRIVATE
+                -static-libgcc -static-libstdc++)
+        endif()
+
+        install(TARGETS Thunder_fighter_jet_sdl
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+        message(STATUS "SDL3 frontend enabled (SDL3 ${SDL3_VERSION})")
+    else()
+        message(STATUS "SDL3 not found: SDL frontend skipped "
+                       "(configure with -DCMAKE_PREFIX_PATH=<SDL3 install>)")
+    endif()
+endif()
+
 # tests (B0: only platform-independent units are covered yet)
 if(THUNDER_BUILD_TESTS)
     add_subdirectory(tests)
