@@ -74,6 +74,46 @@ TEST(Session, DifficultyBackReturnsToMenu)
 	EXPECT_EQ(session.screen(), Screen::Menu);
 }
 
+// 难度选择键不能泄漏进游戏：选中 Normal 后按键仍被按住时，
+// 数字键 2 是作弊"自杀"，必须被起始冷却挡住。
+TEST(Session, DifficultyKeyDoesNotLeakIntoGame)
+{
+	MemoryScoreStore store;
+	GameSession session(store, 7);
+
+	StepMs(session, 16, Hold(Key::Digit1)); // 菜单 -> 难度
+	StepMs(session, 250);                   // 清菜单冷却
+
+	StepMs(session, 16, Hold(Key::Digit2)); // 选择 Normal，手指还没松开
+	ASSERT_EQ(session.screen(), Screen::Playing);
+	ASSERT_EQ(session.Snapshot().difficulty, Difficulty::Normal);
+
+	for(int i = 0; i < 6; ++i) // 96ms，仍在起始冷却内
+		StepMs(session, 16, Hold(Key::Digit2));
+
+	EXPECT_EQ(session.screen(), Screen::Playing);
+	EXPECT_EQ(session.Snapshot().world.life, GameConfig::kNormalLife);
+}
+
+// 同理：Easy 的"1"是上帝模式，也不能在开局瞬间触发。
+TEST(Session, EasyCheatKeyDoesNotLeakIntoGame)
+{
+	MemoryScoreStore store;
+	GameSession session(store, 7);
+
+	StepMs(session, 16, Hold(Key::Digit1));
+	StepMs(session, 250);
+	StepMs(session, 16, Hold(Key::Digit1)); // 选择 Easy，按键仍按住
+	ASSERT_EQ(session.screen(), Screen::Playing);
+
+	for(int i = 0; i < 6; ++i)
+		StepMs(session, 16, Hold(Key::Digit1));
+
+	EXPECT_EQ(session.Snapshot().world.life, GameConfig::kEasyLife);
+	EXPECT_EQ(session.Snapshot().world.bullets_remaining,
+	          GameConfig::kEasyBullets);
+}
+
 TEST(Session, LeaderboardNavigation)
 {
 	MemoryScoreStore store;

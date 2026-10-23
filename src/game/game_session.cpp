@@ -138,7 +138,13 @@ void GameSession::StepPlaying(const InputState& input, bool input_ready,
 	if(paused_)
 		return;
 
-	world_.Tick(GameInput::FromInput(input), dt);
+	// 开局后的输入冷却期不把按键交给世界：
+	// 选择难度的数字键（1/2/3）可能还没松开，而数字键在游戏中是作弊键，
+	// 直接传入会导致"选完 Normal 立刻自杀"、"选完 Easy 立刻上帝模式"。
+	const GameInput game_input =
+	    input_ready ? GameInput::FromInput(input) : GameInput{};
+
+	world_.Tick(game_input, dt);
 
 	if(world_.Over())
 		Settle();
