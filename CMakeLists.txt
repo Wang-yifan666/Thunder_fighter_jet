@@ -12,6 +12,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 option(BUILD_SHARED_LIBS "Build libraries as shared" OFF)
 option(THUNDER_STATIC_MINGW "When using MinGW, link the executable statically" OFF)
 option(BUILD_ADDITIONAL_STATIC_EXE "Also build a statically linked exe target alongside the dynamic one" ON)
+option(THUNDER_BUILD_TESTS "Build unit tests (requires GoogleTest from vcpkg)" ON)
+
+enable_testing()
 
 # ftxui
 find_package(ftxui CONFIG REQUIRED)
@@ -75,3 +78,8 @@ install(TARGETS thunder_core Thunder_fighter_jet
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
+
+# tests (B0: only platform-independent units are covered yet)
+if(THUNDER_BUILD_TESTS)
+    add_subdirectory(tests)
+endif()
