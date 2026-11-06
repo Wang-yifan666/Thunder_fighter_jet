@@ -25,6 +25,12 @@ struct SessionSnapshot
 	bool exit_requested = false;
 	Difficulty difficulty = Difficulty::Easy;
 
+	/// 作弊模式是否已开启（主菜单按 F 切换）。关闭时数字键作弊不生效。
+	bool cheats_enabled = false;
+
+	/// 刚切换过作弊模式：前端应短暂显示一次开/关提示，之后不再显示。
+	bool cheat_notice = false;
+
 	/// 仅 Playing / GameOver 有意义
 	WorldSnapshot world;
 

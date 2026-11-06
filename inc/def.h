@@ -7,7 +7,7 @@
 #include "game/session_snapshot.h"
 #include "io/file_score_store.h"
 
-constexpr const char* GAME_NAME = "雷霆战机";
+constexpr const char* GAME_NAME = "奶蛋的火力不足恐惧症";
 constexpr const char* GAME_VERSION = "v1.6";
 
 /// 终端前端：只负责采集输入，并把 SessionSnapshot 渲染到终端。

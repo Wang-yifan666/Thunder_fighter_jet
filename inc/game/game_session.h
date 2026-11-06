@@ -43,6 +43,10 @@ private:
 	Screen screen_ = Screen::Menu;
 	bool paused_ = false;
 	bool exit_requested_ = false;
+	/// 主菜单按 F 切换；关闭时游戏内的数字键作弊被屏蔽
+	bool cheats_enabled_ = false;
+	/// 切换作弊模式后的提示剩余时长（状态本身不常驻显示）
+	std::chrono::steady_clock::duration cheat_notice_{};
 	std::chrono::steady_clock::duration cooldown_{};
 
 	int rank_ = 0;

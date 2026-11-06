@@ -15,20 +15,23 @@ std::vector<std::string> Build(const thunder::WorldSnapshot& snapshot,
 	std::vector<std::string> screen_buffer(height,
 	                                       std::string(width, ' '));
 
-	// 绘制敌人
+	// 绘制敌人（按命中框高度逐行铺字形）
 	for(const auto& e: snapshot.enemies)
 	{
-		int draw_y = static_cast<int>(e.y);
-
-		if(draw_y < 0 || draw_y >= height)
-			continue;
-
-		for(int i = 0;
-		    i < GameConfig::kEnemyWidth && e.x + i < width;
-		    i++)
+		for(int row = 0; row < e.height; ++row)
 		{
-			if(e.x + i >= 0)
-				screen_buffer[draw_y][e.x + i] = "$o$"[i];
+			const int draw_y = static_cast<int>(e.y) + row;
+
+			if(draw_y < 0 || draw_y >= height)
+				continue;
+
+			for(int i = 0;
+			    i < GameConfig::kEnemyWidth && e.x + i < width;
+			    i++)
+			{
+				if(e.x + i >= 0)
+					screen_buffer[draw_y][e.x + i] = "$o$"[i];
+			}
 		}
 	}
 
@@ -38,6 +41,20 @@ std::vector<std::string> Build(const thunder::WorldSnapshot& snapshot,
 		if(b.y >= 0 && b.y < height && b.x >= 0 && b.x < width)
 		{
 			screen_buffer[b.y][b.x] = GameConfig::kBulletChar;
+		}
+	}
+
+	// 绘制掉落物：3x3 格，字形落在中心格，按种类选字符
+	for(const auto& p: snapshot.pickups)
+	{
+		const int cx = static_cast<int>(p.x) + p.width / 2;
+		const int cy = static_cast<int>(p.y) + p.height / 2;
+
+		if(cx >= 0 && cx < width && cy >= 0 && cy < height)
+		{
+			screen_buffer[cy][cx] = (p.kind == PickupKind::Ammo)
+			    ? GameConfig::kAmmoChar
+			    : GameConfig::kHealthChar;
 		}
 	}
 

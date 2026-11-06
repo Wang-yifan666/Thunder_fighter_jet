@@ -18,6 +18,23 @@ struct WorldTestAccess
 		world.pending_enemies_.clear();
 	}
 	static void ClearBullets(GameWorld& world) { world.bullets_.clear(); }
+	static void ClearPickups(GameWorld& world) { world.pickups_.clear(); }
+
+	static void AddPickup(GameWorld& world, int x, int y,
+	                      PickupKind kind = PickupKind::Health)
+	{
+		world.pickups_.emplace_back(x, y, kind);
+	}
+
+	static int PickupCount(const GameWorld& world)
+	{
+		return static_cast<int>(world.pickups_.size());
+	}
+
+	static PickupKind PickupKindAt(const GameWorld& world, int index)
+	{
+		return world.pickups_[static_cast<std::size_t>(index)].kind;
+	}
 
 	static void AddEnemy(GameWorld& world, int x, int y, int speed = 1,
 	                     int width = 3, int height = 1)

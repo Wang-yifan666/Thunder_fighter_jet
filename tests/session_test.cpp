@@ -42,6 +42,12 @@ void StartEasy(GameSession& session)
 	StepMs(session, 250); // 清开局冷却
 }
 
+/// 在主菜单按一次 F 打开作弊模式（游戏内数字键才会生效）。
+void EnableCheats(GameSession& session)
+{
+	StepMs(session, 16, Hold(Key::CheatUnlock));
+}
+
 } // namespace
 
 TEST(Session, MenuNavigation)
@@ -132,7 +138,8 @@ TEST(Session, ExitRequestedFromMenu)
 	MemoryScoreStore store;
 	GameSession session(store, 7);
 
-	StepMs(session, 16, Hold(Key::Digit3));
+	// 主菜单退出用 Q（原为数字键 3）
+	StepMs(session, 16, Hold(Key::Quit));
 	EXPECT_TRUE(session.exit_requested());
 }
 
@@ -227,6 +234,7 @@ TEST(Session, GameOverSubmitsScoreAndRestarts)
 	MemoryScoreStore store;
 	GameSession session(store, 7);
 
+	EnableCheats(session);
 	StartEasy(session);
 	ASSERT_EQ(session.screen(), Screen::Playing);
 
@@ -260,10 +268,104 @@ TEST(Session, ExitFromGameOverSetsExitRequested)
 	MemoryScoreStore store;
 	GameSession session(store, 7);
 
+	EnableCheats(session);
 	StartEasy(session);
 	StepMs(session, 16, Hold(Key::Digit2));
 	ASSERT_EQ(session.screen(), Screen::GameOver);
 
 	StepMs(session, 16, Hold(Key::Quit));
 	EXPECT_TRUE(session.exit_requested());
+}
+
+// ===================================================================
+// 作弊开关：默认关闭，只有主菜单按 F 才在游戏内生效
+// ===================================================================
+
+TEST(Session, CheatsDisabledByDefault)
+{
+	MemoryScoreStore store;
+	GameSession session(store, 7);
+
+	EXPECT_FALSE(session.Snapshot().cheats_enabled);
+
+	StartEasy(session);
+	ASSERT_EQ(session.screen(), Screen::Playing);
+	const int life_before = session.Snapshot().world.life;
+
+	// 数字键 2 是"自杀"，作弊关闭时必须完全无效
+	for(int i = 0; i < 10; ++i)
+		StepMs(session, 16, Hold(Key::Digit2));
+
+	EXPECT_EQ(session.screen(), Screen::Playing);
+	EXPECT_EQ(session.Snapshot().world.life, life_before);
+}
+
+TEST(Session, CheatsEnabledAfterMenuToggle)
+{
+	MemoryScoreStore store;
+	GameSession session(store, 7);
+
+	EnableCheats(session);
+	EXPECT_TRUE(session.Snapshot().cheats_enabled);
+
+	StartEasy(session);
+	ASSERT_EQ(session.screen(), Screen::Playing);
+
+	StepMs(session, 16, Hold(Key::Digit2)); // 作弊自杀，此时应生效
+	EXPECT_EQ(session.screen(), Screen::GameOver);
+}
+
+TEST(Session, CheatToggleSwitchesBackOff)
+{
+	MemoryScoreStore store;
+	GameSession session(store, 7);
+
+	EnableCheats(session);
+	EXPECT_TRUE(session.Snapshot().cheats_enabled);
+
+	// 松开后再按一次 F，应关闭
+	StepMs(session, 16);
+	EnableCheats(session);
+	EXPECT_FALSE(session.Snapshot().cheats_enabled);
+}
+
+// 作弊状态不常驻显示：只在切换后短暂提示，随后自动消失
+TEST(Session, CheatNoticeIsTransient)
+{
+	MemoryScoreStore store;
+	GameSession session(store, 7);
+
+	EXPECT_FALSE(session.Snapshot().cheat_notice);
+
+	EnableCheats(session);
+	EXPECT_TRUE(session.Snapshot().cheat_notice);
+	EXPECT_TRUE(session.Snapshot().cheats_enabled);
+
+	// 提示时长内仍然显示
+	StepMs(session, 200);
+	EXPECT_TRUE(session.Snapshot().cheat_notice);
+
+	// 超过 kCheatNoticeMs 后自动消失，但作弊仍然是开启的
+	StepMs(session, GameConfig::kCheatNoticeMs);
+	EXPECT_FALSE(session.Snapshot().cheat_notice);
+	EXPECT_TRUE(session.Snapshot().cheats_enabled);
+}
+
+// Q 同时是"游戏中回主菜单"和"主菜单退出"，按住 Q 回菜单后不能顺势退出程序
+TEST(Session, HoldingQuitDoesNotExitFromMenu)
+{
+	MemoryScoreStore store;
+	GameSession session(store, 7);
+
+	StartEasy(session);
+	ASSERT_EQ(session.screen(), Screen::Playing);
+
+	StepMs(session, 16, Hold(Key::Quit)); // 游戏内按 Q 回主菜单
+	ASSERT_EQ(session.screen(), Screen::Menu);
+
+	for(int i = 0; i < 20; ++i)           // 一直按着 Q 不放
+		StepMs(session, 16, Hold(Key::Quit));
+
+	EXPECT_EQ(session.screen(), Screen::Menu);
+	EXPECT_FALSE(session.exit_requested());
 }

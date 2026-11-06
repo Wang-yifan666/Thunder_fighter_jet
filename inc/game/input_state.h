@@ -19,6 +19,7 @@ enum class Key
 	Back,
 	Restart,
 	Escape,
+	CheatUnlock,
 	Digit1,
 	Digit2,
 	Digit3,

@@ -7,3 +7,10 @@ enum class Difficulty
 	Normal,
 	Hard
 };
+
+/// 掉落物的种类。外观与拾取效果都由它决定，逻辑层只认种类。
+enum class PickupKind
+{
+	Health, ///< 回血
+	Ammo    ///< 补弹药
+};

@@ -1,0 +1,56 @@
+// Windows 资源脚本模板：由 CMake 的 configure_file 生成到 <build>/generated/。
+// 不要在生成物里改内容，改这个模板。
+//
+// 提供：可执行文件图标 + 版本信息（含中英双语字符串块）。
+// 版本号来自 CMakeLists.txt 的 project(... VERSION ...)，避免两处维护。
+
+#pragma code_page(65001)
+
+#include <windows.h>
+
+IDI_APPICON ICON "@THUNDER_ICON_FILE@"
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION    @PROJECT_VERSION_MAJOR@,@PROJECT_VERSION_MINOR@,0,0
+ PRODUCTVERSION @PROJECT_VERSION_MAJOR@,@PROJECT_VERSION_MINOR@,0,0
+ FILEFLAGSMASK  VS_FFI_FILEFLAGSMASK
+ FILEFLAGS      0x0L
+ FILEOS         VOS_NT_WINDOWS32
+ FILETYPE       VFT_APP
+ FILESUBTYPE    VFT2_UNKNOWN
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        // 英文（美国）
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "CompanyName",      "Wang-yifan666"
+            VALUE "FileDescription",  "Naidan's Fear of Insufficient Firepower"
+            VALUE "FileVersion",      "@PROJECT_VERSION@.0.0"
+            VALUE "InternalName",     "@THUNDER_INTERNAL_NAME@"
+            VALUE "LegalCopyright",   "Copyright (c) 2025-2026 Wang-yifan666"
+            VALUE "LegalTrademarks",  ""
+            VALUE "OriginalFilename", "@THUNDER_EXE_FILENAME@"
+            VALUE "ProductName",      "Naidan's Fear of Insufficient Firepower"
+            VALUE "ProductVersion",   "@PROJECT_VERSION@.0.0"
+            VALUE "Comments",         "MIT License"
+        END
+        // 简体中文
+        BLOCK "080404b0"
+        BEGIN
+            VALUE "CompanyName",      "Wang-yifan666"
+            VALUE "FileDescription",  "奶蛋的火力不足恐惧症"
+            VALUE "FileVersion",      "@PROJECT_VERSION@.0.0"
+            VALUE "InternalName",     "@THUNDER_INTERNAL_NAME@"
+            VALUE "LegalCopyright",   "Copyright (c) 2025-2026 Wang-yifan666"
+            VALUE "OriginalFilename", "@THUNDER_EXE_FILENAME@"
+            VALUE "ProductName",      "奶蛋的火力不足恐惧症"
+            VALUE "ProductVersion",   "@PROJECT_VERSION@.0.0"
+            VALUE "Comments",         "MIT License"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200, 0x804, 1200
+    END
+END

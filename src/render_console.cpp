@@ -16,6 +16,10 @@ Element CellToElement(char c, bool inv, bool paused, int y, int height)
 		return text(std::string(1, c)) | bold | color(Color::RedLight);
 	if (c == '|')
 		return text("|") | bold | color(Color::Magenta);
+	if (c == '+')
+		return text("+") | bold | color(Color::RedLight);
+	if (c == '@')
+		return text("@") | bold | color(Color::YellowLight);
 	if (paused && y == height / 2 && c != ' ')
 	{
 		return text(std::string(1, c)) | bold | color(Color::White);

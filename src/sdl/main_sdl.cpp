@@ -72,7 +72,7 @@ int main(int argc, char** argv)
 {
 	if(HasFlag(argc, argv, "--help"))
 	{
-		std::printf("Thunder Fighter (SDL3)\n"
+		std::printf("Naidan's Fear of Insufficient Firepower (SDL3)\n"
 		            "  --frames N   run N frames then exit (headless smoke)\n"
 		            "  --demo       feed scripted input (menu -> difficulty -> play)\n"
 		            "  --no-vsync   disable vertical sync (uncapped rendering)\n"
@@ -98,7 +98,7 @@ int main(int argc, char** argv)
 	const bool ttf_font = SdlFont::Init();
 
 	SDL_Window* window = SDL_CreateWindow(
-	    "Thunder Fighter (SDL3)", 832, 496, SDL_WINDOW_RESIZABLE);
+	    "奶蛋的火力不足恐惧症 v1.6", 832, 496, SDL_WINDOW_RESIZABLE);
 	SDL_Renderer* renderer =
 	    window != nullptr ? SDL_CreateRenderer(window, nullptr) : nullptr;
 

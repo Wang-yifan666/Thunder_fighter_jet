@@ -10,6 +10,7 @@
 
 #include "game/game_config.h"
 #include "sdl_font.h"
+#include "sprite_data.h"
 
 namespace
 {
@@ -90,6 +91,144 @@ void DrawStars(SDL_Renderer* renderer, const SdlRender::Layout& layout,
 	}
 }
 
+/// 玩家精灵的边长（像素）：4 格宽。
+/// 命中框仍是 3x1 格（24x8），精灵底边对齐命中框底边、向上悬垂，
+/// 因此"看起来比能被打到的大"——判定对玩家更宽容。
+constexpr int kPlayerSpriteSize = 32;
+
+/// 敌机精灵尺寸（像素）：与 3x2 格命中框等大，
+/// 视觉和判定严格对齐——子弹不会"穿过脸"。
+constexpr int kEnemySpriteWidth = 24;
+constexpr int kEnemySpriteHeight = 16;
+
+/// 血包精灵边长（像素）：与 3x3 格判定等大。
+constexpr int kHealthSpriteSize = 24;
+
+/// 一张按需创建、随后复用的精灵贴图。
+struct SpriteSlot
+{
+	SDL_Texture* texture = nullptr;
+	SDL_Renderer* owner = nullptr;
+};
+
+/// 由内嵌数据创建贴图；数据长度不符或创建失败时返回 nullptr，
+/// 调用方据此回退到色块精灵。
+SDL_Texture* AcquireTexture(SpriteSlot& slot, SDL_Renderer* renderer,
+                            const unsigned char* pixels, std::size_t size,
+                            int width, int height)
+{
+	if(slot.texture != nullptr && slot.owner == renderer)
+		return slot.texture;
+
+	if(slot.texture != nullptr)
+	{
+		SDL_DestroyTexture(slot.texture);
+		slot.texture = nullptr;
+		slot.owner = nullptr;
+	}
+
+	const std::size_t expected = static_cast<std::size_t>(width)
+	    * static_cast<std::size_t>(height) * 4u;
+	if(size != expected)
+		return nullptr;
+
+	SDL_Texture* texture = SDL_CreateTexture(
+	    renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC, width,
+	    height);
+	if(texture == nullptr)
+		return nullptr;
+
+	if(!SDL_UpdateTexture(texture, nullptr, pixels, width * 4))
+	{
+		SDL_DestroyTexture(texture);
+		return nullptr;
+	}
+
+	SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_LINEAR);
+	SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
+	slot.texture = texture;
+	slot.owner = renderer;
+	return texture;
+}
+
+SDL_Texture* PlayerTexture(SDL_Renderer* renderer)
+{
+	static SpriteSlot slot;
+	return AcquireTexture(slot, renderer, SpriteData::kPlayerPixels,
+	                      SpriteData::kPlayerPixelsSize, kPlayerSpriteSize,
+	                      kPlayerSpriteSize);
+}
+
+SDL_Texture* EnemyTexture(SDL_Renderer* renderer)
+{
+	static SpriteSlot slot;
+	return AcquireTexture(slot, renderer, SpriteData::kEnemyPixels,
+	                      SpriteData::kEnemyPixelsSize, kEnemySpriteWidth,
+	                      kEnemySpriteHeight);
+}
+
+SDL_Texture* HealthTexture(SDL_Renderer* renderer)
+{
+	static SpriteSlot slot;
+	return AcquireTexture(slot, renderer, SpriteData::kHealthPixels,
+	                      SpriteData::kHealthPixelsSize, kHealthSpriteSize,
+	                      kHealthSpriteSize);
+}
+
+SDL_Texture* AmmoTexture(SDL_Renderer* renderer)
+{
+	static SpriteSlot slot;
+	return AcquireTexture(slot, renderer, SpriteData::kAmmoPixels,
+	                      SpriteData::kAmmoPixelsSize, kHealthSpriteSize,
+	                      kHealthSpriteSize);
+}
+
+/// 掉落物：带轻微上下浮动，便于和敌机区分（纯视觉，不影响判定）
+void DrawPickup(SDL_Renderer* renderer, const SdlRender::Layout& layout,
+                const thunder::PickupView& item, double seconds)
+{
+	const float cell = static_cast<float>(layout.cell);
+	const float bob = static_cast<float>(std::sin(seconds * 2.4) * 1.2);
+	const float x = static_cast<float>(layout.grid_x) + item.x * cell;
+	const float y = static_cast<float>(layout.grid_y) + item.y * cell + bob;
+	const float w = item.width * cell;
+	const float h = item.height * cell;
+
+	const bool is_ammo = (item.kind == PickupKind::Ammo);
+	SDL_Texture* texture = is_ammo ? AmmoTexture(renderer)
+	                               : HealthTexture(renderer);
+	if(texture != nullptr)
+	{
+		const SDL_FRect dst{x, y, w, h};
+		SDL_RenderTexture(renderer, texture, nullptr, &dst);
+		return;
+	}
+
+	// 回退：血包画红十字，弹药包画黄底加弹形
+	const float pad = cell * 0.5f;
+	const SDL_Color body = is_ammo ? SDL_Color{250, 196, 32, 255}
+	                               : SDL_Color{232, 64, 64, 255};
+	const SDL_Color mark = is_ammo ? SDL_Color{58, 66, 86, 255}
+	                               : SDL_Color{255, 245, 240, 255};
+
+	Fill(renderer, x + pad, y + pad, w - pad * 2, h - pad * 2, body);
+
+	const float cx = x + w * 0.5f;
+	const float cy = y + h * 0.5f;
+	if(is_ammo)
+	{
+		Fill(renderer, cx - 5.0f, cy - 4.0f, 10.0f, 8.0f, mark);
+	}
+	else
+	{
+		const float bar = (w - pad * 2) * 0.28f;
+		Fill(renderer, cx - bar * 0.5f, cy - (h - pad * 2) * 0.5f + 2.0f,
+		     bar, h - pad * 2 - 4.0f, mark);
+		Fill(renderer, cx - (w - pad * 2) * 0.5f + 2.0f, cy - bar * 0.5f,
+		     w - pad * 2 - 4.0f, bar, mark);
+	}
+}
+
 void DrawEnemy(SDL_Renderer* renderer, const SdlRender::Layout& layout,
                const thunder::EntityView& enemy)
 {
@@ -99,7 +238,14 @@ void DrawEnemy(SDL_Renderer* renderer, const SdlRender::Layout& layout,
 	const float w = enemy.width * cell - 1.0f;
 	const float h = enemy.height * cell - 1.0f;
 
-	// 机身 + 左右翼 + 引擎光点
+	if(SDL_Texture* texture = EnemyTexture(renderer))
+	{
+		const SDL_FRect dst{x, y, enemy.width * cell, enemy.height * cell};
+		SDL_RenderTexture(renderer, texture, nullptr, &dst);
+		return;
+	}
+
+	// 回退：机身 + 左右翼 + 引擎光点
 	Fill(renderer, x + 3.0f, y + 1.0f, w - 6.0f, h - 1.0f, kEnemyBody);
 	Fill(renderer, x, y + h * 0.45f, 3.0f, h * 0.55f, kEnemyWing);
 	Fill(renderer, x + w - 3.0f, y + h * 0.45f, 3.0f, h * 0.55f,
@@ -136,10 +282,27 @@ void DrawPlayer(SDL_Renderer* renderer, const SdlRender::Layout& layout,
 	const float w = GameConfig::kPlayerWidth * cell - 1.0f;
 	const float h = cell - 1.0f;
 
+	if(SDL_Texture* texture = PlayerTexture(renderer))
+	{
+		const float size = static_cast<float>(kPlayerSpriteSize);
+		const float left =
+		    x + GameConfig::kPlayerWidth * cell / 2.0f - size / 2.0f;
+		const SDL_FRect dst{left, y + cell - size, size, size};
+
+		// 无敌时压暗，与色块版本的观感保持一致
+		if(world.invincible)
+			SDL_SetTextureColorMod(texture, kTextDim.r, kTextDim.g,
+			                       kTextDim.b);
+		SDL_RenderTexture(renderer, texture, nullptr, &dst);
+		if(world.invincible)
+			SDL_SetTextureColorMod(texture, 255, 255, 255);
+		return;
+	}
+
 	const SDL_Color body = world.invincible ? kTextDim : kPlayer;
 	const SDL_Color wing = world.invincible ? kTextDim : kPlayerWing;
 
-	// 主体（中间一格）+ 两侧机翼 + 驾驶舱
+	// 回退：主体（中间一格）+ 两侧机翼 + 驾驶舱
 	Fill(renderer, x + w / 3.0f, y, w / 3.0f, h, body);
 	Fill(renderer, x, y + h * 0.55f, w / 3.0f, h * 0.45f, wing);
 	Fill(renderer, x + w * 2.0f / 3.0f, y + h * 0.55f, w / 3.0f,
@@ -176,13 +339,22 @@ void DrawWorld(SDL_Renderer* renderer, const thunder::WorldSnapshot& world,
 		               static_cast<float>(layout.grid_x + grid_w), py);
 	}
 
+	// 精灵允许超出格子（玩家贴图向上悬垂），因此裁剪到棋盘范围内
+	const SDL_Rect clip{layout.grid_x, layout.grid_y, grid_w, grid_h};
+	SDL_SetRenderClipRect(renderer, &clip);
+
 	for(const auto& enemy: world.enemies)
 		DrawEnemy(renderer, layout, enemy);
 
 	for(const auto& bullet: world.bullets)
 		DrawBullet(renderer, layout, bullet);
 
+	for(const auto& item: world.pickups)
+		DrawPickup(renderer, layout, item, seconds);
+
 	DrawPlayer(renderer, layout, world, seconds);
+
+	SDL_SetRenderClipRect(renderer, nullptr);
 
 	if(paused)
 	{
@@ -221,16 +393,33 @@ void DrawHint(SDL_Renderer* renderer, const SdlRender::Layout& layout,
 	           text, kTextDim);
 }
 
-void DrawMenu(SDL_Renderer* renderer, const SdlRender::Layout& layout)
+void DrawMenu(SDL_Renderer* renderer, const SdlRender::Layout& layout,
+              bool cheats_enabled, bool cheat_notice)
 {
-	CenterText(renderer, layout.window_width, 150, 4, "THUNDER FIGHTER",
+	// 标题自动降档：内建点阵字体每字符 6*scale 像素，Ubuntu Mono 约 5*scale，
+	// 40 个字符在点阵回退下 scale 4 会超出窗口，这里取能放下的最大档。
+	const std::string title = "NAIDAN'S FEAR OF INSUFFICIENT FIREPOWER";
+	int title_scale = 4;
+	while(title_scale > 1
+	      && SdlFont::TextWidth(title, title_scale) > layout.window_width - 24)
+		--title_scale;
+
+	CenterText(renderer, layout.window_width, 150, title_scale, title,
 	           kTextAccent);
 
 	CenterText(renderer, layout.window_width, 300, 2, "1  START GAME", kText);
 	CenterText(renderer, layout.window_width, 344, 2, "2  LEADERBOARD", kText);
-	CenterText(renderer, layout.window_width, 388, 2, "3  QUIT", kText);
+	CenterText(renderer, layout.window_width, 388, 2, "Q  QUIT", kText);
 
-	DrawHint(renderer, layout, "PRESS 1 / 2 / 3");
+	// 作弊状态不常驻显示，只在切换后短暂提示一次
+	if(cheat_notice)
+	{
+		CenterText(renderer, layout.window_width, 430, 2,
+		           cheats_enabled ? "CHEAT MODE: ON" : "CHEAT MODE: OFF",
+		           cheats_enabled ? kTextAccent : kTextDim);
+	}
+
+	DrawHint(renderer, layout, "PRESS 1 / 2 / Q");
 }
 
 void DrawDifficulty(SDL_Renderer* renderer, const SdlRender::Layout& layout)
@@ -321,7 +510,8 @@ void Draw(SDL_Renderer* renderer, const thunder::SessionSnapshot& snapshot,
 	switch(snapshot.screen)
 	{
 	case thunder::Screen::Menu:
-		DrawMenu(renderer, layout);
+		DrawMenu(renderer, layout, snapshot.cheats_enabled,
+		         snapshot.cheat_notice);
 		break;
 
 	case thunder::Screen::DifficultySelect:

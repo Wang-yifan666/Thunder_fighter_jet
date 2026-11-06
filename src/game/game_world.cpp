@@ -33,6 +33,8 @@ void GameWorld::Reset(Difficulty difficulty)
 	enemies_.clear();
 	pending_enemies_.clear();
 	bullets_.clear();
+	pickups_.clear();
+	pickup_move_counter_ = 0;
 
 	switch(difficulty_)
 	{
@@ -143,6 +145,10 @@ void GameWorld::Tick(const GameInput& input, steady_clock::duration dt)
 	player_x_ = std::clamp(player_x_, 0, GameConfig::kScreenWidth - player_w);
 	player_y_ = std::clamp(player_y_, 0, GameConfig::kScreenHeight - player_h);
 
+	// 掉落物先下落再判定拾取，保证用的是本帧位置
+	UpdatePickups();
+	CheckPickupCollect();
+
 	CheckPlayerCollision();
 
 	UpdateBullets();
@@ -207,6 +213,12 @@ WorldSnapshot GameWorld::Snapshot() const
 	snapshot.bullets.reserve(bullets_.size());
 	for(const auto& b: bullets_)
 		snapshot.bullets.push_back(EntityView{b.x, b.y, 1, 1});
+
+	snapshot.pickups.reserve(pickups_.size());
+	for(const auto& p: pickups_)
+		snapshot.pickups.push_back(PickupView{
+		    p.x, p.y, GameConfig::kPickupSize, GameConfig::kPickupSize,
+		    p.kind});
 
 	snapshot.score = score_;
 	snapshot.level = level_;
@@ -307,6 +319,7 @@ void GameWorld::UpdateBullets()
 				score_ += GameConfig::kScorePerKill;
 				bullet_consumed = true;
 				bullets_remaining_ += GameConfig::kBulletsPerKill;
+				MaybeDropPickup(ex, ey);
 				break;
 			}
 			else
@@ -323,6 +336,92 @@ void GameWorld::UpdateBullets()
 		{
 			b_it++;
 		}
+	}
+}
+
+void GameWorld::MaybeDropPickup(int enemy_x, int enemy_y)
+{
+	// 一次掷骰切分两个区间：先血包，再弹药包，其余不掉
+	std::uniform_int_distribution<int> roll(1, 100);
+	const int value = roll(rng_);
+
+	PickupKind kind;
+	if(value <= GameConfig::kHealthDropPercent)
+		kind = PickupKind::Health;
+	else if(value <= GameConfig::kHealthDropPercent
+	        + GameConfig::kAmmoDropPercent)
+		kind = PickupKind::Ammo;
+	else
+		return;
+
+	const int size = GameConfig::kPickupSize;
+	const int enemy_w = GameConfig::kEnemyWidth;
+
+	// 对齐到敌机中心，并保证整块道具在屏幕内
+	int x = enemy_x + enemy_w / 2 - size / 2;
+	x = std::clamp(x, 0, GameConfig::kScreenWidth - size);
+
+	pickups_.emplace_back(x, enemy_y, kind);
+}
+
+void GameWorld::UpdatePickups()
+{
+	if(pickups_.empty())
+	{
+		pickup_move_counter_ = 0;
+		return;
+	}
+
+	// 与敌机一样按固定间隔下落。
+	// 注意 y 是格子坐标，逐帧移动会让道具不到一秒就穿过整个棋盘。
+	if(++pickup_move_counter_ < GameConfig::kPickupMoveInterval)
+		return;
+
+	pickup_move_counter_ = 0;
+
+	for(auto& item: pickups_)
+		item.y += GameConfig::kPickupSpeed;
+
+	pickups_.erase(std::remove_if(pickups_.begin(), pickups_.end(),
+	                              [](const Pickup& p) {
+		                              return p.y
+		                                  >= GameConfig::kScreenHeight;
+	                              }),
+	               pickups_.end());
+}
+
+void GameWorld::CheckPickupCollect()
+{
+	if(pickups_.empty())
+		return;
+
+	const int size = GameConfig::kPickupSize;
+	const int player_w = GameConfig::kPlayerWidth;
+	const int player_h = GameConfig::kPlayerHeight;
+
+	for(auto it = pickups_.begin(); it != pickups_.end();)
+	{
+		const bool no_overlap = (player_x_ + player_w <= it->x)
+		    || (it->x + size <= player_x_) || (player_y_ + player_h <= it->y)
+		    || (it->y + size <= player_y_);
+
+		if(no_overlap)
+		{
+			++it;
+			continue;
+		}
+
+		switch(it->kind)
+		{
+		case PickupKind::Health:
+			life_number += GameConfig::kHealthPickupLife;
+			break;
+		case PickupKind::Ammo:
+			bullets_remaining_ += GameConfig::kAmmoPickupBullets;
+			break;
+		}
+
+		it = pickups_.erase(it);
 	}
 }
 

@@ -22,6 +22,38 @@ endif()
 
 enable_testing()
 
+# ============ Windows 资源：可执行文件图标 + 版本信息 ============
+# 图标 assets/icons/app.ico 为九档尺寸（16~256）的 ICO；
+# 版本信息由 src/app.rc.in 配置生成，版本号取自上面的 project(... VERSION ...)。
+if(WIN32)
+    enable_language(RC)
+
+    set(THUNDER_ICON_FILE
+        "${CMAKE_CURRENT_SOURCE_DIR}/assets/icons/app.ico")
+
+    # 为一个可执行目标挂上图标与版本资源。
+    # exe_filename 写入 VERSIONINFO 的 OriginalFilename 字段。
+    function(thunder_add_win_resource target exe_filename)
+        if(NOT EXISTS "${THUNDER_ICON_FILE}")
+            message(WARNING "图标缺失：${THUNDER_ICON_FILE}，跳过版本资源")
+            return()
+        endif()
+
+        set(THUNDER_EXE_FILENAME "${exe_filename}")
+        set(THUNDER_INTERNAL_NAME "${target}")
+
+        set(_dir "${CMAKE_CURRENT_BINARY_DIR}/generated")
+        file(MAKE_DIRECTORY "${_dir}")
+        set(_rc "${_dir}/${target}_resource.rc")
+        configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/app.rc.in"
+                       "${_rc}" @ONLY)
+        target_sources(${target} PRIVATE "${_rc}")
+    endfunction()
+else()
+    function(thunder_add_win_resource target exe_filename)
+    endfunction()
+endif()
+
 # ftxui
 find_package(ftxui CONFIG REQUIRED)
 
@@ -86,6 +118,8 @@ add_executable(Thunder_fighter_jet src/main.cpp)
 
 target_link_libraries(Thunder_fighter_jet PRIVATE thunder_core)
 
+thunder_add_win_resource(Thunder_fighter_jet "Thunder_fighter_jet.exe")
+
 if(WIN32)
     target_link_libraries(Thunder_fighter_jet PRIVATE winmm)
 endif()
@@ -99,6 +133,8 @@ if(MINGW AND BUILD_ADDITIONAL_STATIC_EXE)
     add_executable(Thunder_fighter_jet_static src/main.cpp)
     target_link_libraries(Thunder_fighter_jet_static PRIVATE thunder_core)
     target_compile_features(Thunder_fighter_jet_static PRIVATE cxx_std_17)
+    thunder_add_win_resource(Thunder_fighter_jet_static
+                             "Thunder_fighter_jet_static.exe")
     # Prefer partial static linking to avoid depending on libstdc++/libgcc DLLs
     target_link_options(Thunder_fighter_jet_static PRIVATE -static-libgcc -static-libstdc++)
     if(THUNDER_STATIC_MINGW)
@@ -135,6 +171,56 @@ if(THUNDER_BUILD_SDL)
         target_include_directories(Thunder_fighter_jet_sdl PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/src/sdl
         )
+
+        thunder_add_win_resource(Thunder_fighter_jet_sdl
+                                 "Thunder_fighter_jet_sdl.exe")
+
+        # 把精灵的烘焙数据嵌入可执行文件（与字体同一套机制）。
+        # 素材改动后重跑：python tools/bake_sprites.py
+        # 格式：<文件名>|<C++ 符号名>
+        set(_sprite_specs
+            "player_32x32|kPlayerPixels"
+            "enemy_24x16|kEnemyPixels"
+            "health_24x24|kHealthPixels"
+            "ammo_24x24|kAmmoPixels"
+        )
+        file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/generated")
+        foreach(_spec IN LISTS _sprite_specs)
+            string(REPLACE "|" ";" _parts "${_spec}")
+            list(GET _parts 0 _file)
+            list(GET _parts 1 _symbol)
+            set(_rgba "${CMAKE_CURRENT_SOURCE_DIR}/assets/sprites/${_file}.rgba")
+            set(_cpp "${CMAKE_CURRENT_BINARY_DIR}/generated/${_file}_data.cpp")
+
+            if(EXISTS "${_rgba}")
+                file(READ "${_rgba}" _hex HEX)
+                string(LENGTH "${_hex}" _hex_len)
+                math(EXPR _byte_count "${_hex_len} / 2")
+                string(REGEX REPLACE "([0-9a-f][0-9a-f])" "0x\\1,"
+                       _bytes "${_hex}")
+                file(WRITE "${_cpp}"
+                    "#include <cstddef>\n"
+                    "#include \"sprite_data.h\"\n"
+                    "namespace SpriteData\n{\n"
+                    "const unsigned char ${_symbol}[] = {${_bytes}};\n"
+                    "const std::size_t ${_symbol}Size = ${_byte_count}u;\n"
+                    "} // namespace SpriteData\n")
+            else()
+                # 缺数据时给出空占位，保持可链接；绘制端会回退到色块精灵
+                message(STATUS
+                    "sprite data missing: assets/sprites/${_file}.rgba "
+                    "(SDL falls back to colour blocks)")
+                file(WRITE "${_cpp}"
+                    "#include <cstddef>\n"
+                    "#include \"sprite_data.h\"\n"
+                    "namespace SpriteData\n{\n"
+                    "const unsigned char ${_symbol}[] = {0};\n"
+                    "const std::size_t ${_symbol}Size = 0u;\n"
+                    "} // namespace SpriteData\n")
+            endif()
+
+            target_sources(Thunder_fighter_jet_sdl PRIVATE "${_cpp}")
+        endforeach()
 
         target_link_libraries(Thunder_fighter_jet_sdl PRIVATE
             thunder_logic

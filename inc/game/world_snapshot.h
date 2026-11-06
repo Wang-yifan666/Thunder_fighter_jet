@@ -16,6 +16,16 @@ struct EntityView
 	int height = 0;
 };
 
+/// 掉落物的只读视图：位置尺寸之外还带种类，前端据此选外观。
+struct PickupView
+{
+	int x = 0;
+	int y = 0;
+	int width = 0;
+	int height = 0;
+	PickupKind kind = PickupKind::Health;
+};
+
 /// 游戏世界的只读快照。
 /// 只描述"世界"本身：菜单、暂停、排行榜、退出请求属于会话层，不在这里。
 struct WorldSnapshot
@@ -31,6 +41,7 @@ struct WorldSnapshot
 	// 场景
 	std::vector<EntityView> enemies;
 	std::vector<EntityView> bullets;
+	std::vector<PickupView> pickups;
 
 	// HUD 数值
 	int score = 0;

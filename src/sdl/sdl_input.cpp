@@ -39,6 +39,9 @@ bool MapScancode(SDL_Scancode scancode, thunder::Key& out)
 	case SDL_SCANCODE_ESCAPE:
 		out = thunder::Key::Escape;
 		return true;
+	case SDL_SCANCODE_F:
+		out = thunder::Key::CheatUnlock;
+		return true;
 	case SDL_SCANCODE_1:
 		out = thunder::Key::Digit1;
 		return true;

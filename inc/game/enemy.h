@@ -1,5 +1,7 @@
 #pragma once
 
+#include "game/game_config.h"
+
 struct Enemy
 {
 	int x;
@@ -12,8 +14,8 @@ struct Enemy
 	Enemy(int _x = 0,     //
 	      int _y = 0,     //
 	      int _speed = 1, //
-	      int _width = 3, //
-	      int _height = 1 //
+	      int _width = GameConfig::kEnemyWidth,   //
+	      int _height = GameConfig::kEnemyHeight //
 	      ):
 	x(_x),           //
 	y(_y),           //

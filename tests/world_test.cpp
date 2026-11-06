@@ -19,7 +19,7 @@ using thunder::WorldTestAccess;
 namespace
 {
 
-/// 清空敌机 / pending / 子弹，便于构造无随机干扰的场景。
+/// 清空敌机 / pending / 子弹 / 血包，便于构造无随机干扰的场景。
 GameWorld MakeIdleWorld(Difficulty difficulty = Difficulty::Easy)
 {
 	GameWorld world;
@@ -27,6 +27,7 @@ GameWorld MakeIdleWorld(Difficulty difficulty = Difficulty::Easy)
 	WorldTestAccess::ClearEnemies(world);
 	WorldTestAccess::ClearPending(world);
 	WorldTestAccess::ClearBullets(world);
+	WorldTestAccess::ClearPickups(world);
 	return world;
 }
 
@@ -354,4 +355,168 @@ TEST(WorldGameOver, SelfKillMarksWorldOver)
 	EXPECT_TRUE(world.Over());
 	EXPECT_EQ(world.Snapshot().life, 0);
 	EXPECT_TRUE(world.Snapshot().over);
+}
+
+// ===================================================================
+// 掉落物（血包 / 弹药包）
+// ===================================================================
+
+namespace
+{
+
+/// 掉落物按固定间隔下落：推进恰好一个间隔让所有掉落物移动一步。
+void StepOnePickupMove(GameWorld& world)
+{
+	for(int i = 0; i < GameConfig::kPickupMoveInterval; ++i)
+		world.Tick(GameInput{}, kFrame);
+}
+
+} // namespace
+
+TEST(WorldPickup, FallsAndIsExposedInSnapshot)
+{
+	GameWorld world = MakeIdleWorld();
+	WorldTestAccess::AddPickup(world, 10, 10);
+
+	const WorldSnapshot start = world.Snapshot();
+	ASSERT_EQ(start.pickups.size(), 1u);
+	EXPECT_EQ(start.pickups[0].x, 10);
+	EXPECT_EQ(start.pickups[0].y, 10);
+	EXPECT_EQ(start.pickups[0].width, GameConfig::kPickupSize);
+	EXPECT_EQ(start.pickups[0].height, GameConfig::kPickupSize);
+	EXPECT_EQ(start.pickups[0].kind, PickupKind::Health);
+
+	// 间隔未到之前不动
+	world.Tick(GameInput{}, kFrame);
+	ASSERT_EQ(world.Snapshot().pickups.size(), 1u);
+	EXPECT_EQ(world.Snapshot().pickups[0].y, 10);
+
+	StepOnePickupMove(world);
+
+	const WorldSnapshot after = world.Snapshot();
+	ASSERT_EQ(after.pickups.size(), 1u);
+	EXPECT_EQ(after.pickups[0].y, 10 + GameConfig::kPickupSpeed);
+}
+
+// 下落节奏必须与敌机同一数量级：
+// 48 格 / (间隔 / 62.5 帧每秒) 应落在十几秒，而不是零点几秒。
+TEST(WorldPickup, FallSpeedIsComparableToEnemies)
+{
+	const double ticks_per_second = 1000.0 / GameConfig::kFrameDelayMs;
+	const double seconds_to_cross = GameConfig::kScreenHeight
+	    * GameConfig::kPickupMoveInterval / ticks_per_second;
+
+	EXPECT_GT(seconds_to_cross, 5.0) << "太快：会像瞬移一样掉下来";
+	EXPECT_LT(seconds_to_cross, 40.0) << "太慢：掉落物会长时间占屏";
+}
+
+TEST(WorldPickup, HealthRestoresLifeAndIsConsumed)
+{
+	GameWorld world = MakeIdleWorld();
+	const WorldSnapshot start = world.Snapshot();
+	const int life_before = start.life;
+
+	WorldTestAccess::AddPickup(world, start.player_x, start.player_y - 1,
+	                           PickupKind::Health);
+
+	StepOnePickupMove(world);
+
+	const WorldSnapshot after = world.Snapshot();
+	EXPECT_EQ(after.pickups.size(), 0u) << "拾取后应消失";
+	EXPECT_EQ(after.life, life_before + GameConfig::kHealthPickupLife);
+	EXPECT_EQ(after.bullets_remaining, start.bullets_remaining)
+	    << "血包不应影响弹药";
+}
+
+TEST(WorldPickup, AmmoAddsBulletsAndIsConsumed)
+{
+	GameWorld world = MakeIdleWorld();
+	const WorldSnapshot start = world.Snapshot();
+
+	WorldTestAccess::AddPickup(world, start.player_x, start.player_y - 1,
+	                           PickupKind::Ammo);
+
+	StepOnePickupMove(world);
+
+	const WorldSnapshot after = world.Snapshot();
+	EXPECT_EQ(after.pickups.size(), 0u) << "拾取后应消失";
+	EXPECT_EQ(after.bullets_remaining,
+	          start.bullets_remaining + GameConfig::kAmmoPickupBullets);
+	EXPECT_EQ(after.life, start.life) << "弹药包不应加命";
+}
+
+TEST(WorldPickup, NoCollectWhenNotOverlapping)
+{
+	GameWorld world = MakeIdleWorld();
+	const WorldSnapshot start = world.Snapshot();
+
+	// 玩家默认在最底行，道具很快就掉出屏幕；先把玩家挪到中间
+	WorldTestAccess::SetPlayer(world, start.player_x, 30);
+	WorldTestAccess::AddPickup(world, start.player_x + 6, 29,
+	                           PickupKind::Ammo);
+
+	StepOnePickupMove(world);
+
+	EXPECT_EQ(world.Snapshot().life, start.life);
+	EXPECT_EQ(world.Snapshot().bullets_remaining, start.bullets_remaining);
+	EXPECT_EQ(WorldTestAccess::PickupCount(world), 1);
+}
+
+TEST(WorldPickup, RemovedAfterLeavingScreen)
+{
+	GameWorld world = MakeIdleWorld();
+	WorldTestAccess::AddPickup(world, 5, GameConfig::kScreenHeight - 1);
+
+	StepOnePickupMove(world);
+
+	EXPECT_EQ(WorldTestAccess::PickupCount(world), 0);
+	EXPECT_EQ(world.Snapshot().life, GameConfig::kEasyLife) << "掉落不结算";
+}
+
+TEST(WorldPickup, ResetClearsExistingPickups)
+{
+	GameWorld world = MakeIdleWorld();
+	WorldTestAccess::AddPickup(world, 20, 20, PickupKind::Ammo);
+	ASSERT_EQ(WorldTestAccess::PickupCount(world), 1);
+
+	world.Reset(Difficulty::Normal);
+
+	EXPECT_EQ(WorldTestAccess::PickupCount(world), 0);
+}
+
+TEST(WorldPickup, DropsBothKindsWhenEnemyIsKilled)
+{
+	GameWorld world(20260101);
+	world.Reset(Difficulty::Easy);
+	WorldTestAccess::ClearEnemies(world);
+	WorldTestAccess::ClearPending(world);
+	WorldTestAccess::ClearBullets(world);
+	WorldTestAccess::ClearPickups(world);
+
+	int health = 0;
+	int ammo = 0;
+	for(int i = 0; i < 400; ++i)
+	{
+		// 敌机固定在 (10,20)，子弹从下一格上移正好命中
+		WorldTestAccess::AddEnemy(world, 10, 20, 0);
+		WorldTestAccess::AddBullet(world, 10, 21);
+		world.Tick(GameInput{}, kFrame);
+
+		for(int k = 0; k < WorldTestAccess::PickupCount(world); ++k)
+		{
+			if(WorldTestAccess::PickupKindAt(world, k) == PickupKind::Ammo)
+				++ammo;
+			else
+				++health;
+		}
+
+		WorldTestAccess::ClearPickups(world);
+		WorldTestAccess::ClearEnemies(world);
+		WorldTestAccess::ClearBullets(world);
+	}
+
+	// 两种掉落率都是 8%，400 次击杀里一次都不出几乎不可能
+	EXPECT_GT(health, 0) << "应至少掉过一次血包";
+	EXPECT_GT(ammo, 0) << "应至少掉过一次弹药包";
+	EXPECT_LT(health + ammo, 400) << "不应该是必掉";
 }

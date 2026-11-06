@@ -22,6 +22,20 @@ struct Bullet
 	Bullet(int _x = 0, int _y = 0): x(_x), y(_y) {}
 };
 
+/// 敌人被击毁后掉落的道具；与玩家接触即拾取。
+/// 血包与弹药包共用同一套下落 / 判定逻辑，只有 kind 决定拾取效果。
+struct Pickup
+{
+	int x;
+	int y;
+	PickupKind kind;
+
+	Pickup(int _x = 0, int _y = 0, PickupKind _kind = PickupKind::Health):
+	x(_x), y(_y), kind(_kind)
+	{
+	}
+};
+
 /// 平台无关的游戏世界。
 /// 拥有全部可变对局状态；通过 Tick(input, dt) 推进，通过 Snapshot() 只读暴露。
 /// 不读系统时钟、不轮询键盘、不做任何终端/图形输出。
@@ -79,11 +93,18 @@ private:
 	int enemy_move_interval_ = GameConfig::kInitialEnemyMoveInterval;
 	int remaining_rows_in_batch_ = 0;
 
+	// ========== pickups ==========
+	std::vector<Pickup> pickups_;
+	int pickup_move_counter_ = 0;
+
 	// ========== update ==========
 	void Level(const GameInput& input);
 	void AccrueScore();
 	void UpdateBullets();
 	void CheckPlayerCollision();
+	void UpdatePickups();
+	void CheckPickupCollect();
+	void MaybeDropPickup(int enemy_x, int enemy_y);
 
 	void Make_enermy();
 	void Clear_Current_Enemies();

@@ -48,6 +48,7 @@ thunder::RawInput PollRawInput()
 	set(thunder::Key::Back, 'B');
 	set(thunder::Key::Restart, 'R');
 	set(thunder::Key::Escape, VK_ESCAPE);
+	set(thunder::Key::CheatUnlock, 'F');
 
 	set(thunder::Key::Digit1, '1');
 	set(thunder::Key::Digit2, '2');
@@ -142,16 +143,22 @@ void ThunderFighter::DrawScene(const thunder::SessionSnapshot& snapshot)
 	case thunder::Screen::Menu:
 		std::cout << "\n\n";
 		std::cout << "================================\n";
-		std::cout << "        雷 霆 战 机           \n";
+		std::cout << "      奶蛋的火力不足恐惧症      \n";
 		std::cout << "================================\n\n\n";
 
 		std::cout << "  [1] 开始游戏\n";
 		std::cout << "  [2] 排行榜\n";
-		std::cout << "  [3] 退出游戏\n\n\n";
+		std::cout << "  [Q] 退出游戏\n\n\n";
 
 		std::cout << "*********************************\n\n";
 
-		std::cout << "  按 1 / 2 / 3 进行选择...\n";
+		std::cout << "  按 1 / 2 / Q 进行选择...\n";
+
+		// 作弊状态不常驻显示，只在切换后短暂提示
+		if(snapshot.cheat_notice)
+			std::cout << "  作弊模式: "
+			          << (snapshot.cheats_enabled ? "开启" : "关闭")
+			          << "\n";
 
 		std::cout << "================================\n\n";
 		break;

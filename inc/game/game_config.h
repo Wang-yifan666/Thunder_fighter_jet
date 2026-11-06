@@ -32,6 +32,7 @@ constexpr int kHardBullets = 150;
 
 // ========== 敌人 ==========
 constexpr int kEnemyWidth = 3;
+constexpr int kEnemyHeight = 2;  // 原 1 行；精灵需要方形空间，命中框同步加高
 constexpr int kMinEnemySpeed = 1;
 constexpr int kMaxEnemySpeed = 3;
 constexpr int kMinEnemyMoveInterval = 5;
@@ -53,15 +54,27 @@ constexpr int kPlayerWidth = 3;
 constexpr int kPlayerHeight = 1;
 constexpr int kInvincibleDurationSec = 1;
 
+// ========== 掉落物（血包 / 弹药包） ==========
+constexpr int kPickupSize = 3;              // 3x3 格，精灵与判定等大
+constexpr int kPickupSpeed = 1;             // 每次移动的格子数
+constexpr int kPickupMoveInterval = 16;     // 每多少帧移动一次（约 12 秒穿过全屏）
+constexpr int kHealthDropPercent = 8;       // 击毁敌机后掉血包的概率(%)
+constexpr int kAmmoDropPercent = 8;         // 击毁敌机后掉弹药包的概率(%)
+constexpr int kHealthPickupLife = 1;        // 血包回复的生命值
+constexpr int kAmmoPickupBullets = 50;      // 弹药包补充的子弹数
+
 // ========== 作弊 ==========
 constexpr int kCheatAddScore = 1000;
 constexpr int kCheatAddBullets = 100;
 constexpr int kCheatGodlikeLife = 9999999;
 constexpr int kCheatGodlikeBullets = 9999999;
+constexpr int kCheatNoticeMs = 1500;  // 切换作弊模式后提示显示时长
 
 // ========== 显示 ==========
 constexpr int kMaxLifeDisplay = 10;
 constexpr int kMaxHighScores = 5;
 constexpr char kBulletChar = '|';
+constexpr char kHealthChar = '+';
+constexpr char kAmmoChar = '@';
 
 } // namespace GameConfig
