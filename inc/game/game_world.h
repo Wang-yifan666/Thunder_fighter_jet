@@ -30,8 +30,7 @@ struct Pickup
 	int y;
 	PickupKind kind;
 
-	Pickup(int _x = 0, int _y = 0, PickupKind _kind = PickupKind::Health):
-	x(_x), y(_y), kind(_kind)
+	Pickup(int _x = 0, int _y = 0, PickupKind _kind = PickupKind::Health): x(_x), y(_y), kind(_kind)
 	{
 	}
 };
@@ -55,9 +54,18 @@ public:
 	/// 渲染与测试用的只读快照。
 	WorldSnapshot Snapshot() const;
 
-	bool Over() const { return life_ <= 0; }
-	int Score() const { return score_; }
-	Difficulty difficulty() const { return difficulty_; }
+	bool Over() const
+	{
+		return life_ <= 0;
+	}
+	int Score() const
+	{
+		return score_;
+	}
+	Difficulty difficulty() const
+	{
+		return difficulty_;
+	}
 
 private:
 	// ========== timing ==========
@@ -109,8 +117,8 @@ private:
 	void SpawnEnemyWave();
 	void ClearActiveEnemies();
 	void SpawnEnemiesFromPending();
-	void MoveEnemies(std::vector<Enemy>& active_enemies, int level,
-	                 int screen_width, int screen_height);
+	void MoveEnemies(std::vector<Enemy>& active_enemies, int level, int screen_width,
+	                 int screen_height);
 
 	// ========== cheats ==========
 	void CheatKillAll();

@@ -116,8 +116,7 @@ TEST(Session, EasyCheatKeyDoesNotLeakIntoGame)
 		StepMs(session, 16, Hold(Key::Digit1));
 
 	EXPECT_EQ(session.Snapshot().world.life, GameConfig::kEasyLife);
-	EXPECT_EQ(session.Snapshot().world.bullets_remaining,
-	          GameConfig::kEasyBullets);
+	EXPECT_EQ(session.Snapshot().world.bullets_remaining, GameConfig::kEasyBullets);
 }
 
 TEST(Session, LeaderboardNavigation)
@@ -239,8 +238,7 @@ TEST(Session, GameOverSubmitsScoreAndRestarts)
 	ASSERT_EQ(session.screen(), Screen::Playing);
 
 	const auto before = session.Snapshot().world;
-	const int expected = before.score
-	    + before.bullets_remaining * GameConfig::kEndGameBulletBonus;
+	const int expected = before.score + before.bullets_remaining * GameConfig::kEndGameBulletBonus;
 
 	StepMs(session, 16, Hold(Key::Digit2)); // 作弊自杀
 
@@ -363,7 +361,7 @@ TEST(Session, HoldingQuitDoesNotExitFromMenu)
 	StepMs(session, 16, Hold(Key::Quit)); // 游戏内按 Q 回主菜单
 	ASSERT_EQ(session.screen(), Screen::Menu);
 
-	for(int i = 0; i < 20; ++i)           // 一直按着 Q 不放
+	for(int i = 0; i < 20; ++i) // 一直按着 Q 不放
 		StepMs(session, 16, Hold(Key::Quit));
 
 	EXPECT_EQ(session.screen(), Screen::Menu);

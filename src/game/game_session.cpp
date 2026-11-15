@@ -54,8 +54,7 @@ void GameSession::Step(const RawInput& raw, steady_clock::duration dt)
 		if(input_.Pressed(Key::CheatUnlock))
 		{
 			cheats_enabled_ = !cheats_enabled_;
-			cheat_notice_ =
-			    ToDuration(milliseconds(GameConfig::kCheatNoticeMs));
+			cheat_notice_ = ToDuration(milliseconds(GameConfig::kCheatNoticeMs));
 		}
 
 		if(!input_ready)
@@ -129,8 +128,7 @@ void GameSession::Step(const RawInput& raw, steady_clock::duration dt)
 	}
 }
 
-void GameSession::StepPlaying(const InputState& input, bool input_ready,
-                              steady_clock::duration dt)
+void GameSession::StepPlaying(const InputState& input, bool input_ready, steady_clock::duration dt)
 {
 	if(input_ready && input.Pressed(Key::Quit))
 	{
@@ -161,8 +159,7 @@ void GameSession::StepPlaying(const InputState& input, bool input_ready,
 	// 开局后的输入冷却期不把按键交给世界：
 	// 选择难度的数字键（1/2/3）可能还没松开，而数字键在游戏中是作弊键，
 	// 直接传入会导致"选完 Normal 立刻自杀"、"选完 Easy 立刻上帝模式"。
-	GameInput game_input =
-	    input_ready ? GameInput::FromInput(input) : GameInput{};
+	GameInput game_input = input_ready ? GameInput::FromInput(input) : GameInput{};
 
 	// 作弊模式未开启时屏蔽全部数字键，正常游玩不会误触
 	if(!cheats_enabled_)
@@ -192,8 +189,7 @@ void GameSession::Settle()
 {
 	const WorldSnapshot snapshot = world_.Snapshot();
 
-	final_score_ = snapshot.score
-	    + snapshot.bullets_remaining * GameConfig::kEndGameBulletBonus;
+	final_score_ = snapshot.score + snapshot.bullets_remaining * GameConfig::kEndGameBulletBonus;
 
 	highscore_.Submit(final_score_);
 	rank_ = highscore_.GetRank(final_score_);

@@ -9,7 +9,7 @@ namespace thunder
 
 /// 基于文件的分数存储（唯一涉及文件 IO 的实现）。
 /// 文件格式与默认路径保持重构前一致：每行一个分数。
-class FileScoreStore : public ScoreStore
+class FileScoreStore: public ScoreStore
 {
 public:
 	explicit FileScoreStore(std::string path = "../highscore.txt");

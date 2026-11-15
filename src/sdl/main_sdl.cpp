@@ -22,8 +22,7 @@
 namespace
 {
 
-constexpr auto kLogicStep =
-    std::chrono::milliseconds(GameConfig::kFrameDelayMs);
+constexpr auto kLogicStep = std::chrono::milliseconds(GameConfig::kFrameDelayMs);
 constexpr int kMaxStepsPerFrame = 5; // 卡顿时最多补 5 步，避免死亡螺旋
 
 int ParseIntOption(int argc, char** argv, const char* name)
@@ -105,18 +104,15 @@ int main(int argc, char** argv)
 	// 窗口标题走系统渲染，可以直接用中文
 	const std::string window_title =
 	    std::string(GameInfo::kProductNameZh) + " " + GameInfo::kVersionTag;
-	SDL_Window* window =
-	    SDL_CreateWindow(window_title.c_str(), 832, 496, SDL_WINDOW_RESIZABLE);
-	SDL_Renderer* renderer =
-	    window != nullptr ? SDL_CreateRenderer(window, nullptr) : nullptr;
+	SDL_Window* window = SDL_CreateWindow(window_title.c_str(), 832, 496, SDL_WINDOW_RESIZABLE);
+	SDL_Renderer* renderer = window != nullptr ? SDL_CreateRenderer(window, nullptr) : nullptr;
 
 	if(renderer != nullptr)
 	{
 		// 默认开启垂直同步；--no-vsync 用于取消同步（可配合 --max-fps 限帧）
 		SDL_SetRenderVSync(renderer, no_vsync ? 0 : 1);
 		// 逻辑分辨率固定 832x496；窗口缩放时按比例缩放并留黑边
-		SDL_SetRenderLogicalPresentation(renderer, 832, 496,
-		                                 SDL_LOGICAL_PRESENTATION_LETTERBOX);
+		SDL_SetRenderLogicalPresentation(renderer, 832, 496, SDL_LOGICAL_PRESENTATION_LETTERBOX);
 		SDL_SetWindowMinimumSize(window, 416, 248);
 	}
 	else
@@ -155,8 +151,7 @@ int main(int argc, char** argv)
 				running = false;
 
 			if(event.type == SDL_EVENT_KEY_DOWN && !event.key.repeat
-			   && event.key.scancode == SDL_SCANCODE_F11
-			   && window != nullptr)
+			   && event.key.scancode == SDL_SCANCODE_F11 && window != nullptr)
 			{
 				fullscreen = !fullscreen;
 				SDL_SetWindowFullscreen(window, fullscreen);
@@ -177,8 +172,7 @@ int main(int argc, char** argv)
 		}
 		else
 		{
-			accumulator += std::chrono::nanoseconds(
-			    static_cast<long long>(now_ns - last_ns));
+			accumulator += std::chrono::nanoseconds(static_cast<long long>(now_ns - last_ns));
 
 			const thunder::RawInput raw = input.Build();
 
@@ -211,8 +205,7 @@ int main(int argc, char** argv)
 		{
 			SDL_SetRenderDrawColor(renderer, 12, 12, 16, 255);
 			SDL_RenderClear(renderer);
-			SdlRender::Draw(renderer, snapshot, fps,
-			                static_cast<double>(now_ns) / 1.0e9);
+			SdlRender::Draw(renderer, snapshot, fps, static_cast<double>(now_ns) / 1.0e9);
 			SDL_RenderPresent(renderer);
 		}
 		else if(max_frames == 0)
@@ -235,8 +228,7 @@ int main(int argc, char** argv)
 
 		if(renderer != nullptr && no_vsync && max_fps > 0)
 		{
-			const Uint64 frame_ns =
-			    1000000000ULL / static_cast<Uint64>(max_fps);
+			const Uint64 frame_ns = 1000000000ULL / static_cast<Uint64>(max_fps);
 			const Uint64 after_present = SDL_GetTicksNS();
 			if(next_frame_ns != 0 && after_present < next_frame_ns)
 				SDL_DelayNS(next_frame_ns - after_present);
@@ -249,8 +241,7 @@ int main(int argc, char** argv)
 
 	if(max_frames > 0)
 	{
-		std::printf("smoke ok: frames=%d steps=%u screen=%d font=%s\n", frames,
-		            demo ? demo_step : 0,
+		std::printf("smoke ok: frames=%d steps=%u screen=%d font=%s\n", frames, demo ? demo_step : 0,
 		            static_cast<int>(session.Snapshot().screen),
 		            ttf_font ? "ubuntu-mono" : "bitmap");
 	}

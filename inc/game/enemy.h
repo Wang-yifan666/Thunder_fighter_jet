@@ -11,10 +11,10 @@ struct Enemy
 	int speed;
 	bool alive;
 
-	Enemy(int _x = 0,     //
-	      int _y = 0,     //
-	      int _speed = 1, //
-	      int _width = GameConfig::kEnemyWidth,   //
+	Enemy(int _x = 0,                            //
+	      int _y = 0,                            //
+	      int _speed = 1,                        //
+	      int _width = GameConfig::kEnemyWidth,  //
 	      int _height = GameConfig::kEnemyHeight //
 	      ):
 	x(_x),           //

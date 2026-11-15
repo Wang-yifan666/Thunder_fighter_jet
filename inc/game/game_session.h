@@ -26,8 +26,14 @@ public:
 
 	SessionSnapshot Snapshot() const;
 
-	bool exit_requested() const { return exit_requested_; }
-	Screen screen() const { return screen_; }
+	bool exit_requested() const
+	{
+		return exit_requested_;
+	}
+	Screen screen() const
+	{
+		return screen_;
+	}
 
 private:
 	void StartGame(Difficulty difficulty);

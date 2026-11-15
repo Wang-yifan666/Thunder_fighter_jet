@@ -34,8 +34,7 @@ std::vector<EntityView> RunScene(std::uint32_t seed)
 	return world.Snapshot().enemies;
 }
 
-bool SameScene(const std::vector<EntityView>& a,
-               const std::vector<EntityView>& b)
+bool SameScene(const std::vector<EntityView>& a, const std::vector<EntityView>& b)
 {
 	if(a.size() != b.size())
 		return false;

@@ -87,8 +87,7 @@ void GameWorld::Tick(const GameInput& input, steady_clock::duration dt)
 
 	if(enemy_move_counter_ >= enemy_move_interval_)
 	{
-		MoveEnemies(enemies_, level_, GameConfig::kScreenWidth,
-		            GameConfig::kScreenHeight);
+		MoveEnemies(enemies_, level_, GameConfig::kScreenWidth, GameConfig::kScreenHeight);
 		enemy_move_counter_ = 0;
 	}
 
@@ -176,10 +175,8 @@ void GameWorld::UpdateLevel(const GameInput& input)
 
 	int min_interval = GameConfig::kMinEnemyMoveInterval;
 	int max_interval = GameConfig::kMaxEnemyMoveInterval;
-	enemy_move_interval_ =
-	    max_interval
-	    - (level_ - 1) * (max_interval - min_interval)
-	          / GameConfig::kLevelMoveIntervalDivisor;
+	enemy_move_interval_ = max_interval
+	    - (level_ - 1) * (max_interval - min_interval) / GameConfig::kLevelMoveIntervalDivisor;
 	enemy_move_interval_ = std::max<int>(enemy_move_interval_, min_interval);
 }
 
@@ -216,9 +213,8 @@ WorldSnapshot GameWorld::Snapshot() const
 
 	snapshot.pickups.reserve(pickups_.size());
 	for(const auto& p: pickups_)
-		snapshot.pickups.push_back(PickupView{
-		    p.x, p.y, GameConfig::kPickupSize, GameConfig::kPickupSize,
-		    p.kind});
+		snapshot.pickups.push_back(
+		    PickupView{p.x, p.y, GameConfig::kPickupSize, GameConfig::kPickupSize, p.kind});
 
 	snapshot.score = score_;
 	snapshot.level = level_;
@@ -251,18 +247,15 @@ void GameWorld::CheckPlayerCollision()
 		int ew = e.width;
 		int eh = e.height;
 
-		bool no_overlap = (px + player_w <= ex)
-		    || (ex + ew <= px)
-		    || (py + player_h <= ey)
-		    || (ey + eh <= py);
+		bool no_overlap =
+		    (px + player_w <= ex) || (ex + ew <= px) || (py + player_h <= ey) || (ey + eh <= py);
 
 		if(no_overlap)
 			continue;
 
 		life_--;
 		is_invincible_ = true;
-		invincible_remaining_ =
-		    std::chrono::seconds(GameConfig::kInvincibleDurationSec);
+		invincible_remaining_ = std::chrono::seconds(GameConfig::kInvincibleDurationSec);
 
 		if(life_ < 0)
 			life_ = 0;
@@ -281,13 +274,10 @@ void GameWorld::UpdateBullets()
 		b.y -= 1;
 	}
 
-	bullets_.erase(std::remove_if
-	               (bullets_.begin(),
-	                bullets_.end(),
-	                [](const Bullet& b)
-	                {
-		                return b.y < 0;
-	                }),
+	bullets_.erase(std::remove_if(bullets_.begin(), bullets_.end(),
+	                              [](const Bullet& b) {
+		                              return b.y < 0;
+	                              }),
 	               bullets_.end());
 
 	for(auto b_it = bullets_.begin(); b_it != bullets_.end();)
@@ -308,10 +298,8 @@ void GameWorld::UpdateBullets()
 			int ew = e.width;
 			int eh = e.height;
 
-			bool hit = (b_it->y >= ey)
-			    && (b_it->y < ey + eh)
-			    && (b_it->x >= ex)
-			    && (b_it->x < ex + ew);
+			bool hit =
+			    (b_it->y >= ey) && (b_it->y < ey + eh) && (b_it->x >= ex) && (b_it->x < ex + ew);
 
 			if(hit)
 			{
@@ -402,8 +390,7 @@ void GameWorld::UpdatePickups()
 
 	pickups_.erase(std::remove_if(pickups_.begin(), pickups_.end(),
 	                              [](const Pickup& p) {
-		                              return p.y
-		                                  >= GameConfig::kScreenHeight;
+		                              return p.y >= GameConfig::kScreenHeight;
 	                              }),
 	               pickups_.end());
 }
@@ -421,14 +408,12 @@ void GameWorld::CheckPickupCollect()
 	const int grab_w = GameConfig::kPlayerWidth;
 	const int grab_h = GameConfig::kPlayerGrabHeight;
 	const int grab_x = player_x_;
-	const int grab_y =
-	    player_y_ + GameConfig::kPlayerHeight - grab_h; // 底边对齐
+	const int grab_y = player_y_ + GameConfig::kPlayerHeight - grab_h; // 底边对齐
 
 	for(auto it = pickups_.begin(); it != pickups_.end();)
 	{
-		const bool no_overlap = (grab_x + grab_w <= it->x)
-		    || (it->x + size <= grab_x) || (grab_y + grab_h <= it->y)
-		    || (it->y + size <= grab_y);
+		const bool no_overlap = (grab_x + grab_w <= it->x) || (it->x + size <= grab_x)
+		    || (grab_y + grab_h <= it->y) || (it->y + size <= grab_y);
 
 		if(no_overlap)
 		{

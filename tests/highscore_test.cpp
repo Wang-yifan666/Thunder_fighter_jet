@@ -20,17 +20,13 @@ class TempScoreFile
 public:
 	TempScoreFile()
 	{
-		static const auto seed =
-		    std::chrono::steady_clock::now().time_since_epoch().count();
+		static const auto seed = std::chrono::steady_clock::now().time_since_epoch().count();
 		static int counter = 0;
 
-		const auto dir = std::filesystem::temp_directory_path()
-		    / "thunder_highscore_tests";
+		const auto dir = std::filesystem::temp_directory_path() / "thunder_highscore_tests";
 		std::filesystem::create_directories(dir);
 
-		path_ = dir
-		    / ("hs_" + std::to_string(seed) + "_"
-		       + std::to_string(counter++) + ".txt");
+		path_ = dir / ("hs_" + std::to_string(seed) + "_" + std::to_string(counter++) + ".txt");
 
 		std::error_code ec;
 		std::filesystem::remove(path_, ec);
@@ -45,9 +41,15 @@ public:
 	TempScoreFile(const TempScoreFile&) = delete;
 	TempScoreFile& operator=(const TempScoreFile&) = delete;
 
-	std::string Path() const { return path_.string(); }
+	std::string Path() const
+	{
+		return path_.string();
+	}
 
-	bool Exists() const { return std::filesystem::exists(path_); }
+	bool Exists() const
+	{
+		return std::filesystem::exists(path_);
+	}
 
 	void Write(const std::string& content) const
 	{

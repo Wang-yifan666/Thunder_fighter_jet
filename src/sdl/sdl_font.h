@@ -16,8 +16,8 @@ void Shutdown();
 bool UsingTrueType();
 
 /// scale 与内置点阵保持一致（1..4）；TTF 模式下映射为像素字号（12/18/24/30 px）。
-void DrawText(SDL_Renderer* renderer, int x, int y, int scale,
-              const std::string& text, SDL_Color color);
+void DrawText(SDL_Renderer* renderer, int x, int y, int scale, const std::string& text,
+              SDL_Color color);
 
 int TextWidth(const std::string& text, int scale);
 

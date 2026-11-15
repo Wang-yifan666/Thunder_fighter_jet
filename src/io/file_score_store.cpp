@@ -11,9 +11,7 @@
 namespace thunder
 {
 
-FileScoreStore::FileScoreStore(std::string path): path_(std::move(path))
-{
-}
+FileScoreStore::FileScoreStore(std::string path): path_(std::move(path)) {}
 
 std::vector<int> FileScoreStore::Load()
 {

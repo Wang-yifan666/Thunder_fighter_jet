@@ -50,12 +50,9 @@ TEST(WorldReset, DifficultyInitialValues)
 	};
 
 	const Case cases[] = {
-	    {Difficulty::Easy, GameConfig::kEasyLife, GameConfig::kEasyBullets,
-	     2},
-	    {Difficulty::Normal, GameConfig::kNormalLife,
-	     GameConfig::kNormalBullets, 2},
-	    {Difficulty::Hard, GameConfig::kHardLife, GameConfig::kHardBullets,
-	     4},
+	    {Difficulty::Easy, GameConfig::kEasyLife, GameConfig::kEasyBullets, 2},
+	    {Difficulty::Normal, GameConfig::kNormalLife, GameConfig::kNormalBullets, 2},
+	    {Difficulty::Hard, GameConfig::kHardLife, GameConfig::kHardBullets, 4},
 	};
 
 	for(const auto& c: cases)
@@ -85,8 +82,7 @@ TEST(WorldReset, ClearsActiveEnemiesAndRebuildsPending)
 
 	GameInput none;
 	world.Tick(none, kFrame);
-	ASSERT_GT(WorldTestAccess::EnemyCount(world), 0)
-	    << "顶行空时应从 pending 生成一批敌机";
+	ASSERT_GT(WorldTestAccess::EnemyCount(world), 0) << "顶行空时应从 pending 生成一批敌机";
 
 	GameInput add_score;
 	add_score.digit[4] = true;
@@ -118,8 +114,7 @@ TEST(WorldReset, LevelUpTimerIsPerGame)
 			world.Tick(none, seconds(1));
 
 		EXPECT_EQ(world.Snapshot().level, 2) << "round " << round;
-		EXPECT_EQ(WorldTestAccess::LastLevelUpTime(world),
-		          GameConfig::kLevelUpTime);
+		EXPECT_EQ(WorldTestAccess::LastLevelUpTime(world), GameConfig::kLevelUpTime);
 	}
 }
 
@@ -156,10 +151,8 @@ TEST(WorldPlayer, ClampsToScreenBounds)
 			world.Tick(right_down, kFrame);
 
 		const WorldSnapshot snap = world.Snapshot();
-		EXPECT_EQ(snap.player_x,
-		          GameConfig::kScreenWidth - GameConfig::kPlayerWidth);
-		EXPECT_EQ(snap.player_y,
-		          GameConfig::kScreenHeight - GameConfig::kPlayerHeight);
+		EXPECT_EQ(snap.player_x, GameConfig::kScreenWidth - GameConfig::kPlayerWidth);
+		EXPECT_EQ(snap.player_y, GameConfig::kScreenHeight - GameConfig::kPlayerHeight);
 	}
 }
 
@@ -184,8 +177,7 @@ TEST(WorldBullet, HitsEnemyConsumesBulletAndRewards)
 	ASSERT_EQ(after_fire.bullets.size(), 1u);
 	EXPECT_EQ(after_fire.bullets[0].x, bullet_x);
 	EXPECT_EQ(after_fire.bullets[0].y, player_y - 2); // 开火同一帧内已上移一格
-	EXPECT_EQ(after_fire.bullets_remaining,
-	          GameConfig::kEasyBullets - 1);
+	EXPECT_EQ(after_fire.bullets_remaining, GameConfig::kEasyBullets - 1);
 
 	for(int i = 0; i < 6; ++i)
 		world.Tick(GameInput{}, kFrame);
@@ -194,8 +186,7 @@ TEST(WorldBullet, HitsEnemyConsumesBulletAndRewards)
 	EXPECT_EQ(WorldTestAccess::BulletCount(world), 0);
 	EXPECT_EQ(WorldTestAccess::EnemyCount(world), 0);
 	EXPECT_EQ(snap.score, GameConfig::kScorePerKill);
-	EXPECT_EQ(snap.bullets_remaining, GameConfig::kEasyBullets - 1
-	                                      + GameConfig::kBulletsPerKill);
+	EXPECT_EQ(snap.bullets_remaining, GameConfig::kEasyBullets - 1 + GameConfig::kBulletsPerKill);
 }
 
 TEST(WorldBullet, ExpiresAboveScreenWithoutScore)
@@ -273,8 +264,7 @@ TEST(WorldLevel, LevelsUpAtTenSeconds)
 
 	const WorldSnapshot snap = world.Snapshot();
 	EXPECT_EQ(snap.level, 2);
-	EXPECT_EQ(snap.bullets_remaining,
-	          GameConfig::kEasyBullets + GameConfig::kBulletsPerLevelUp);
+	EXPECT_EQ(snap.bullets_remaining, GameConfig::kEasyBullets + GameConfig::kBulletsPerLevelUp);
 	EXPECT_EQ(WorldTestAccess::EnemyMoveInterval(world), 19);
 	EXPECT_EQ(WorldTestAccess::PendingCount(world), 2);
 }
@@ -302,8 +292,7 @@ TEST(WorldLevel, MoveIntervalHasFloor)
 		world.Tick(GameInput{}, seconds(GameConfig::kLevelUpTime));
 
 	EXPECT_EQ(world.Snapshot().level, 10);
-	EXPECT_EQ(WorldTestAccess::EnemyMoveInterval(world),
-	          GameConfig::kMinEnemyMoveInterval);
+	EXPECT_EQ(WorldTestAccess::EnemyMoveInterval(world), GameConfig::kMinEnemyMoveInterval);
 }
 
 // ===================================================================
@@ -316,8 +305,7 @@ TEST(WorldScore, GainsOncePerElapsedSecond)
 	for(int i = 0; i < 10; ++i)
 		world.Tick(GameInput{}, seconds(1));
 
-	EXPECT_EQ(world.Snapshot().score,
-	          10 * GameConfig::kScorePerSecond);
+	EXPECT_EQ(world.Snapshot().score, 10 * GameConfig::kScorePerSecond);
 }
 
 TEST(WorldScore, SingleLargeDeltaGainsOnlyOnce)
@@ -403,8 +391,8 @@ TEST(WorldPickup, FallsAndIsExposedInSnapshot)
 TEST(WorldPickup, FallSpeedIsComparableToEnemies)
 {
 	const double ticks_per_second = 1000.0 / GameConfig::kFrameDelayMs;
-	const double seconds_to_cross = GameConfig::kScreenHeight
-	    * GameConfig::kPickupMoveInterval / ticks_per_second;
+	const double seconds_to_cross =
+	    GameConfig::kScreenHeight * GameConfig::kPickupMoveInterval / ticks_per_second;
 
 	EXPECT_GT(seconds_to_cross, 5.0) << "太快：会像瞬移一样掉下来";
 	EXPECT_LT(seconds_to_cross, 40.0) << "太慢：掉落物会长时间占屏";
@@ -416,16 +404,14 @@ TEST(WorldPickup, HealthRestoresLifeAndIsConsumed)
 	const WorldSnapshot start = world.Snapshot();
 	const int life_before = start.life;
 
-	WorldTestAccess::AddPickup(world, start.player_x, start.player_y - 1,
-	                           PickupKind::Health);
+	WorldTestAccess::AddPickup(world, start.player_x, start.player_y - 1, PickupKind::Health);
 
 	StepOnePickupMove(world);
 
 	const WorldSnapshot after = world.Snapshot();
 	EXPECT_EQ(after.pickups.size(), 0u) << "拾取后应消失";
 	EXPECT_EQ(after.life, life_before + GameConfig::kHealthPickupLife);
-	EXPECT_EQ(after.bullets_remaining, start.bullets_remaining)
-	    << "血包不应影响弹药";
+	EXPECT_EQ(after.bullets_remaining, start.bullets_remaining) << "血包不应影响弹药";
 }
 
 TEST(WorldPickup, AmmoAddsBulletsAndIsConsumed)
@@ -433,15 +419,13 @@ TEST(WorldPickup, AmmoAddsBulletsAndIsConsumed)
 	GameWorld world = MakeIdleWorld();
 	const WorldSnapshot start = world.Snapshot();
 
-	WorldTestAccess::AddPickup(world, start.player_x, start.player_y - 1,
-	                           PickupKind::Ammo);
+	WorldTestAccess::AddPickup(world, start.player_x, start.player_y - 1, PickupKind::Ammo);
 
 	StepOnePickupMove(world);
 
 	const WorldSnapshot after = world.Snapshot();
 	EXPECT_EQ(after.pickups.size(), 0u) << "拾取后应消失";
-	EXPECT_EQ(after.bullets_remaining,
-	          start.bullets_remaining + GameConfig::kAmmoPickupBullets);
+	EXPECT_EQ(after.bullets_remaining, start.bullets_remaining + GameConfig::kAmmoPickupBullets);
 	EXPECT_EQ(after.life, start.life) << "弹药包不应加命";
 }
 
@@ -452,8 +436,7 @@ TEST(WorldPickup, NoCollectWhenNotOverlapping)
 
 	// 玩家默认在最底行，道具很快就掉出屏幕；先把玩家挪到中间
 	WorldTestAccess::SetPlayer(world, start.player_x, 30);
-	WorldTestAccess::AddPickup(world, start.player_x + 6, 29,
-	                           PickupKind::Ammo);
+	WorldTestAccess::AddPickup(world, start.player_x + 6, 29, PickupKind::Ammo);
 
 	StepOnePickupMove(world);
 
@@ -542,16 +525,14 @@ TEST(WorldPickup, CollectsWhenTouchingVisualBodyOnly)
 
 	EXPECT_EQ(WorldTestAccess::PickupCount(world), 0)
 	    << "压在身体上就应该捡到，不该等它掉到脚底那 1 行";
-	EXPECT_EQ(world.Snapshot().life,
-	          start.life + GameConfig::kHealthPickupLife);
+	EXPECT_EQ(world.Snapshot().life, start.life + GameConfig::kHealthPickupLife);
 }
 
 TEST(WorldPickup, CollectedWhileStandingOnBottomRow)
 {
 	GameWorld world = MakeIdleWorld();
 	const WorldSnapshot start = world.Snapshot();
-	ASSERT_EQ(start.player_y, GameConfig::kScreenHeight - 1)
-	    << "默认就在最下面一排";
+	ASSERT_EQ(start.player_y, GameConfig::kScreenHeight - 1) << "默认就在最下面一排";
 
 	WorldTestAccess::AddPickup(world, start.player_x, 30, PickupKind::Ammo);
 
@@ -640,9 +621,8 @@ int OverlappingPairs(const WorldSnapshot& snap)
 		{
 			const auto& a = snap.enemies[i];
 			const auto& b = snap.enemies[j];
-			const bool apart = (a.x + a.width <= b.x)
-			    || (b.x + b.width <= a.x) || (a.y + a.height <= b.y)
-			    || (b.y + b.height <= a.y);
+			const bool apart = (a.x + a.width <= b.x) || (b.x + b.width <= a.x)
+			    || (a.y + a.height <= b.y) || (b.y + b.height <= a.y);
 			if(!apart)
 				++count;
 		}
@@ -671,6 +651,5 @@ TEST(WorldEnemy, EnemiesNeverOverlapEachOther)
 		}
 	}
 
-	EXPECT_EQ(first_bad, -1)
-	    << "第 " << first_bad << " 帧出现 " << bad_pairs << " 对重叠敌机";
+	EXPECT_EQ(first_bad, -1) << "第 " << first_bad << " 帧出现 " << bad_pairs << " 对重叠敌机";
 }

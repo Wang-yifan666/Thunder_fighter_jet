@@ -9,10 +9,7 @@
 namespace thunder
 {
 
-HighScore::HighScore(ScoreStore& store, std::size_t max_keep):
-store_(store), max_keep_(max_keep)
-{
-}
+HighScore::HighScore(ScoreStore& store, std::size_t max_keep): store_(store), max_keep_(max_keep) {}
 
 void HighScore::EnsureNotEmpty()
 {

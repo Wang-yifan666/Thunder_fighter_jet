@@ -33,23 +33,21 @@ constexpr SDL_Color kTextDim{150, 150, 165, 255};
 constexpr SDL_Color kTextAccent{255, 214, 64, 255};
 constexpr SDL_Color kOverlay{0, 0, 0, 170};
 
-void Fill(SDL_Renderer* renderer, float x, float y, float w, float h,
-          SDL_Color color)
+void Fill(SDL_Renderer* renderer, float x, float y, float w, float h, SDL_Color color)
 {
 	SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
 	SDL_FRect rect{x, y, w, h};
 	SDL_RenderFillRect(renderer, &rect);
 }
 
-void Blend(SDL_Renderer* renderer, float x, float y, float w, float h,
-           SDL_Color color)
+void Blend(SDL_Renderer* renderer, float x, float y, float w, float h, SDL_Color color)
 {
 	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 	Fill(renderer, x, y, w, h, color);
 }
 
-void CenterText(SDL_Renderer* renderer, int width, int y, int scale,
-                const std::string& text, SDL_Color color)
+void CenterText(SDL_Renderer* renderer, int width, int y, int scale, const std::string& text,
+                SDL_Color color)
 {
 	const int x = (width - SdlFont::TextWidth(text, scale)) / 2;
 	SdlFont::DrawText(renderer, x, y, scale, text, color);
@@ -62,8 +60,7 @@ std::string PaddedNumber(int value, int width)
 	return out.str();
 }
 
-void DrawStars(SDL_Renderer* renderer, const SdlRender::Layout& layout,
-               double seconds)
+void DrawStars(SDL_Renderer* renderer, const SdlRender::Layout& layout, double seconds)
 {
 	const int grid_w = GameConfig::kScreenWidth * layout.cell;
 	const int grid_h = GameConfig::kScreenHeight * layout.cell;
@@ -71,23 +68,19 @@ void DrawStars(SDL_Renderer* renderer, const SdlRender::Layout& layout,
 	for(int i = 0; i < 72; ++i)
 	{
 		// 固定散列保证初始位置稳定；按深度不同速度缓慢下落，形成视差
-		const std::uint32_t hash =
-		    static_cast<std::uint32_t>(i) * 2654435761u;
-		const int x = layout.grid_x
-		    + static_cast<int>(hash % static_cast<std::uint32_t>(grid_w));
+		const std::uint32_t hash = static_cast<std::uint32_t>(i) * 2654435761u;
+		const int x = layout.grid_x + static_cast<int>(hash % static_cast<std::uint32_t>(grid_w));
 		const int depth = (i % 3) + 1;
 		const double speed = 8.0 * depth;
-		const double base_y = static_cast<double>(
-		    static_cast<int>(hash / 7919u)
-		    % static_cast<std::uint32_t>(grid_h));
+		const double base_y =
+		    static_cast<double>(static_cast<int>(hash / 7919u) % static_cast<std::uint32_t>(grid_h));
 		const int y = layout.grid_y
-		    + static_cast<int>(std::fmod(base_y + seconds * speed,
-		                                 static_cast<double>(grid_h)));
+		    + static_cast<int>(std::fmod(base_y + seconds * speed, static_cast<double>(grid_h)));
 		const bool bright = (i % 9) == 0;
 		const float size = bright ? 2.0f : 1.0f;
 
-		Fill(renderer, static_cast<float>(x), static_cast<float>(y), size,
-		     size, bright ? kStarBright : kStar);
+		Fill(renderer, static_cast<float>(x), static_cast<float>(y), size, size,
+		     bright ? kStarBright : kStar);
 	}
 }
 
@@ -113,9 +106,8 @@ struct SpriteSlot
 
 /// 由内嵌数据创建贴图；数据长度不符或创建失败时返回 nullptr，
 /// 调用方据此回退到色块精灵。
-SDL_Texture* AcquireTexture(SpriteSlot& slot, SDL_Renderer* renderer,
-                            const unsigned char* pixels, std::size_t size,
-                            int width, int height)
+SDL_Texture* AcquireTexture(SpriteSlot& slot, SDL_Renderer* renderer, const unsigned char* pixels,
+                            std::size_t size, int width, int height)
 {
 	if(slot.texture != nullptr && slot.owner == renderer)
 		return slot.texture;
@@ -127,14 +119,13 @@ SDL_Texture* AcquireTexture(SpriteSlot& slot, SDL_Renderer* renderer,
 		slot.owner = nullptr;
 	}
 
-	const std::size_t expected = static_cast<std::size_t>(width)
-	    * static_cast<std::size_t>(height) * 4u;
+	const std::size_t expected =
+	    static_cast<std::size_t>(width) * static_cast<std::size_t>(height) * 4u;
 	if(size != expected)
 		return nullptr;
 
-	SDL_Texture* texture = SDL_CreateTexture(
-	    renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC, width,
-	    height);
+	SDL_Texture* texture =
+	    SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC, width, height);
 	if(texture == nullptr)
 		return nullptr;
 
@@ -154,33 +145,29 @@ SDL_Texture* AcquireTexture(SpriteSlot& slot, SDL_Renderer* renderer,
 SDL_Texture* PlayerTexture(SDL_Renderer* renderer)
 {
 	static SpriteSlot slot;
-	return AcquireTexture(slot, renderer, SpriteData::kPlayerPixels,
-	                      SpriteData::kPlayerPixelsSize, kPlayerSpriteSize,
-	                      kPlayerSpriteSize);
+	return AcquireTexture(slot, renderer, SpriteData::kPlayerPixels, SpriteData::kPlayerPixelsSize,
+	                      kPlayerSpriteSize, kPlayerSpriteSize);
 }
 
 SDL_Texture* EnemyTexture(SDL_Renderer* renderer)
 {
 	static SpriteSlot slot;
-	return AcquireTexture(slot, renderer, SpriteData::kEnemyPixels,
-	                      SpriteData::kEnemyPixelsSize, kEnemySpriteWidth,
-	                      kEnemySpriteHeight);
+	return AcquireTexture(slot, renderer, SpriteData::kEnemyPixels, SpriteData::kEnemyPixelsSize,
+	                      kEnemySpriteWidth, kEnemySpriteHeight);
 }
 
 SDL_Texture* HealthTexture(SDL_Renderer* renderer)
 {
 	static SpriteSlot slot;
-	return AcquireTexture(slot, renderer, SpriteData::kHealthPixels,
-	                      SpriteData::kHealthPixelsSize, kHealthSpriteSize,
-	                      kHealthSpriteSize);
+	return AcquireTexture(slot, renderer, SpriteData::kHealthPixels, SpriteData::kHealthPixelsSize,
+	                      kHealthSpriteSize, kHealthSpriteSize);
 }
 
 SDL_Texture* AmmoTexture(SDL_Renderer* renderer)
 {
 	static SpriteSlot slot;
-	return AcquireTexture(slot, renderer, SpriteData::kAmmoPixels,
-	                      SpriteData::kAmmoPixelsSize, kHealthSpriteSize,
-	                      kHealthSpriteSize);
+	return AcquireTexture(slot, renderer, SpriteData::kAmmoPixels, SpriteData::kAmmoPixelsSize,
+	                      kHealthSpriteSize, kHealthSpriteSize);
 }
 
 /// 掉落物：带轻微上下浮动，便于和敌机区分（纯视觉，不影响判定）
@@ -195,8 +182,7 @@ void DrawPickup(SDL_Renderer* renderer, const SdlRender::Layout& layout,
 	const float h = item.height * cell;
 
 	const bool is_ammo = (item.kind == PickupKind::Ammo);
-	SDL_Texture* texture = is_ammo ? AmmoTexture(renderer)
-	                               : HealthTexture(renderer);
+	SDL_Texture* texture = is_ammo ? AmmoTexture(renderer) : HealthTexture(renderer);
 	if(texture != nullptr)
 	{
 		const SDL_FRect dst{x, y, w, h};
@@ -206,10 +192,8 @@ void DrawPickup(SDL_Renderer* renderer, const SdlRender::Layout& layout,
 
 	// 回退：血包画红十字，弹药包画黄底加弹形
 	const float pad = cell * 0.5f;
-	const SDL_Color body = is_ammo ? SDL_Color{250, 196, 32, 255}
-	                               : SDL_Color{232, 64, 64, 255};
-	const SDL_Color mark = is_ammo ? SDL_Color{58, 66, 86, 255}
-	                               : SDL_Color{255, 245, 240, 255};
+	const SDL_Color body = is_ammo ? SDL_Color{250, 196, 32, 255} : SDL_Color{232, 64, 64, 255};
+	const SDL_Color mark = is_ammo ? SDL_Color{58, 66, 86, 255} : SDL_Color{255, 245, 240, 255};
 
 	Fill(renderer, x + pad, y + pad, w - pad * 2, h - pad * 2, body);
 
@@ -222,10 +206,10 @@ void DrawPickup(SDL_Renderer* renderer, const SdlRender::Layout& layout,
 	else
 	{
 		const float bar = (w - pad * 2) * 0.28f;
-		Fill(renderer, cx - bar * 0.5f, cy - (h - pad * 2) * 0.5f + 2.0f,
-		     bar, h - pad * 2 - 4.0f, mark);
-		Fill(renderer, cx - (w - pad * 2) * 0.5f + 2.0f, cy - bar * 0.5f,
-		     w - pad * 2 - 4.0f, bar, mark);
+		Fill(renderer, cx - bar * 0.5f, cy - (h - pad * 2) * 0.5f + 2.0f, bar, h - pad * 2 - 4.0f,
+		     mark);
+		Fill(renderer, cx - (w - pad * 2) * 0.5f + 2.0f, cy - bar * 0.5f, w - pad * 2 - 4.0f, bar,
+		     mark);
 	}
 }
 
@@ -248,20 +232,16 @@ void DrawEnemy(SDL_Renderer* renderer, const SdlRender::Layout& layout,
 	// 回退：机身 + 左右翼 + 引擎光点
 	Fill(renderer, x + 3.0f, y + 1.0f, w - 6.0f, h - 1.0f, kEnemyBody);
 	Fill(renderer, x, y + h * 0.45f, 3.0f, h * 0.55f, kEnemyWing);
-	Fill(renderer, x + w - 3.0f, y + h * 0.45f, 3.0f, h * 0.55f,
-	     kEnemyWing);
-	Fill(renderer, x + w * 0.5f - 1.0f, y + h - 2.0f, 2.0f, 2.0f,
-	     kEnemyCore);
+	Fill(renderer, x + w - 3.0f, y + h * 0.45f, 3.0f, h * 0.55f, kEnemyWing);
+	Fill(renderer, x + w * 0.5f - 1.0f, y + h - 2.0f, 2.0f, 2.0f, kEnemyCore);
 }
 
 void DrawBullet(SDL_Renderer* renderer, const SdlRender::Layout& layout,
                 const thunder::EntityView& bullet)
 {
 	const float cell = static_cast<float>(layout.cell);
-	const float cx = static_cast<float>(layout.grid_x)
-	    + bullet.x * cell + cell * 0.5f;
-	const float cy = static_cast<float>(layout.grid_y)
-	    + bullet.y * cell + cell * 0.5f;
+	const float cx = static_cast<float>(layout.grid_x) + bullet.x * cell + cell * 0.5f;
+	const float cy = static_cast<float>(layout.grid_y) + bullet.y * cell + cell * 0.5f;
 
 	Fill(renderer, cx - 2.0f, cy - 4.0f, 4.0f, 8.0f, kBullet);
 	Fill(renderer, cx - 1.0f, cy - 3.0f, 2.0f, 5.0f, kBulletCore);
@@ -275,24 +255,20 @@ void DrawPlayer(SDL_Renderer* renderer, const SdlRender::Layout& layout,
 		return;
 
 	const float cell = static_cast<float>(layout.cell);
-	const float x = static_cast<float>(layout.grid_x)
-	    + world.player_x * cell;
-	const float y = static_cast<float>(layout.grid_y)
-	    + world.player_y * cell;
+	const float x = static_cast<float>(layout.grid_x) + world.player_x * cell;
+	const float y = static_cast<float>(layout.grid_y) + world.player_y * cell;
 	const float w = GameConfig::kPlayerWidth * cell - 1.0f;
 	const float h = cell - 1.0f;
 
 	if(SDL_Texture* texture = PlayerTexture(renderer))
 	{
 		const float size = static_cast<float>(kPlayerSpriteSize);
-		const float left =
-		    x + GameConfig::kPlayerWidth * cell / 2.0f - size / 2.0f;
+		const float left = x + GameConfig::kPlayerWidth * cell / 2.0f - size / 2.0f;
 		const SDL_FRect dst{left, y + cell - size, size, size};
 
 		// 无敌时压暗，与色块版本的观感保持一致
 		if(world.invincible)
-			SDL_SetTextureColorMod(texture, kTextDim.r, kTextDim.g,
-			                       kTextDim.b);
+			SDL_SetTextureColorMod(texture, kTextDim.r, kTextDim.g, kTextDim.b);
 		SDL_RenderTexture(renderer, texture, nullptr, &dst);
 		if(world.invincible)
 			SDL_SetTextureColorMod(texture, 255, 255, 255);
@@ -305,8 +281,7 @@ void DrawPlayer(SDL_Renderer* renderer, const SdlRender::Layout& layout,
 	// 回退：主体（中间一格）+ 两侧机翼 + 驾驶舱
 	Fill(renderer, x + w / 3.0f, y, w / 3.0f, h, body);
 	Fill(renderer, x, y + h * 0.55f, w / 3.0f, h * 0.45f, wing);
-	Fill(renderer, x + w * 2.0f / 3.0f, y + h * 0.55f, w / 3.0f,
-	     h * 0.45f, wing);
+	Fill(renderer, x + w * 2.0f / 3.0f, y + h * 0.55f, w / 3.0f, h * 0.45f, wing);
 	Fill(renderer, x + w / 2.0f - 1.0f, y + 1.0f, 2.0f, 2.0f, kPlayerCore);
 }
 
@@ -317,15 +292,13 @@ void DrawWorld(SDL_Renderer* renderer, const thunder::WorldSnapshot& world,
 	const int grid_w = GameConfig::kScreenWidth * cell;
 	const int grid_h = GameConfig::kScreenHeight * cell;
 
-	Fill(renderer, static_cast<float>(layout.grid_x),
-	     static_cast<float>(layout.grid_y), static_cast<float>(grid_w),
-	     static_cast<float>(grid_h), kGridBg);
+	Fill(renderer, static_cast<float>(layout.grid_x), static_cast<float>(layout.grid_y),
+	     static_cast<float>(grid_w), static_cast<float>(grid_h), kGridBg);
 
 	DrawStars(renderer, layout, seconds);
 
 	// 网格线
-	SDL_SetRenderDrawColor(renderer, kGridLine.r, kGridLine.g, kGridLine.b,
-	                       kGridLine.a);
+	SDL_SetRenderDrawColor(renderer, kGridLine.r, kGridLine.g, kGridLine.b, kGridLine.a);
 	for(int x = 0; x <= GameConfig::kScreenWidth; ++x)
 	{
 		const float px = static_cast<float>(layout.grid_x + x * cell);
@@ -358,54 +331,45 @@ void DrawWorld(SDL_Renderer* renderer, const thunder::WorldSnapshot& world,
 
 	if(paused)
 	{
-		Blend(renderer, static_cast<float>(layout.grid_x),
-		      static_cast<float>(layout.grid_y), static_cast<float>(grid_w),
-		      static_cast<float>(grid_h), kOverlay);
-		CenterText(renderer, layout.window_width,
-		           layout.grid_y + grid_h / 2 - 20, 4, "PAUSED",
+		Blend(renderer, static_cast<float>(layout.grid_x), static_cast<float>(layout.grid_y),
+		      static_cast<float>(grid_w), static_cast<float>(grid_h), kOverlay);
+		CenterText(renderer, layout.window_width, layout.grid_y + grid_h / 2 - 20, 4, "PAUSED",
 		           kTextAccent);
 	}
 }
 
-void DrawHud(SDL_Renderer* renderer, const thunder::WorldSnapshot& world,
-             int best, int fps, const SdlRender::Layout& layout)
+void DrawHud(SDL_Renderer* renderer, const thunder::WorldSnapshot& world, int best, int fps,
+             const SdlRender::Layout& layout)
 {
-	const int enemies = static_cast<int>(world.enemies.size())
-	    + world.pending_enemies;
+	const int enemies = static_cast<int>(world.enemies.size()) + world.pending_enemies;
 
-	const std::string line1 = "SCORE " + PaddedNumber(world.score, 10)
-	    + "   LEVEL " + std::to_string(world.level) + "   TIME "
-	    + std::to_string(world.elapsed_seconds) + "S";
+	const std::string line1 = "SCORE " + PaddedNumber(world.score, 10) + "   LEVEL "
+	    + std::to_string(world.level) + "   TIME " + std::to_string(world.elapsed_seconds) + "S";
 
-	const std::string line2 = "LIFE " + std::to_string(world.life)
-	    + "   AMMO " + std::to_string(world.bullets_remaining) + "   ENEMIES "
-	    + std::to_string(enemies) + "   BEST " + std::to_string(best)
-	    + "   FPS " + std::to_string(fps);
+	const std::string line2 = "LIFE " + std::to_string(world.life) + "   AMMO "
+	    + std::to_string(world.bullets_remaining) + "   ENEMIES " + std::to_string(enemies)
+	    + "   BEST " + std::to_string(best) + "   FPS " + std::to_string(fps);
 
 	SdlFont::DrawText(renderer, layout.grid_x, 8, 2, line1, kTextAccent);
 	SdlFont::DrawText(renderer, layout.grid_x, 28, 2, line2, kText);
 }
 
-void DrawHint(SDL_Renderer* renderer, const SdlRender::Layout& layout,
-              const std::string& text)
+void DrawHint(SDL_Renderer* renderer, const SdlRender::Layout& layout, const std::string& text)
 {
-	CenterText(renderer, layout.window_width, layout.window_height - 26, 1,
-	           text, kTextDim);
+	CenterText(renderer, layout.window_width, layout.window_height - 26, 1, text, kTextDim);
 }
 
-void DrawMenu(SDL_Renderer* renderer, const SdlRender::Layout& layout,
-              bool cheats_enabled, bool cheat_notice)
+void DrawMenu(SDL_Renderer* renderer, const SdlRender::Layout& layout, bool cheats_enabled,
+              bool cheat_notice)
 {
 	// 标题自动降档：内建点阵字体每字符 6*scale 像素，Ubuntu Mono 约 5*scale，
 	// 40 个字符在点阵回退下 scale 4 会超出窗口，这里取能放下的最大档。
 	const std::string title = "NAIDAN'S FEAR OF INSUFFICIENT FIREPOWER";
 	int title_scale = 4;
-	while(title_scale > 1
-	      && SdlFont::TextWidth(title, title_scale) > layout.window_width - 24)
+	while(title_scale > 1 && SdlFont::TextWidth(title, title_scale) > layout.window_width - 24)
 		--title_scale;
 
-	CenterText(renderer, layout.window_width, 150, title_scale, title,
-	           kTextAccent);
+	CenterText(renderer, layout.window_width, 150, title_scale, title, kTextAccent);
 
 	CenterText(renderer, layout.window_width, 300, 2, "1  START GAME", kText);
 	CenterText(renderer, layout.window_width, 344, 2, "2  LEADERBOARD", kText);
@@ -424,8 +388,7 @@ void DrawMenu(SDL_Renderer* renderer, const SdlRender::Layout& layout,
 
 void DrawDifficulty(SDL_Renderer* renderer, const SdlRender::Layout& layout)
 {
-	CenterText(renderer, layout.window_width, 150, 3, "SELECT DIFFICULTY",
-	           kTextAccent);
+	CenterText(renderer, layout.window_width, 150, 3, "SELECT DIFFICULTY", kTextAccent);
 
 	CenterText(renderer, layout.window_width, 280, 2, "1  EASY", kText);
 	CenterText(renderer, layout.window_width, 330, 2, "2  NORMAL", kText);
@@ -434,18 +397,16 @@ void DrawDifficulty(SDL_Renderer* renderer, const SdlRender::Layout& layout)
 	DrawHint(renderer, layout, "B  BACK");
 }
 
-void DrawLeaderboard(SDL_Renderer* renderer,
-                     const thunder::SessionSnapshot& snapshot,
+void DrawLeaderboard(SDL_Renderer* renderer, const thunder::SessionSnapshot& snapshot,
                      const SdlRender::Layout& layout)
 {
-	CenterText(renderer, layout.window_width, 90, 3, "LEADERBOARD TOP 5",
-	           kTextAccent);
+	CenterText(renderer, layout.window_width, 90, 3, "LEADERBOARD TOP 5", kTextAccent);
 
 	int y = 180;
 	for(size_t i = 0; i < snapshot.leaderboard.size(); ++i)
 	{
-		const std::string row = std::to_string(i + 1) + ".  "
-		    + std::to_string(snapshot.leaderboard[i]);
+		const std::string row =
+		    std::to_string(i + 1) + ".  " + std::to_string(snapshot.leaderboard[i]);
 		CenterText(renderer, layout.window_width, y, 2, row, kText);
 		y += 36;
 	}
@@ -453,28 +414,22 @@ void DrawLeaderboard(SDL_Renderer* renderer,
 	DrawHint(renderer, layout, "B  BACK");
 }
 
-void DrawGameOver(SDL_Renderer* renderer,
-                  const thunder::SessionSnapshot& snapshot,
+void DrawGameOver(SDL_Renderer* renderer, const thunder::SessionSnapshot& snapshot,
                   const SdlRender::Layout& layout)
 {
 	const int panel_height = 240;
 	const int panel_y = (layout.window_height - panel_height) / 2;
 	const int panel_x = 120;
 
-	Blend(renderer, static_cast<float>(panel_x),
-	      static_cast<float>(panel_y),
-	      static_cast<float>(layout.window_width - panel_x * 2),
-	      static_cast<float>(panel_height), SDL_Color{0, 0, 0, 200});
+	Blend(renderer, static_cast<float>(panel_x), static_cast<float>(panel_y),
+	      static_cast<float>(layout.window_width - panel_x * 2), static_cast<float>(panel_height),
+	      SDL_Color{0, 0, 0, 200});
 
-	CenterText(renderer, layout.window_width, panel_y + 20, 4, "GAME OVER",
-	           kEnemyBody);
+	CenterText(renderer, layout.window_width, panel_y + 20, 4, "GAME OVER", kEnemyBody);
 
-	const std::string score = "SCORE " + std::to_string(snapshot.world.score)
-	    + "  +AMMO " + std::to_string(
-	                         snapshot.world.bullets_remaining
-	                         * GameConfig::kEndGameBulletBonus);
-	CenterText(renderer, layout.window_width, panel_y + 80, 2, score,
-	           kTextAccent);
+	const std::string score = "SCORE " + std::to_string(snapshot.world.score) + "  +AMMO "
+	    + std::to_string(snapshot.world.bullets_remaining * GameConfig::kEndGameBulletBonus);
+	CenterText(renderer, layout.window_width, panel_y + 80, 2, score, kTextAccent);
 
 	std::string rank_text;
 	if(snapshot.new_record)
@@ -483,11 +438,9 @@ void DrawGameOver(SDL_Renderer* renderer,
 		rank_text = "TOP 5  RANK " + std::to_string(snapshot.rank);
 	else
 		rank_text = "NO TOP 5";
-	CenterText(renderer, layout.window_width, panel_y + 120, 2, rank_text,
-	           kText);
+	CenterText(renderer, layout.window_width, panel_y + 120, 2, rank_text, kText);
 
-	CenterText(renderer, layout.window_width, panel_y + 170, 2,
-	           "R RESTART   Q QUIT", kTextDim);
+	CenterText(renderer, layout.window_width, panel_y + 170, 2, "R RESTART   Q QUIT", kTextDim);
 }
 
 } // namespace
@@ -495,23 +448,19 @@ void DrawGameOver(SDL_Renderer* renderer,
 namespace SdlRender
 {
 
-void Draw(SDL_Renderer* renderer, const thunder::SessionSnapshot& snapshot,
-          int fps, double seconds)
+void Draw(SDL_Renderer* renderer, const thunder::SessionSnapshot& snapshot, int fps, double seconds)
 {
 	const Layout layout;
 
 	Fill(renderer, 0, 0, static_cast<float>(layout.window_width),
 	     static_cast<float>(layout.window_height), kBg);
 
-	const int best = snapshot.leaderboard.empty()
-	    ? 0
-	    : snapshot.leaderboard.front();
+	const int best = snapshot.leaderboard.empty() ? 0 : snapshot.leaderboard.front();
 
 	switch(snapshot.screen)
 	{
 	case thunder::Screen::Menu:
-		DrawMenu(renderer, layout, snapshot.cheats_enabled,
-		         snapshot.cheat_notice);
+		DrawMenu(renderer, layout, snapshot.cheats_enabled, snapshot.cheat_notice);
 		break;
 
 	case thunder::Screen::DifficultySelect:

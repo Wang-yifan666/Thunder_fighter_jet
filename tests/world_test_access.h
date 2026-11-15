@@ -12,16 +12,24 @@ namespace thunder
 /// 生产代码不包含本文件；GameWorld 中以 friend 声明保留入口。
 struct WorldTestAccess
 {
-	static void ClearEnemies(GameWorld& world) { world.enemies_.clear(); }
+	static void ClearEnemies(GameWorld& world)
+	{
+		world.enemies_.clear();
+	}
 	static void ClearPending(GameWorld& world)
 	{
 		world.pending_enemies_.clear();
 	}
-	static void ClearBullets(GameWorld& world) { world.bullets_.clear(); }
-	static void ClearPickups(GameWorld& world) { world.pickups_.clear(); }
+	static void ClearBullets(GameWorld& world)
+	{
+		world.bullets_.clear();
+	}
+	static void ClearPickups(GameWorld& world)
+	{
+		world.pickups_.clear();
+	}
 
-	static void AddPickup(GameWorld& world, int x, int y,
-	                      PickupKind kind = PickupKind::Health)
+	static void AddPickup(GameWorld& world, int x, int y, PickupKind kind = PickupKind::Health)
 	{
 		world.pickups_.emplace_back(x, y, kind);
 	}
@@ -36,8 +44,8 @@ struct WorldTestAccess
 		return world.pickups_[static_cast<std::size_t>(index)].kind;
 	}
 
-	static void AddEnemy(GameWorld& world, int x, int y, int speed = 1,
-	                     int width = 3, int height = 1)
+	static void AddEnemy(GameWorld& world, int x, int y, int speed = 1, int width = 3,
+	                     int height = 1)
 	{
 		world.enemies_.emplace_back(x, y, speed, width, height);
 	}
@@ -93,8 +101,7 @@ struct WorldTestAccess
 		return world.cheat_invincible_;
 	}
 
-	static std::chrono::steady_clock::duration InvincibleRemaining(
-	    const GameWorld& world)
+	static std::chrono::steady_clock::duration InvincibleRemaining(const GameWorld& world)
 	{
 		return world.invincible_remaining_;
 	}

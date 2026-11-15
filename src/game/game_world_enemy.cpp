@@ -25,17 +25,13 @@ BatchLimits BatchLimitsFor(Difficulty difficulty)
 	switch(difficulty)
 	{
 	case Difficulty::Easy:
-		return {GameConfig::kEasyMaxBatchCount,
-		        GameConfig::kEasyMaxPerBatch};
+		return {GameConfig::kEasyMaxBatchCount, GameConfig::kEasyMaxPerBatch};
 	case Difficulty::Normal:
-		return {GameConfig::kNormalMaxBatchCount,
-		        GameConfig::kNormalMaxPerBatch};
+		return {GameConfig::kNormalMaxBatchCount, GameConfig::kNormalMaxPerBatch};
 	case Difficulty::Hard:
-		return {GameConfig::kHardMaxBatchCount,
-		        GameConfig::kHardMaxPerBatch};
+		return {GameConfig::kHardMaxBatchCount, GameConfig::kHardMaxPerBatch};
 	}
-	return {GameConfig::kNormalMaxBatchCount,
-	        GameConfig::kNormalMaxPerBatch};
+	return {GameConfig::kNormalMaxBatchCount, GameConfig::kNormalMaxPerBatch};
 }
 
 } //namespace
@@ -86,15 +82,13 @@ void GameWorld::SpawnEnemiesFromPending()
 	if(remaining_rows_in_batch_ == 0)
 	{
 		//这波最多能有多少批？理论上<=pending 数量，外加上限 15
-		int max_possible_batches = std::min<int>(
-		    limits.max_batch_count,
-		    static_cast<int>(pending_enemies_.size()));
+		int max_possible_batches =
+		    std::min<int>(limits.max_batch_count, static_cast<int>(pending_enemies_.size()));
 
 		if(max_possible_batches <= 0)
 			return;
 
-		std::uniform_int_distribution<int> batch_dist(
-		    1, max_possible_batches);
+		std::uniform_int_distribution<int> batch_dist(1, max_possible_batches);
 		remaining_rows_in_batch_ = batch_dist(rng_);
 	}
 
@@ -102,10 +96,9 @@ void GameWorld::SpawnEnemiesFromPending()
 	// 所以"顶部这几行全空"才允许生成。
 	// 曾经这里写死成 e.y < 1（只清 1 行）：命中框加高到 2 行之后，
 	// y == 1 的旧敌机正好和新敌机压在第 1 行上，视觉上叠在一起。
-	bool top_row_clear = std::none_of(
-	    enemies_.begin(), enemies_.end(), [](const Enemy& e) {
-		    return e.y < GameConfig::kEnemyHeight;
-	    });
+	bool top_row_clear = std::none_of(enemies_.begin(), enemies_.end(), [](const Enemy& e) {
+		return e.y < GameConfig::kEnemyHeight;
+	});
 
 	if(!top_row_clear)
 		return; // 顶部还没空出来，等下一帧再说
@@ -150,8 +143,7 @@ void GameWorld::SpawnEnemiesFromPending()
 		spawned_row.push_back(e);
 	}
 
-	enemies_.insert(enemies_.end(), spawned_row.begin(),
-	                spawned_row.end());
+	enemies_.insert(enemies_.end(), spawned_row.begin(), spawned_row.end());
 
 	//当前这批刷完了，这一波的剩余批次数量减一
 	remaining_rows_in_batch_--;
@@ -161,15 +153,15 @@ void GameWorld::SpawnEnemiesFromPending()
 		remaining_rows_in_batch_ = 0;
 }
 
-void GameWorld::MoveEnemies(std::vector<Enemy>& active_enemies, int level,
-                            int screen_width, int screen_height)
+void GameWorld::MoveEnemies(std::vector<Enemy>& active_enemies, int level, int screen_width,
+                            int screen_height)
 {
 	std::vector<Enemy> to_pending; // 到底部的敌人
 
 	// 两架敌机在格子意义上的矩形是否相交。
 	auto overlaps = [](const Enemy& a, int ax, int ay, const Enemy& b) {
-		return !((ax + a.width <= b.x) || (b.x + b.width <= ax)
-		         || (ay + a.height <= b.y) || (b.y + b.height <= ay));
+		return !((ax + a.width <= b.x) || (b.x + b.width <= ax) || (ay + a.height <= b.y)
+		         || (b.y + b.height <= ay));
 	};
 
 	// 指定敌机移到 (x, y) 后会不会撞上别的敌机。
@@ -196,8 +188,7 @@ void GameWorld::MoveEnemies(std::vector<Enemy>& active_enemies, int level,
 		{
 			// 放回 pending
 			to_pending.push_back(e);
-			active_enemies.erase(active_enemies.begin()
-			                     + static_cast<std::ptrdiff_t>(i));
+			active_enemies.erase(active_enemies.begin() + static_cast<std::ptrdiff_t>(i));
 			continue; // erase 之后同一位置就是下一个元素，不能再 ++i
 		}
 
@@ -235,8 +226,7 @@ void GameWorld::MoveEnemies(std::vector<Enemy>& active_enemies, int level,
 	}
 
 	// 放回 pending
-	pending_enemies_.insert(pending_enemies_.end(), to_pending.begin(),
-	                        to_pending.end());
+	pending_enemies_.insert(pending_enemies_.end(), to_pending.begin(), to_pending.end());
 }
 
 } // namespace thunder

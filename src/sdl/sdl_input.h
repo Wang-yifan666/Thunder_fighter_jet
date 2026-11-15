@@ -15,10 +15,16 @@ class State
 public:
 	void HandleEvent(const SDL_Event& event);
 
-	thunder::RawInput Build() const { return raw_; }
+	thunder::RawInput Build() const
+	{
+		return raw_;
+	}
 
 	/// 逻辑步消费完按下事件后调用
-	void ConsumePressedEvents() { raw_.pressed_events.reset(); }
+	void ConsumePressedEvents()
+	{
+		raw_.pressed_events.reset();
+	}
 
 private:
 	void SetKey(SDL_Scancode scancode, bool down);

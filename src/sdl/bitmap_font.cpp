@@ -92,8 +92,8 @@ const Glyph& FindGlyph(char c)
 namespace BitmapFont
 {
 
-void DrawText(SDL_Renderer* renderer, int x, int y, int scale,
-              const std::string& text, SDL_Color color)
+void DrawText(SDL_Renderer* renderer, int x, int y, int scale, const std::string& text,
+              SDL_Color color)
 {
 	if(renderer == nullptr || scale <= 0)
 		return;
@@ -111,11 +111,9 @@ void DrawText(SDL_Renderer* renderer, int x, int y, int scale,
 			{
 				if((glyph.rows[row] >> (4 - col)) & 0x1)
 				{
-					SDL_FRect pixel{
-					    static_cast<float>(cursor_x + col * scale),
-					    static_cast<float>(y + row * scale),
-					    static_cast<float>(scale),
-					    static_cast<float>(scale)};
+					SDL_FRect pixel{static_cast<float>(cursor_x + col * scale),
+					                static_cast<float>(y + row * scale), static_cast<float>(scale),
+					                static_cast<float>(scale)};
 					SDL_RenderFillRect(renderer, &pixel);
 				}
 			}

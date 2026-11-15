@@ -57,8 +57,14 @@ struct InputState
 	KeyBits down;
 	KeyBits pressed;
 
-	bool Down(Key key) const { return down.test(KeyIndex(key)); }
-	bool Pressed(Key key) const { return pressed.test(KeyIndex(key)); }
+	bool Down(Key key) const
+	{
+		return down.test(KeyIndex(key));
+	}
+	bool Pressed(Key key) const
+	{
+		return pressed.test(KeyIndex(key));
+	}
 };
 
 /// 把 RawInput 转换为带按下沿的 InputState。

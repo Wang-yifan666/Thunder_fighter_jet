@@ -18,12 +18,18 @@ public:
 	virtual void Save(const std::vector<int>& scores) = 0;
 };
 
-class MemoryScoreStore : public ScoreStore
+class MemoryScoreStore: public ScoreStore
 {
 public:
-	std::vector<int> Load() override { return scores_; }
+	std::vector<int> Load() override
+	{
+		return scores_;
+	}
 
-	void Save(const std::vector<int>& scores) override { scores_ = scores; }
+	void Save(const std::vector<int>& scores) override
+	{
+		scores_ = scores;
+	}
 
 private:
 	std::vector<int> scores_;

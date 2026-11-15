@@ -40,9 +40,8 @@ TTF_Font* OpenEmbeddedFont(float pixel_size)
 	if(SdlFontData::kUbuntuMonoRegularSize == 0)
 		return nullptr;
 
-	SDL_IOStream* io = SDL_IOFromMem(
-	    const_cast<unsigned char*>(SdlFontData::kUbuntuMonoRegular),
-	    SdlFontData::kUbuntuMonoRegularSize);
+	SDL_IOStream* io = SDL_IOFromMem(const_cast<unsigned char*>(SdlFontData::kUbuntuMonoRegular),
+	                                 SdlFontData::kUbuntuMonoRegularSize);
 	if(io == nullptr)
 		return nullptr;
 
@@ -56,10 +55,8 @@ std::string FindFontFile()
 
 	if(const char* base = SDL_GetBasePath())
 	{
-		candidates.push_back(std::string(base)
-		                     + "assets/fonts/UbuntuMono-Regular.ttf");
-		candidates.push_back(std::string(base)
-		                     + "../assets/fonts/UbuntuMono-Regular.ttf");
+		candidates.push_back(std::string(base) + "assets/fonts/UbuntuMono-Regular.ttf");
+		candidates.push_back(std::string(base) + "../assets/fonts/UbuntuMono-Regular.ttf");
 	}
 
 	candidates.push_back("assets/fonts/UbuntuMono-Regular.ttf");
@@ -112,16 +109,13 @@ bool Init()
 	for(int scale = 1; scale <= kMaxScale; ++scale)
 	{
 		// 优先使用嵌入字体；失败时再尝试磁盘上的字体文件
-		TTF_Font* font =
-		    OpenEmbeddedFont(static_cast<float>(PixelSize(scale)));
+		TTF_Font* font = OpenEmbeddedFont(static_cast<float>(PixelSize(scale)));
 		if(font == nullptr && !path.empty())
-			font = TTF_OpenFont(path.c_str(),
-			                    static_cast<float>(PixelSize(scale)));
+			font = TTF_OpenFont(path.c_str(), static_cast<float>(PixelSize(scale)));
 
 		if(font == nullptr)
 		{
-			std::fprintf(stderr, "TTF font unavailable: %s\n",
-			             SDL_GetError());
+			std::fprintf(stderr, "TTF font unavailable: %s\n", SDL_GetError());
 			CloseFonts();
 			TTF_Quit();
 			return false;
@@ -134,8 +128,7 @@ bool Init()
 	g_ttf_ready = true;
 	return true;
 #else
-	std::fprintf(stderr,
-	             "built without SDL3_ttf; fallback to built-in bitmap font\n");
+	std::fprintf(stderr, "built without SDL3_ttf; fallback to built-in bitmap font\n");
 	return false;
 #endif
 }
@@ -157,25 +150,21 @@ bool UsingTrueType()
 #endif
 }
 
-void DrawText(SDL_Renderer* renderer, int x, int y, int scale,
-              const std::string& text, SDL_Color color)
+void DrawText(SDL_Renderer* renderer, int x, int y, int scale, const std::string& text,
+              SDL_Color color)
 {
 #if defined(THUNDER_HAVE_SDL3_TTF)
 	if(g_ttf_ready)
 	{
 		TTF_Font* font = g_fonts[ClampScale(scale)];
-		SDL_Surface* surface =
-		    TTF_RenderText_Blended(font, text.c_str(), text.size(), color);
+		SDL_Surface* surface = TTF_RenderText_Blended(font, text.c_str(), text.size(), color);
 		if(surface != nullptr)
 		{
-			SDL_Texture* texture =
-			    SDL_CreateTextureFromSurface(renderer, surface);
+			SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
 			if(texture != nullptr)
 			{
-				SDL_FRect dst{static_cast<float>(x),
-				              static_cast<float>(y),
-				              static_cast<float>(surface->w),
-				              static_cast<float>(surface->h)};
+				SDL_FRect dst{static_cast<float>(x), static_cast<float>(y),
+				              static_cast<float>(surface->w), static_cast<float>(surface->h)};
 				SDL_RenderTexture(renderer, texture, nullptr, &dst);
 				SDL_DestroyTexture(texture);
 			}
@@ -194,8 +183,7 @@ int TextWidth(const std::string& text, int scale)
 	{
 		int width = 0;
 		int height = 0;
-		if(TTF_GetStringSize(g_fonts[ClampScale(scale)], text.c_str(),
-		                     text.size(), &width, &height))
+		if(TTF_GetStringSize(g_fonts[ClampScale(scale)], text.c_str(), text.size(), &width, &height))
 			return width;
 	}
 #endif
