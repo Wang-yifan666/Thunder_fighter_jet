@@ -45,7 +45,62 @@ bool HasFlag(int argc, char** argv, const char* flag)
 	return false;
 }
 
-/// 无头冒烟用：按固定步数注入脚本化输入（菜单 -> 难度 -> 开火移动）。
+const char* ParseStringOption(int argc, char** argv, const char* name)
+{
+	for(int i = 1; i + 1 < argc; ++i)
+	{
+		if(std::strcmp(argv[i], name) == 0)
+			return argv[i + 1];
+	}
+	return nullptr;
+}
+
+/// 把当前帧存成原始 RGBA（"宽 高\n" + 像素），
+/// 由 tools/shots_to_png.py 转成 PNG。用于更新文档截图。
+bool SaveFrame(SDL_Renderer* renderer, const char* path)
+{
+	SDL_Surface* shot = SDL_RenderReadPixels(renderer, nullptr);
+	if(shot == nullptr)
+	{
+		std::fprintf(stderr, "screenshot failed: %s\n", SDL_GetError());
+		return false;
+	}
+
+	SDL_Surface* rgba = SDL_ConvertSurface(shot, SDL_PIXELFORMAT_RGBA32);
+	SDL_DestroySurface(shot);
+	if(rgba == nullptr)
+	{
+		std::fprintf(stderr, "convert failed: %s\n", SDL_GetError());
+		return false;
+	}
+
+	const int width = rgba->w;
+	const int height = rgba->h;
+	const int pitch = rgba->pitch;
+
+	FILE* fp = std::fopen(path, "wb");
+	if(fp == nullptr)
+	{
+		SDL_DestroySurface(rgba);
+		return false;
+	}
+
+	std::fprintf(fp, "%d %d\n", width, height);
+	const unsigned char* base = static_cast<const unsigned char*>(rgba->pixels);
+	for(int y = 0; y < height; ++y)
+	{
+		std::fwrite(base + static_cast<std::size_t>(y) * pitch, 1,
+		            static_cast<std::size_t>(width) * 4, fp);
+	}
+	std::fclose(fp);
+	SDL_DestroySurface(rgba);
+
+	std::printf("screenshot: %s (%dx%d)\n", path, width, height);
+	return true;
+}
+
+/// 脚本化输入（无头冒烟与截图共用）：
+/// 主菜单按 F 开作弊 -> 选难度 -> 开火横移 -> 到固定步数自杀进结算。
 thunder::RawInput DemoInput(unsigned int step)
 {
 	thunder::RawInput raw;
@@ -53,13 +108,19 @@ thunder::RawInput DemoInput(unsigned int step)
 		raw.down.set(thunder::KeyIndex(key));
 	};
 
-	if(step < 6)
+	if(step < 6) // 主菜单：打开作弊模式（否则游戏内数字键无效）
+		set(thunder::Key::CheatUnlock);
+	else if(step >= 12 && step < 18) // 菜单 -> 难度选择
 		set(thunder::Key::Digit1);
-	else if(step >= 20 && step < 26)
+	else if(step >= 24 && step < 30) // 选 Easy -> 进入游戏
 		set(thunder::Key::Digit1);
-	else if(step >= 30)
+	else if(step >= 300 && step < 306) // 作弊自杀 -> 结算界面
+		set(thunder::Key::Digit2);
+	else if(step >= 36)
 	{
-		set(thunder::Key::Fire);
+		// 点射而不是长按：长按会每步发一颗，串成一条连续的子弹长龙
+		if(step % 8 < 3)
+			set(thunder::Key::Fire);
 		if((step / 20) % 2 == 0)
 			set(thunder::Key::Left);
 		else
@@ -77,9 +138,11 @@ int main(int argc, char** argv)
 	{
 		std::printf("%s\n"
 		            "  --frames N   run N frames then exit (headless smoke)\n"
-		            "  --demo       feed scripted input (menu -> difficulty -> play)\n"
+		            "  --demo       feed scripted input (menu -> play -> game over)\n"
 		            "  --no-vsync   disable vertical sync (uncapped rendering)\n"
 		            "  --max-fps N  limit render rate (only useful with --no-vsync)\n"
+		            "  --screenshot PATH\n"
+		            "               dump the last frame as raw RGBA (for docs)\n"
 		            "  --help       show this help\n"
 		            "In-game: WASD move, SPACE fire, P pause, Q menu, F cheats,\n"
 		            "         F11 fullscreen, ESC quit\n",
@@ -91,6 +154,7 @@ int main(int argc, char** argv)
 	const int max_fps = ParseIntOption(argc, argv, "--max-fps");
 	const bool demo = HasFlag(argc, argv, "--demo");
 	const bool no_vsync = HasFlag(argc, argv, "--no-vsync");
+	const char* shot_path = ParseStringOption(argc, argv, "--screenshot");
 
 	if(!SDL_Init(SDL_INIT_VIDEO))
 	{
@@ -224,7 +288,11 @@ int main(int argc, char** argv)
 		}
 
 		if(max_frames > 0 && frames >= max_frames)
+		{
+			if(shot_path != nullptr && renderer != nullptr)
+				SaveFrame(renderer, shot_path);
 			running = false;
+		}
 
 		if(renderer != nullptr && no_vsync && max_fps > 0)
 		{

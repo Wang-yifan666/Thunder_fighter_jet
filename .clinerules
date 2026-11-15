@@ -1,68 +1,68 @@
-# Thunder Fighter Refactor Rules
+# Naidan 开发规则
 
-## Current Stage
+## 当前阶段
 
-The current stage is behavior-preserving refactoring only.
+单一 SDL3 前端 + 平台无关逻辑层。目标：保持单文件发布体验，同时让逻辑层可以
+被移植到其他平台（Android 等）。
 
-Do not introduce SDL, WebAssembly, mobile support, new gameplay logic, new rendering logic, or new input logic in this stage.
+## 硬性约束
 
-## Hard Rules
+1. **逻辑层零平台依赖**
+   `inc/game/` 与 `src/game/` 不得出现 SDL、`windows.h`、`std::cout`、
+   `std::ifstream`、`steady_clock::now`、`system()`、`sleep`。
+   由 `tests/check_isolation.cmake` 在 ctest 中强制检查，加新文件不需要额外登记。
 
-1. Do not rewrite the whole project at once.
-2. Keep every step buildable.
-3. Do not change gameplay behavior unless explicitly requested.
-4. Do not change enemy spawning logic.
-5. Do not change bullet logic.
-6. Do not change collision logic.
-7. Do not change score logic.
-8. Do not change leaderboard logic.
-9. Do not change menu flow.
-10. Do not change keyboard bindings.
-11. Do not change visual output.
-12. Do not introduce SDL in the current stage.
-13. Do not introduce WebAssembly in the current stage.
-14. Do not introduce mobile-specific code in the current stage.
+2. **时间必须注入**
+   `GameWorld::Tick(input, dt)` 的 `dt` 由前端提供，逻辑层不读系统时钟；
+   `GameSession` 的冷却与提示计时同样用注入的 `dt` 递减。
 
-## Allowed Refactoring
+3. **暂停不推进世界**
+   `GameSession` 在暂停分支直接返回，绝不调用 `GameWorld::Tick`。
 
-The following changes are allowed only when explicitly requested:
+4. **数值集中在 `game_config.h`**
+   新的可调数值一律加进 `GameConfig` 命名空间，不要在业务代码里写魔数。
 
-1. Split large files.
-2. Move existing types into separate headers.
-3. Move existing constants into config headers.
-4. Move existing console input code into separate files.
-5. Move existing console rendering code into separate files.
-6. Move existing high score file I/O into separate files.
-7. Reorder class methods for readability.
-8. Rename functions only when behavior remains identical.
-9. Update CMake only to include newly split files.
+5. **产品名与版本号单一来源**
+   `inc/game/game_info.h`（前端与文档）与 `CMakeLists.txt` 的 `project(VERSION)`
+   （Windows 资源）必须同步修改。
 
-## Forbidden Refactoring
+6. **素材走烘焙管线，不要手改生成物**
+   改图 → 换 `assets/sprites/*.png` → `python tools/bake_sprites.py`。
+   `*.rgba` 与 `build/generated/*` 都是产物。
 
-1. Do not redesign the whole architecture in one step.
-2. Do not create a new GameCore yet unless explicitly requested.
-3. Do not create SDL frontend yet.
-4. Do not delete the old terminal version.
-5. Do not replace FTXUI yet.
-6. Do not optimize gameplay values.
-7. Do not rebalance difficulty.
-8. Do not change file formats.
+7. **判定盒与视觉必须一致或对玩家有利**
+   - 玩家：伤害盒 3×1 格（比精灵小，对玩家宽容），拾取盒 4 行（与精灵等大）
+   - 敌机：精灵与命中框严格等大（子弹不能"穿过脸"）
+   - 任何"看起来打到了却不算"的情况都算 bug
 
-## Build Rule
+8. **敌机之间不得重叠**
+   由 `WorldEnemy.EnemiesNeverOverlapEachOther` 锁定，改移动逻辑时别破坏它。
 
-After every code modification, run the existing CMake configure and build commands.
+## 开发流程
 
-If the build fails, stop and report the exact error before continuing.
+- 改动后必须：`cmake --build build` + `ctest --test-dir build --output-on-failure`
+- 行为变更单独提交，并在提交信息里说明"行为是否改变"
+- 每个提交保持可构建、测试全绿
+- 提交粒度：一个主题一个提交；纯格式化、纯改名各自单独提交
 
-## Long-Term Direction
+## 代码风格
 
-The long-term goal is:
+- `.clang-format` 是唯一标准，提交前跑一次 `clang-format -i`
+- Tab 缩进、Allman 大括号、列宽 100
+- 注释用中文，标识符用英文
 
-1. Behavior-preserving cleanup.
-2. Separate platform-specific code.
-3. Extract platform-independent game logic.
-4. Add SDL desktop frontend.
-5. Prepare WebAssembly support.
-6. Prepare mobile support.
+## 目录职责
 
-But the current stage is only step 1.
+| 目录 | 职责 | 允许依赖 |
+|---|---|---|
+| `inc/game/` `src/game/` | 游戏逻辑、状态机、规则 | 仅标准库 |
+| `inc/io/` `src/io/` | 文件存取 | 标准库 |
+| `src/sdl/` | SDL3 渲染、输入、入口 | SDL3、thunder_logic、thunder_io |
+| `tests/` | 回归测试 | gtest、thunder_logic、thunder_io |
+
+## 长期方向
+
+1. ~~逻辑/平台分离~~（已完成）
+2. ~~单文件发布 + 内嵌资源~~（已完成）
+3. 安装包（Inno Setup）与代码签名
+4. Android 移植验证（SDL3 官方支持 Android，优先复用现有前端）

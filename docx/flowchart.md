@@ -1,105 +1,99 @@
-#  游戏运行流程图 (Game Execution Flow)
+# 运行流程图
 
-本文档描述了 `Thunder Fighter Jet` 的核心执行流程。
+描述当前（v1.7，单一 SDL3 前端）的实际执行路径。
 
-##  整体架构流程 (Mermaid Diagram)
+## 主循环
 
 ```mermaid
 flowchart TD
-    %% 节点样式
-    classDef startend fill:#f9f,stroke:#333,stroke-width:2px;
-    classDef process fill:#e1f5fe,stroke:#0277bd,stroke-width:2px;
-    classDef decision fill:#fff9c4,stroke:#fbc02d,stroke-width:2px;
-    classDef subfunction fill:#e0f2f1,stroke:#00695c,stroke-width:1px,stroke-dasharray: 5 5;
+    Start(("main()")) --> Init["SDL_Init(VIDEO)<br>SdlFont::Init()<br>建窗口 832x496 + 渲染器"]
+    Init --> Store["FileScoreStore<br>GameSession(store)"]
+    Store --> Loop{"running ?"}
 
-    %% 程序启动
-    Start(("程序启动<br>main")):::startend --> Init["构造 ThunderFighter<br>Constructor"]:::process
-    Init --> LoadHS["加载最高分<br>highscore_.Load()"]:::subfunction
-    Init --> InitEnemies["初始化敌人池<br>Make_enermy()"]:::subfunction
-    Init --> MainLoop{"主循环<br>IsRunning() ?"}:::decision
+    Loop -- 是 --> Events["轮询 SDL 事件<br>QUIT / F11 / 键盘 → SdlInput"]
+    Events --> Acc["accumulator += 实际耗时"]
+    Acc --> Steps{"accumulator >= 16ms<br>且 steps < 5 ?"}
+    Steps -- 是 --> Step["session.Step(input, 16ms)<br>（贪睡时最多补 5 步）"]
+    Step --> Steps
+    Steps -- 否 --> Exit{"exit_requested ?"}
+    Exit -- 是 --> End
+    Exit -- 否 --> Snap["snapshot = session.Snapshot()"]
+    Snap --> Draw["SdlRender::Draw(snapshot, fps, seconds)"]
+    Draw --> Delay["--no-vsync 时软限帧"]
+    Delay --> Loop
+    Loop -- 否 --> End(("退出"))
+```
 
-    %% 主循环
-    MainLoop -- True --> Run["调用 Run()"]:::process
+## GameSession 状态机
 
-    %% Run 内部：状态分发
-    Run --> StateCheck{"当前 GameState ?"}:::decision
+```mermaid
+flowchart TD
+    Menu["Menu 主菜单"] -- "1" --> Diff["DifficultySelect"]
+    Menu -- "2" --> Board["Leaderboard"]
+    Menu -- "Q" --> Exit(("退出程序"))
+    Menu -. "F（任意时刻）" .-> Cheat["切换作弊模式<br>提示 1.5 秒后自动隐藏"]
 
-    %% ===== 主菜单 =====
-    StateCheck -- Menu --> ShowMenu["显示主菜单<br>ShowMenu()"]:::process
+    Diff -- "1 / 2 / 3" --> Play["Playing"]
+    Diff -- "B" --> Menu
+    Board -- "B" --> Menu
+    Board -- "Esc" --> Exit
 
-    %% 主菜单：开始游戏 -> 难度选择
-    ShowMenu -- "按 1" --> DiffMenu["选择难度<br>ShowDifficultyMenu()"]:::process
-    DiffMenu -- "选定难度" --> ResetGame["ResetGame()"]:::process
-    ResetGame --> SetPlaying["state = Playing"]:::process
-    SetPlaying --> ReturnRun1["返回 Run()"]:::process
+    Play -- "Q" --> Menu
+    Play -- "Esc" --> Exit
+    Play -- "P（按下沿）" --> Pause["暂停（不调用 Tick）"]
+    Pause -- "P" --> Play
+    Play -- "life <= 0" --> Over["GameOver<br>结算 + 写入排行榜"]
+    Over -- "R" --> Menu
+    Over -- "Q" --> Exit
+```
 
-    %% 主菜单：排行榜（可选）
-    ShowMenu -- "按 2 (排行榜)" --> Leaderboard["排行榜页面<br>ShowLeaderboard()"]:::process
-    Leaderboard -- "按 B " --> ShowMenu
+## 一帧的 Tick 顺序（GameWorld::Tick）
 
-    %% 主菜单：退出
-    ShowMenu -- "按 3 (退出)" --> ExitSet1["state = Exit<br>running_=false"]:::process
-    ExitSet1 --> MainLoop
+```mermaid
+flowchart TD
+    A["enemy_move_counter++"] --> B["elapsed += dt<br>elapsed_seconds 取整"]
+    B --> C["无敌倒计时 -= dt"]
+    C --> D{"到移动间隔？"}
+    D -- 是 --> D1["MoveEnemies<br>（禁止走进已被占用的格子）"]
+    D -- 否 --> E
+    D1 --> E{"pending 非空？"}
+    E -- 是 --> E1["SpawnEnemiesFromPending<br>（顶部 kEnemyHeight 行全空才刷）"]
+    E -- 否 --> F
+    E1 --> F["UpdateLevel：每 10 秒升级<br>按等级收紧移动间隔"]
+    F --> G["AccrueScore：每跨 1 秒 +10"]
+    G --> H["开火输入 → 生成子弹（弹药 > 0）"]
+    H --> I["按输入移动玩家"]
+    I --> J["作弊键（会话层已门控，未开启时全为 false）"]
+    J --> K["玩家位置钳制到棋盘内"]
+    K --> L["UpdatePickups + CheckPickupCollect<br>（拾取用视觉身体 4 行判定）"]
+    L --> M["CheckPlayerCollision<br>（伤害用 3x1 命中框）"]
+    M --> N["UpdateBullets<br>命中 → 加分 +5 弹药 + 概率掉落"]
+```
 
-    %% ===== 游戏进行中 =====
-    StateCheck -- Playing --> GameLoop{"Playing && !ShouldExit()"}:::decision
+## 分层
 
-    GameLoop -- True --> DrawFrame["DrawFrame()"]:::process
-
-    %% DrawFrame 内部
-    subgraph DrawFrame_Logic [DrawFrame 内部逻辑]
-        direction TB
-
-        CheckBack{"按下 Q ?"}:::decision
-        CheckBack -- Yes --> BackMenu["Back_to_menu()<br>state=Menu"]:::process
-        CheckBack -- No --> PauseCheck{"按下 P ?"}:::decision
-
-        PauseCheck -- Yes --> TogglePause["切换暂停<br>修正时间"]:::process
-        PauseCheck -- No --> IsPaused{"is_paused_ ?"}:::decision
-
-        IsPaused -- Yes --> RenderPause["绘制 PAUSED"]:::process
-        IsPaused -- No --> LogicUpdate["逻辑更新"]:::process
-
-        LogicUpdate --> CoreFuncs["核心逻辑调用"]:::subfunction
-
-        subgraph LogicFunctions [逻辑调用顺序]
-            direction TB
-            F1["MoveEnemies (按 interval)"]
-            F2["SpawnEnemiesFromPending (pending 非空)"]
-            F3["Level() / score()"]
-            F4["输入处理<br>WASD / Space / Cheats"]
-            F5["CheckPlayerCollision()"]
-            F6["UpdateBullets()"]
-
-            F1 --> F2 --> F3 --> F4 --> F5 --> F6
-        end
-
-        CoreFuncs --> RenderGame["渲染游戏画面"]:::process
+```mermaid
+flowchart LR
+    subgraph platform["平台相关"]
+        SDL["src/sdl<br>渲染 / 输入 / 入口"]
+    end
+    subgraph io["thunder_io"]
+        FS["FileScoreStore<br>ScoreStore 接口实现"]
+    end
+    subgraph logic["thunder_logic（零平台依赖）"]
+        Session["GameSession<br>流程状态机"]
+        World["GameWorld<br>对局状态"]
+        Snap["WorldSnapshot /<br>SessionSnapshot"]
+        HS["HighScore"]
     end
 
-    DrawFrame --> Sleep["sleep_for 16ms"]:::process
-    Sleep --> GameLoop
+    SDL -- "RawInput + dt" --> Session
+    Session --> World
+    World --> Snap
+    Snap -- "只读快照" --> SDL
+    Session --> HS
+    HS -. "ScoreStore 接口注入" .- FS
+```
 
-    %% ===== 游戏结束（离开 Playing 循环） =====
-    GameLoop -- False --> LifeCheck{"life_number <= 0 ?"}:::decision
-
-    %% 不是死亡：可能是 ESC 或 state 切换到 Menu
-    LifeCheck -- No --> ReturnRun2["返回 Run()"]:::process
-    ReturnRun2 --> MainLoop
-
-    %% 死亡：结算
-    LifeCheck -- Yes --> GameOver["结算流程"]:::process
-    GameOver --> CalcScore["子弹结算 + 排名计算"]:::subfunction
-    CalcScore --> SubmitHS["highscore_.Submit(score_)"]:::subfunction
-
-    %% 结算界面
-    SubmitHS --> OverScreen{"结算界面"}:::decision
-
-    OverScreen -- "按 R" --> MenuBack["state = Menu"]:::process
-    MenuBack --> MainLoop
-
-    OverScreen -- "按 Q" --> ExitSet2["state = Exit<br>running_=false"]:::process
-    ExitSet2 --> MainLoop
-
-    %% 程序结束
-    MainLoop -- False --> End(("程序结束")):::startend
+逻辑层不包含任何 SDL / windows.h / 文件 IO / 系统时钟调用，
+由 `tests/check_isolation.cmake` 在 ctest 中强制校验。
