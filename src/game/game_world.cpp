@@ -39,15 +39,15 @@ void GameWorld::Reset(Difficulty difficulty)
 	switch(difficulty_)
 	{
 	case Difficulty::Easy:
-		life_number = GameConfig::kEasyLife;
+		life_ = GameConfig::kEasyLife;
 		bullets_remaining_ = GameConfig::kEasyBullets;
 		break;
 	case Difficulty::Normal:
-		life_number = GameConfig::kNormalLife;
+		life_ = GameConfig::kNormalLife;
 		bullets_remaining_ = GameConfig::kNormalBullets;
 		break;
 	case Difficulty::Hard:
-		life_number = GameConfig::kHardLife;
+		life_ = GameConfig::kHardLife;
 		bullets_remaining_ = GameConfig::kHardBullets;
 		break;
 	}
@@ -63,7 +63,7 @@ void GameWorld::Reset(Difficulty difficulty)
 	cheat_invincible_ = false;
 	invincible_remaining_ = steady_clock::duration::zero();
 
-	Make_enermy();
+	SpawnEnemyWave();
 }
 
 void GameWorld::Tick(const GameInput& input, steady_clock::duration dt)
@@ -97,7 +97,7 @@ void GameWorld::Tick(const GameInput& input, steady_clock::duration dt)
 		SpawnEnemiesFromPending();
 	}
 
-	Level(input);
+	UpdateLevel(input);
 	AccrueScore();
 
 	const int player_w = GameConfig::kPlayerWidth;
@@ -126,21 +126,21 @@ void GameWorld::Tick(const GameInput& input, steady_clock::duration dt)
 
 	// 作弊键（与原实现一致：按住即重复触发，不是按下沿触发）
 	if(input.digit[8])
-		Clear_Current_Enemies();
+		ClearActiveEnemies();
 	if(input.digit[7])
-		cheats_kills();
+		CheatKillAll();
 	if(input.digit[6])
-		cheats_life();
+		CheatAddLife();
 	if(input.digit[5])
-		cheats_invincible();
+		CheatToggleInvincible();
 	if(input.digit[4])
-		cheats_addscore();
+		CheatAddScore();
 	if(input.digit[3])
-		cheats_addbullters();
+		CheatAddAmmo();
 	if(input.digit[2])
-		kill_self();
+		CheatSelfDestruct();
 	if(input.digit[1])
-		cheats_godlike();
+		CheatGodMode();
 
 	player_x_ = std::clamp(player_x_, 0, GameConfig::kScreenWidth - player_w);
 	player_y_ = std::clamp(player_y_, 0, GameConfig::kScreenHeight - player_h);
@@ -154,7 +154,7 @@ void GameWorld::Tick(const GameInput& input, steady_clock::duration dt)
 	UpdateBullets();
 }
 
-void GameWorld::Level(const GameInput& input)
+void GameWorld::UpdateLevel(const GameInput& input)
 {
 	if(elapsed_seconds_ - last_level_up_time_ >= GameConfig::kLevelUpTime)
 	{
@@ -163,14 +163,14 @@ void GameWorld::Level(const GameInput& input)
 
 		bullets_remaining_ += GameConfig::kBulletsPerLevelUp;
 
-		Make_enermy();
+		SpawnEnemyWave();
 	}
 
 	// 作弊：强制升级（按住即连续触发，原实现如此）
 	if(input.digit[9])
 	{
 		level_++;
-		Make_enermy();
+		SpawnEnemyWave();
 		bullets_remaining_ += GameConfig::kBulletsPerLevelUp;
 	}
 
@@ -199,7 +199,7 @@ WorldSnapshot GameWorld::Snapshot() const
 	snapshot.difficulty = difficulty_;
 	snapshot.player_x = player_x_;
 	snapshot.player_y = player_y_;
-	snapshot.life = life_number;
+	snapshot.life = life_;
 	snapshot.invincible = is_invincible_ || cheat_invincible_;
 
 	snapshot.enemies.reserve(enemies_.size());
@@ -225,7 +225,7 @@ WorldSnapshot GameWorld::Snapshot() const
 	snapshot.bullets_remaining = bullets_remaining_;
 	snapshot.elapsed_seconds = elapsed_seconds_;
 	snapshot.pending_enemies = static_cast<int>(pending_enemies_.size());
-	snapshot.over = life_number <= 0;
+	snapshot.over = life_ <= 0;
 
 	return snapshot;
 }
@@ -259,13 +259,13 @@ void GameWorld::CheckPlayerCollision()
 		if(no_overlap)
 			continue;
 
-		life_number--;
+		life_--;
 		is_invincible_ = true;
 		invincible_remaining_ =
 		    std::chrono::seconds(GameConfig::kInvincibleDurationSec);
 
-		if(life_number < 0)
-			life_number = 0;
+		if(life_ < 0)
+			life_ = 0;
 
 		break;
 	}
@@ -439,7 +439,7 @@ void GameWorld::CheckPickupCollect()
 		switch(it->kind)
 		{
 		case PickupKind::Health:
-			life_number += GameConfig::kHealthPickupLife;
+			life_ += GameConfig::kHealthPickupLife;
 			break;
 		case PickupKind::Ammo:
 			bullets_remaining_ += GameConfig::kAmmoPickupBullets;

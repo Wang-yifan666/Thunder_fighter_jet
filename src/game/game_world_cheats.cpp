@@ -7,19 +7,19 @@
 namespace thunder
 {
 
-void GameWorld::cheats_kills()
+void GameWorld::CheatKillAll()
 {
 	enemies_.clear();
 	pending_enemies_.clear();
 	remaining_rows_in_batch_ = 0;
 }
 
-void GameWorld::cheats_life()
+void GameWorld::CheatAddLife()
 {
-	life_number++;
+	life_++;
 }
 
-void GameWorld::cheats_invincible()
+void GameWorld::CheatToggleInvincible()
 {
 	cheat_invincible_ = !cheat_invincible_;
 
@@ -33,26 +33,26 @@ void GameWorld::cheats_invincible()
 	}
 }
 
-void GameWorld::cheats_addscore()
+void GameWorld::CheatAddScore()
 {
 	score_ += GameConfig::kCheatAddScore; //每次加分
 }
 
-void GameWorld::cheats_addbullters()
+void GameWorld::CheatAddAmmo()
 {
 	bullets_remaining_ += GameConfig::kCheatAddBullets; //每次加子弹
 }
 
-void GameWorld::cheats_godlike()
+void GameWorld::CheatGodMode()
 {
-	cheats_invincible();
-	life_number = GameConfig::kCheatGodlikeLife;
+	CheatToggleInvincible();
+	life_ = GameConfig::kCheatGodlikeLife;
 	bullets_remaining_ = GameConfig::kCheatGodlikeBullets;
 }
 
-void GameWorld::kill_self()
+void GameWorld::CheatSelfDestruct()
 {
-	life_number = 0;
+	life_ = 0;
 }
 
 } // namespace thunder

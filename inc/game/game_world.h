@@ -55,7 +55,7 @@ public:
 	/// 渲染与测试用的只读快照。
 	WorldSnapshot Snapshot() const;
 
-	bool Over() const { return life_number <= 0; }
+	bool Over() const { return life_ <= 0; }
 	int Score() const { return score_; }
 	Difficulty difficulty() const { return difficulty_; }
 
@@ -77,7 +77,7 @@ private:
 	// ========== player ==========
 	int player_x_ = 0;
 	int player_y_ = 0;
-	int life_number = 0;
+	int life_ = 0;
 	bool is_invincible_ = false;
 	bool cheat_invincible_ = false;
 	std::chrono::steady_clock::duration invincible_remaining_{};
@@ -98,7 +98,7 @@ private:
 	int pickup_move_counter_ = 0;
 
 	// ========== update ==========
-	void Level(const GameInput& input);
+	void UpdateLevel(const GameInput& input);
 	void AccrueScore();
 	void UpdateBullets();
 	void CheckPlayerCollision();
@@ -106,20 +106,20 @@ private:
 	void CheckPickupCollect();
 	void MaybeDropPickup(int enemy_x, int enemy_y);
 
-	void Make_enermy();
-	void Clear_Current_Enemies();
+	void SpawnEnemyWave();
+	void ClearActiveEnemies();
 	void SpawnEnemiesFromPending();
 	void MoveEnemies(std::vector<Enemy>& active_enemies, int level,
 	                 int screen_width, int screen_height);
 
 	// ========== cheats ==========
-	void cheats_kills();
-	void cheats_life();
-	void cheats_invincible();
-	void cheats_addscore();
-	void cheats_addbullters();
-	void cheats_godlike();
-	void kill_self();
+	void CheatKillAll();
+	void CheatAddLife();
+	void CheatToggleInvincible();
+	void CheatAddScore();
+	void CheatAddAmmo();
+	void CheatGodMode();
+	void CheatSelfDestruct();
 
 	// 测试专用访问器（定义位于 tests/world_test_access.h，不参与生产构建）
 	friend struct WorldTestAccess;

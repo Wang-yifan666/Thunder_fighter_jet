@@ -43,7 +43,7 @@ BatchLimits BatchLimitsFor(Difficulty difficulty)
 namespace thunder
 {
 
-void GameWorld::Make_enermy()
+void GameWorld::SpawnEnemyWave()
 {
 	std::uniform_int_distribution<int> randSpeed(GameConfig::kMinEnemySpeed,
 	                                             GameConfig::kMaxEnemySpeed);
@@ -70,7 +70,7 @@ void GameWorld::Make_enermy()
 	remaining_rows_in_batch_ = 0;
 }
 
-void GameWorld::Clear_Current_Enemies()
+void GameWorld::ClearActiveEnemies()
 {
 	enemies_.clear();
 }
