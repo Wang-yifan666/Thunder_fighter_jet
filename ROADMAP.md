@@ -37,13 +37,13 @@
 - vcpkg 在 runner 上用 `x64-mingw-static` 从源码构建 SDL3_ttf 的耗时
 - MSYS2 提供的 gcc 版本与本地 11.2.0 的行为差异
 
-### 2. 数据路径改造（安装包的前置条件）
+### 2. ~~数据路径改造~~（已完成）
 
-现状：排行榜写在 exe 同目录。装进 `Program Files` 后那里不可写，
-成绩会静默丢到 UAC 虚拟化目录。
+`ResolveScorePath` 现在是：`NAIDAN_DATA_DIR` 环境变量 > exe 同目录可写 > 兼容旧布局
+> `%APPDATA%\Naidan\`。写文件改用二进制模式，`highscore.txt` 也从版本控制移除
+并加入 `.gitignore`，仓库不会再被存档弄脏。
 
-计划：抽 `DataPaths`——便携优先（exe 同目录可写就用），否则退到
-`%APPDATA%\Naidan\`。顺带把 `highscore.txt` 改二进制写入，避免 CRLF 反复弄脏仓库。
+配套测试 `tests/score_path_test.cpp` 覆盖了四种分支与写入格式。
 
 ### 3. 安装包（Inno Setup）
 
