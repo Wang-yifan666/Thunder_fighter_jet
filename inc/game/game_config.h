@@ -4,13 +4,12 @@ namespace GameConfig
 {
 
 // ========== 屏幕 / 窗口 ==========
-constexpr int kScreenWidth = 102;  // 原 98 列，左右各扩充 2 列
-constexpr int kScreenHeight = 48;  // 原 40 行，上下各扩充 4 行
-constexpr int kWindowWidth = 104;  // 棋盘 102 列 + 边框
-constexpr int kWindowHeight = 58;  // 棋盘 48 行 + HUD/边框余量
+constexpr int kScreenWidth = 102;  // 棋盘格数
+constexpr int kScreenHeight = 48;
 
 // ========== 帧 / 菜单延迟 (ms) ==========
-constexpr int kFrameDelayMs = 16;          // 主循环帧延迟 ~60fps
+// 游戏逻辑固定每步 16ms（约 62.5 步/秒），渲染帧率与它解耦。
+constexpr int kFrameDelayMs = 16;
 constexpr int kKeyDebounceMs = 200;        // 按键防抖
 constexpr int kAntiBounceDelayMs = 120;    // 防抖延迟
 
@@ -84,10 +83,6 @@ constexpr int kCheatGodlikeBullets = 9999999;
 constexpr int kCheatNoticeMs = 1500;  // 切换作弊模式后提示显示时长
 
 // ========== 显示 ==========
-constexpr int kMaxLifeDisplay = 10;
 constexpr int kMaxHighScores = 5;
-constexpr char kBulletChar = '|';
-constexpr char kHealthChar = '+';
-constexpr char kAmmoChar = '@';
 
 } // namespace GameConfig

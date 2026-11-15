@@ -1,4 +1,4 @@
-// SDL3 前端入口：固定 16ms 逻辑步长，渲染帧率与显示器刷新率解耦。
+// Naidan 入口：固定逻辑步长，渲染帧率与显示器刷新率解耦。
 // 游戏规则全部来自 thunder_logic 的 GameSession，本文件只做事件/绘制/计时。
 
 #include <SDL3/SDL.h>
@@ -7,8 +7,11 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <string>
 
+#include "game/game_config.h"
 #include "game/game_session.h"
+#include "game/game_info.h"
 #include "game/input_state.h"
 #include "io/file_score_store.h"
 #include "io/score_path.h"
@@ -19,7 +22,8 @@
 namespace
 {
 
-constexpr auto kLogicStep = std::chrono::milliseconds(16);
+constexpr auto kLogicStep =
+    std::chrono::milliseconds(GameConfig::kFrameDelayMs);
 constexpr int kMaxStepsPerFrame = 5; // 卡顿时最多补 5 步，避免死亡螺旋
 
 int ParseIntOption(int argc, char** argv, const char* name)
@@ -72,14 +76,15 @@ int main(int argc, char** argv)
 {
 	if(HasFlag(argc, argv, "--help"))
 	{
-		std::printf("Naidan's Fear of Insufficient Firepower (SDL3)\n"
+		std::printf("%s\n"
 		            "  --frames N   run N frames then exit (headless smoke)\n"
 		            "  --demo       feed scripted input (menu -> difficulty -> play)\n"
 		            "  --no-vsync   disable vertical sync (uncapped rendering)\n"
 		            "  --max-fps N  limit render rate (only useful with --no-vsync)\n"
 		            "  --help       show this help\n"
-		            "In-game: WASD move, SPACE fire, P pause, Q menu, "
-		            "F11 fullscreen, ESC quit\n");
+		            "In-game: WASD move, SPACE fire, P pause, Q menu, F cheats,\n"
+		            "         F11 fullscreen, ESC quit\n",
+		            GameInfo::kProductNameEn);
 		return 0;
 	}
 
@@ -97,8 +102,11 @@ int main(int argc, char** argv)
 	// 优先使用 Ubuntu Mono；找不到字体或未编译 SDL3_ttf 时自动回退点阵字体
 	const bool ttf_font = SdlFont::Init();
 
-	SDL_Window* window = SDL_CreateWindow(
-	    "奶蛋的火力不足恐惧症 v1.6", 832, 496, SDL_WINDOW_RESIZABLE);
+	// 窗口标题走系统渲染，可以直接用中文
+	const std::string window_title =
+	    std::string(GameInfo::kProductNameZh) + " " + GameInfo::kVersionTag;
+	SDL_Window* window =
+	    SDL_CreateWindow(window_title.c_str(), 832, 496, SDL_WINDOW_RESIZABLE);
 	SDL_Renderer* renderer =
 	    window != nullptr ? SDL_CreateRenderer(window, nullptr) : nullptr;
 

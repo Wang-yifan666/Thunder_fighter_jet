@@ -1,0 +1,108 @@
+name: build
+
+# 触发条件：
+#   push 到 main / refactor 分支 —— 日常验证
+#   push tag v*                —— 发布候选（后面接签名与安装包）
+#   workflow_dispatch          —— 手动跑一次，方便调试
+on:
+  push:
+    branches: [main, refactor/logic-separation]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+env:
+  # 与本地开发保持一致：MinGW + vcpkg 静态 triplet
+  VCPKG_TRIPLET: x64-mingw-static
+  # vcpkg 二进制缓存目录（跨 workflow 复用，避免每次都从源码编译 SDL3）
+  VCPKG_BINARY_CACHE: ${{ github.workspace }}/.vcpkg-cache
+
+jobs:
+  windows:
+    name: Windows (MinGW + SDL3)
+    runs-on: windows-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      # MSYS2 提供与本地一致的 MinGW-w64 工具链。
+      # path-type: inherit 让后续步骤直接能用 gcc / cmake / ninja。
+      - name: 安装 MinGW 工具链
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: false
+          path-type: inherit
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-make
+
+      # vcpkg 二进制缓存：命中时 SDL3 / SDL3_ttf 直接解压，不重新编译。
+      # 首次运行（缓存为空）会比较慢，之后几分钟即可完成。
+      - name: 恢复 vcpkg 二进制缓存
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.VCPKG_BINARY_CACHE }}
+          key: vcpkg-${{ runner.os }}-${{ env.VCPKG_TRIPLET }}-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: |
+            vcpkg-${{ runner.os }}-${{ env.VCPKG_TRIPLET }}-
+
+      - name: 安装依赖（vcpkg）
+        shell: pwsh
+        run: |
+          $cache = $env:VCPKG_BINARY_CACHE
+          New-Item -ItemType Directory -Force -Path $cache | Out-Null
+          $env:VCPKG_BINARY_SOURCES = "clear;files,$cache,readwrite"
+
+          Write-Host "vcpkg 根目录: $env:VCPKG_INSTALLATION_ROOT"
+          & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" install `
+              "sdl3:$env:VCPKG_TRIPLET" `
+              "sdl3-ttf:$env:VCPKG_TRIPLET" `
+              "gtest:$env:VCPKG_TRIPLET" `
+              --clean-after-build
+          if ($LASTEXITCODE -ne 0) { throw "vcpkg install 失败" }
+
+      - name: 配置 CMake
+        shell: pwsh
+        run: |
+          cmake -S . -B build -G Ninja `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
+            -DVCPKG_TARGET_TRIPLET="$env:VCPKG_TRIPLET" `
+            -DTHUNDER_BUILD_TESTS=ON
+          if ($LASTEXITCODE -ne 0) { throw "CMake 配置失败" }
+
+      - name: 构建
+        shell: pwsh
+        run: |
+          cmake --build build --parallel
+          if ($LASTEXITCODE -ne 0) { throw "构建失败" }
+
+      - name: 运行测试
+        shell: pwsh
+        run: |
+          ctest --test-dir build --output-on-failure
+          if ($LASTEXITCODE -ne 0) { throw "测试失败" }
+
+      # GUI 子系统程序不能直接捕获 stdout，必须重定向后等待退出
+      - name: 无头冒烟
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem build -Filter *.exe | Select-Object -First 1
+          if (-not $exe) { throw "没有找到可执行文件" }
+          $env:SDL_VIDEODRIVER = 'dummy'
+          $out = Join-Path $env:RUNNER_TEMP 'smoke.txt'
+          Start-Process $exe.FullName -ArgumentList '--frames','300','--demo' `
+            -RedirectStandardOutput $out -Wait -WorkingDirectory $env:RUNNER_TEMP
+          Get-Content $out
+          if (-not (Select-String -Path $out -Pattern 'smoke ok')) { throw "冒烟未通过" }
+
+      - name: 上传产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: Naidan-windows-x64
+          path: build/*.exe
+          if-no-files-found: error
