@@ -520,3 +520,157 @@ TEST(WorldPickup, DropsBothKindsWhenEnemyIsKilled)
 	EXPECT_GT(ammo, 0) << "应至少掉过一次弹药包";
 	EXPECT_LT(health + ammo, 400) << "不应该是必掉";
 }
+// ===================================================================
+// 拾取判定必须跟"看到的身体"一致，而不是 3x1 的伤害命中框
+// ===================================================================
+
+TEST(WorldPickup, CollectsWhenTouchingVisualBodyOnly)
+{
+	GameWorld world = MakeIdleWorld();
+	const WorldSnapshot start = world.Snapshot();
+
+	// 把玩家放到中间。玩家身体向上悬垂 kPlayerGrabHeight 行，
+	// 而 3x1 的伤害命中框只在第 30 行。
+	WorldTestAccess::SetPlayer(world, start.player_x, 30);
+
+	// 道具停在视觉身体范围内（第 27..29 行），完全不碰伤害命中框。
+	WorldTestAccess::AddPickup(world, start.player_x, 27, PickupKind::Health);
+
+	// 只推进到"下次移动之前"，保证判定发生在道具还在第 27 行的时候
+	for(int i = 0; i < GameConfig::kPickupMoveInterval - 1; ++i)
+		world.Tick(GameInput{}, kFrame);
+
+	EXPECT_EQ(WorldTestAccess::PickupCount(world), 0)
+	    << "压在身体上就应该捡到，不该等它掉到脚底那 1 行";
+	EXPECT_EQ(world.Snapshot().life,
+	          start.life + GameConfig::kHealthPickupLife);
+}
+
+TEST(WorldPickup, CollectedWhileStandingOnBottomRow)
+{
+	GameWorld world = MakeIdleWorld();
+	const WorldSnapshot start = world.Snapshot();
+	ASSERT_EQ(start.player_y, GameConfig::kScreenHeight - 1)
+	    << "默认就在最下面一排";
+
+	WorldTestAccess::AddPickup(world, start.player_x, 30, PickupKind::Ammo);
+
+	const int ammo_before = start.bullets_remaining;
+	bool collected = false;
+	for(int i = 0; i < 500 && !collected; ++i)
+	{
+		world.Tick(GameInput{}, kFrame);
+		collected = world.Snapshot().bullets_remaining > ammo_before;
+	}
+
+	EXPECT_TRUE(collected) << "贴底站着也必须能捡到落下来的道具";
+}
+
+// ===================================================================
+// 掉落率随难度变化
+// ===================================================================
+
+namespace
+{
+
+/// 用固定方式连杀若干敌机，统计掉落总数。
+int CountDrops(GameWorld& world, int kills)
+{
+	int drops = 0;
+	for(int i = 0; i < kills; ++i)
+	{
+		WorldTestAccess::AddEnemy(world, 10, 20, 0);
+		WorldTestAccess::AddBullet(world, 10, 21);
+		world.Tick(GameInput{}, kFrame);
+
+		drops += WorldTestAccess::PickupCount(world);
+
+		WorldTestAccess::ClearPickups(world);
+		WorldTestAccess::ClearEnemies(world);
+		WorldTestAccess::ClearBullets(world);
+	}
+	return drops;
+}
+
+GameWorld MakeDropWorld(Difficulty difficulty)
+{
+	GameWorld world(97531);
+	world.Reset(difficulty);
+	WorldTestAccess::ClearEnemies(world);
+	WorldTestAccess::ClearPending(world);
+	WorldTestAccess::ClearBullets(world);
+	WorldTestAccess::ClearPickups(world);
+	return world;
+}
+
+} // namespace
+
+TEST(WorldPickup, DropRatesFallWithDifficulty)
+{
+	GameWorld easy = MakeDropWorld(Difficulty::Easy);
+	GameWorld normal = MakeDropWorld(Difficulty::Normal);
+	GameWorld hard = MakeDropWorld(Difficulty::Hard);
+
+	// Easy 10%+12%，Normal 8%+8%，Hard 6%+6%
+	// 低难度是新手保护，高难度少给补给：高手不需要救济。
+	const int easy_drops = CountDrops(easy, 600);
+	const int normal_drops = CountDrops(normal, 600);
+	const int hard_drops = CountDrops(hard, 600);
+
+	EXPECT_LT(normal_drops, easy_drops);
+	EXPECT_LT(hard_drops, normal_drops);
+
+	// 顺带确认数量级没跑偏（Easy 期望约 132，Hard 期望约 72）
+	EXPECT_GT(hard_drops, 20) << "困难也不是完全不给";
+	EXPECT_LT(easy_drops, 600);
+}
+// ===================================================================
+// 敌机之间不许互相重叠（命中框改成 3x2 之后容易出问题）
+// ===================================================================
+
+namespace
+{
+
+int OverlappingPairs(const WorldSnapshot& snap)
+{
+	int count = 0;
+	for(std::size_t i = 0; i < snap.enemies.size(); ++i)
+	{
+		for(std::size_t j = i + 1; j < snap.enemies.size(); ++j)
+		{
+			const auto& a = snap.enemies[i];
+			const auto& b = snap.enemies[j];
+			const bool apart = (a.x + a.width <= b.x)
+			    || (b.x + b.width <= a.x) || (a.y + a.height <= b.y)
+			    || (b.y + b.height <= a.y);
+			if(!apart)
+				++count;
+		}
+	}
+	return count;
+}
+
+} // namespace
+
+TEST(WorldEnemy, EnemiesNeverOverlapEachOther)
+{
+	GameWorld world(13579);
+	world.Reset(Difficulty::Hard);
+
+	int first_bad = -1;
+	int bad_pairs = 0;
+	for(int i = 0; i < 3000; ++i)
+	{
+		world.Tick(GameInput{}, kFrame);
+		const int pairs = OverlappingPairs(world.Snapshot());
+		if(pairs > 0)
+		{
+			first_bad = i;
+			bad_pairs = pairs;
+			break;
+		}
+	}
+
+	EXPECT_EQ(first_bad, -1)
+	    << "第 " << first_bad << " 帧出现 " << bad_pairs << " 对重叠敌机";
+}

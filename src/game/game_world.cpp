@@ -341,15 +341,33 @@ void GameWorld::UpdateBullets()
 
 void GameWorld::MaybeDropPickup(int enemy_x, int enemy_y)
 {
+	// 掉落率随难度变化：低难度给新手保护，高难度少给补给
+	int health_percent = GameConfig::kNormalHealthDropPercent;
+	int ammo_percent = GameConfig::kNormalAmmoDropPercent;
+	switch(difficulty_)
+	{
+	case Difficulty::Easy:
+		health_percent = GameConfig::kEasyHealthDropPercent;
+		ammo_percent = GameConfig::kEasyAmmoDropPercent;
+		break;
+	case Difficulty::Normal:
+		health_percent = GameConfig::kNormalHealthDropPercent;
+		ammo_percent = GameConfig::kNormalAmmoDropPercent;
+		break;
+	case Difficulty::Hard:
+		health_percent = GameConfig::kHardHealthDropPercent;
+		ammo_percent = GameConfig::kHardAmmoDropPercent;
+		break;
+	}
+
 	// 一次掷骰切分两个区间：先血包，再弹药包，其余不掉
 	std::uniform_int_distribution<int> roll(1, 100);
 	const int value = roll(rng_);
 
 	PickupKind kind;
-	if(value <= GameConfig::kHealthDropPercent)
+	if(value <= health_percent)
 		kind = PickupKind::Health;
-	else if(value <= GameConfig::kHealthDropPercent
-	        + GameConfig::kAmmoDropPercent)
+	else if(value <= health_percent + ammo_percent)
 		kind = PickupKind::Ammo;
 	else
 		return;
@@ -396,14 +414,21 @@ void GameWorld::CheckPickupCollect()
 		return;
 
 	const int size = GameConfig::kPickupSize;
-	const int player_w = GameConfig::kPlayerWidth;
-	const int player_h = GameConfig::kPlayerHeight;
+
+	// 拾取用"视觉身体"而不是伤害命中框：
+	// 精灵底边对齐命中框底边、向上悬垂 kPlayerGrabHeight 行，
+	// 玩家看到的是这 4 行，就该按这 4 行判拾取。
+	const int grab_w = GameConfig::kPlayerWidth;
+	const int grab_h = GameConfig::kPlayerGrabHeight;
+	const int grab_x = player_x_;
+	const int grab_y =
+	    player_y_ + GameConfig::kPlayerHeight - grab_h; // 底边对齐
 
 	for(auto it = pickups_.begin(); it != pickups_.end();)
 	{
-		const bool no_overlap = (player_x_ + player_w <= it->x)
-		    || (it->x + size <= player_x_) || (player_y_ + player_h <= it->y)
-		    || (it->y + size <= player_y_);
+		const bool no_overlap = (grab_x + grab_w <= it->x)
+		    || (it->x + size <= grab_x) || (grab_y + grab_h <= it->y)
+		    || (it->y + size <= grab_y);
 
 		if(no_overlap)
 		{

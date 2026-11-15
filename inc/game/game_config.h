@@ -54,14 +54,27 @@ constexpr int kPlayerWidth = 3;
 constexpr int kPlayerHeight = 1;
 constexpr int kInvincibleDurationSec = 1;
 
+// 拾取判定用的"视觉身体"高度（格）。
+// 精灵是 32x32 像素、底边对齐命中框底边，肉眼看到的身体有 4 行高；
+// 受伤害仍用 kPlayerHeight(1 行) 的命中框，两者必须分开：
+// 拿 1 行的伤害判定去做拾取，会出现"从道具上碾过去却没吃到"。
+constexpr int kPlayerGrabHeight = 4;
+
 // ========== 掉落物（血包 / 弹药包） ==========
 constexpr int kPickupSize = 3;              // 3x3 格，精灵与判定等大
 constexpr int kPickupSpeed = 1;             // 每次移动的格子数
 constexpr int kPickupMoveInterval = 16;     // 每多少帧移动一次（约 12 秒穿过全屏）
-constexpr int kHealthDropPercent = 8;       // 击毁敌机后掉血包的概率(%)
-constexpr int kAmmoDropPercent = 8;         // 击毁敌机后掉弹药包的概率(%)
 constexpr int kHealthPickupLife = 1;        // 血包回复的生命值
 constexpr int kAmmoPickupBullets = 50;      // 弹药包补充的子弹数
+
+// 掉落率随难度变化（百分比）。
+// 难度越低补给越慷慨：Easy 是新手保护，Hard 靠自己本事——高手不需要救济。
+constexpr int kEasyHealthDropPercent = 10;
+constexpr int kEasyAmmoDropPercent = 12;
+constexpr int kNormalHealthDropPercent = 8;
+constexpr int kNormalAmmoDropPercent = 8;
+constexpr int kHardHealthDropPercent = 6;
+constexpr int kHardAmmoDropPercent = 6;
 
 // ========== 作弊 ==========
 constexpr int kCheatAddScore = 1000;
