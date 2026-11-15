@@ -79,6 +79,8 @@ def main():
     parser = argparse.ArgumentParser(description="生成文档截图")
     parser.add_argument("--exe", default=os.path.join(ROOT, "build", "Naidan.exe"))
     parser.add_argument("--out", default=os.path.join(ROOT, "assets", "screenshots"))
+    parser.add_argument("--seed", type=int, default=20261107,
+                        help="固定随机种子，保证截图可复现")
     args = parser.parse_args()
 
     if not os.path.exists(args.exe):
@@ -91,11 +93,18 @@ def main():
     env = dict(os.environ)
     env["SDL_VIDEODRIVER"] = "dummy"
 
+    # 排行榜存档在 exe 同目录，会被上一轮演示改写；
+    # HUD 里的 BEST 依赖它，所以每次生成前先清掉，保证截图可复现。
+    score_file = os.path.join(os.path.dirname(os.path.abspath(args.exe)), "highscore.txt")
+    if os.path.exists(score_file):
+        os.remove(score_file)
+
     failed = 0
     with tempfile.TemporaryDirectory() as tmp:
         for name, frames, demo in SHOTS:
             raw_path = os.path.join(tmp, name + ".rgba")
-            cmd = [args.exe, "--frames", str(frames), "--screenshot", raw_path]
+            cmd = [args.exe, "--frames", str(frames), "--screenshot", raw_path,
+                   "--seed", str(args.seed)]
             if demo:
                 cmd.append("--demo")
 

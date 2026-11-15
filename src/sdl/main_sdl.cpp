@@ -6,6 +6,7 @@
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
+#include <cstdint>
 #include <cstring>
 #include <string>
 
@@ -141,6 +142,7 @@ int main(int argc, char** argv)
 		            "  --demo       feed scripted input (menu -> play -> game over)\n"
 		            "  --no-vsync   disable vertical sync (uncapped rendering)\n"
 		            "  --max-fps N  limit render rate (only useful with --no-vsync)\n"
+		            "  --seed N     fix the RNG seed (reproducible demo / screenshots)\n"
 		            "  --screenshot PATH\n"
 		            "               dump the last frame as raw RGBA (for docs)\n"
 		            "  --help       show this help\n"
@@ -155,6 +157,8 @@ int main(int argc, char** argv)
 	const bool demo = HasFlag(argc, argv, "--demo");
 	const bool no_vsync = HasFlag(argc, argv, "--no-vsync");
 	const char* shot_path = ParseStringOption(argc, argv, "--screenshot");
+	// 0 = 随机播种（正常游玩）；非 0 时场景完全可复现，供截图与冒烟使用
+	const auto seed = static_cast<std::uint32_t>(ParseIntOption(argc, argv, "--seed"));
 
 	if(!SDL_Init(SDL_INIT_VIDEO))
 	{
@@ -191,7 +195,7 @@ int main(int argc, char** argv)
 
 	thunder::FileScoreStore score_store(
 	    thunder::ResolveScorePath(exe_dir.empty() ? ".\\" : exe_dir));
-	thunder::GameSession session(score_store);
+	thunder::GameSession session(score_store, seed);
 
 	SdlInput::State input;
 	std::chrono::steady_clock::duration accumulator{};

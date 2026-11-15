@@ -84,18 +84,6 @@ void DrawStars(SDL_Renderer* renderer, const SdlRender::Layout& layout, double s
 	}
 }
 
-/// 玩家精灵的边长（像素）：4 格宽。
-/// 命中框仍是 3x1 格（24x8），精灵底边对齐命中框底边、向上悬垂，
-/// 因此"看起来比能被打到的大"——判定对玩家更宽容。
-constexpr int kPlayerSpriteSize = 32;
-
-/// 敌机精灵尺寸（像素）：与 3x2 格命中框等大，
-/// 视觉和判定严格对齐——子弹不会"穿过脸"。
-constexpr int kEnemySpriteWidth = 24;
-constexpr int kEnemySpriteHeight = 16;
-
-/// 血包精灵边长（像素）：与 3x3 格判定等大。
-constexpr int kHealthSpriteSize = 24;
 
 /// 一张按需创建、随后复用的精灵贴图。
 struct SpriteSlot
@@ -146,28 +134,28 @@ SDL_Texture* PlayerTexture(SDL_Renderer* renderer)
 {
 	static SpriteSlot slot;
 	return AcquireTexture(slot, renderer, SpriteData::kPlayerPixels, SpriteData::kPlayerPixelsSize,
-	                      kPlayerSpriteSize, kPlayerSpriteSize);
+	                      View::kPlayerSpriteSize, View::kPlayerSpriteSize);
 }
 
 SDL_Texture* EnemyTexture(SDL_Renderer* renderer)
 {
 	static SpriteSlot slot;
 	return AcquireTexture(slot, renderer, SpriteData::kEnemyPixels, SpriteData::kEnemyPixelsSize,
-	                      kEnemySpriteWidth, kEnemySpriteHeight);
+	                      View::kEnemySpriteWidth, View::kEnemySpriteHeight);
 }
 
 SDL_Texture* HealthTexture(SDL_Renderer* renderer)
 {
 	static SpriteSlot slot;
 	return AcquireTexture(slot, renderer, SpriteData::kHealthPixels, SpriteData::kHealthPixelsSize,
-	                      kHealthSpriteSize, kHealthSpriteSize);
+	                      View::kPickupSpriteSize, View::kPickupSpriteSize);
 }
 
 SDL_Texture* AmmoTexture(SDL_Renderer* renderer)
 {
 	static SpriteSlot slot;
 	return AcquireTexture(slot, renderer, SpriteData::kAmmoPixels, SpriteData::kAmmoPixelsSize,
-	                      kHealthSpriteSize, kHealthSpriteSize);
+	                      View::kPickupSpriteSize, View::kPickupSpriteSize);
 }
 
 /// 掉落物：带轻微上下浮动，便于和敌机区分（纯视觉，不影响判定）
@@ -176,10 +164,11 @@ void DrawPickup(SDL_Renderer* renderer, const SdlRender::Layout& layout,
 {
 	const float cell = static_cast<float>(layout.cell);
 	const float bob = static_cast<float>(std::sin(seconds * 2.4) * 1.2);
-	const float x = static_cast<float>(layout.grid_x) + item.x * cell;
-	const float y = static_cast<float>(layout.grid_y) + item.y * cell + bob;
-	const float w = item.width * cell;
-	const float h = item.height * cell;
+	const View::Rect box = View::PickupRect(layout, item.x, item.y, item.width, item.height, bob);
+	const float x = box.x;
+	const float y = box.y;
+	const float w = box.w;
+	const float h = box.h;
 
 	const bool is_ammo = (item.kind == PickupKind::Ammo);
 	SDL_Texture* texture = is_ammo ? AmmoTexture(renderer) : HealthTexture(renderer);
@@ -217,14 +206,15 @@ void DrawEnemy(SDL_Renderer* renderer, const SdlRender::Layout& layout,
                const thunder::EntityView& enemy)
 {
 	const float cell = static_cast<float>(layout.cell);
-	const float x = static_cast<float>(layout.grid_x) + enemy.x * cell;
-	const float y = static_cast<float>(layout.grid_y) + enemy.y * cell;
-	const float w = enemy.width * cell - 1.0f;
-	const float h = enemy.height * cell - 1.0f;
+	const View::Rect box = View::EnemyRect(layout, enemy.x, enemy.y, enemy.width, enemy.height);
+	const float x = box.x;
+	const float y = box.y;
+	const float w = box.w - 1.0f;
+	const float h = box.h - 1.0f;
 
 	if(SDL_Texture* texture = EnemyTexture(renderer))
 	{
-		const SDL_FRect dst{x, y, enemy.width * cell, enemy.height * cell};
+		const SDL_FRect dst{box.x, box.y, box.w, box.h};
 		SDL_RenderTexture(renderer, texture, nullptr, &dst);
 		return;
 	}
@@ -239,11 +229,11 @@ void DrawEnemy(SDL_Renderer* renderer, const SdlRender::Layout& layout,
 void DrawBullet(SDL_Renderer* renderer, const SdlRender::Layout& layout,
                 const thunder::EntityView& bullet)
 {
-	const float cell = static_cast<float>(layout.cell);
-	const float cx = static_cast<float>(layout.grid_x) + bullet.x * cell + cell * 0.5f;
-	const float cy = static_cast<float>(layout.grid_y) + bullet.y * cell + cell * 0.5f;
+	const View::Rect body = View::BulletRect(layout, bullet.x, bullet.y, 4.0f, 8.0f);
+	const float cx = body.x + body.w * 0.5f;
+	const float cy = body.y + body.h * 0.5f;
 
-	Fill(renderer, cx - 2.0f, cy - 4.0f, 4.0f, 8.0f, kBullet);
+	Fill(renderer, body.x, body.y, body.w, body.h, kBullet);
 	Fill(renderer, cx - 1.0f, cy - 3.0f, 2.0f, 5.0f, kBulletCore);
 }
 
@@ -255,16 +245,17 @@ void DrawPlayer(SDL_Renderer* renderer, const SdlRender::Layout& layout,
 		return;
 
 	const float cell = static_cast<float>(layout.cell);
-	const float x = static_cast<float>(layout.grid_x) + world.player_x * cell;
-	const float y = static_cast<float>(layout.grid_y) + world.player_y * cell;
-	const float w = GameConfig::kPlayerWidth * cell - 1.0f;
-	const float h = cell - 1.0f;
+	const View::Rect hitbox = View::CellRect(layout, world.player_x, world.player_y,
+	                                         GameConfig::kPlayerWidth, GameConfig::kPlayerHeight);
+	const float x = hitbox.x;
+	const float y = hitbox.y;
+	const float w = hitbox.w - 1.0f;
+	const float h = hitbox.h - 1.0f;
 
 	if(SDL_Texture* texture = PlayerTexture(renderer))
 	{
-		const float size = static_cast<float>(kPlayerSpriteSize);
-		const float left = x + GameConfig::kPlayerWidth * cell / 2.0f - size / 2.0f;
-		const SDL_FRect dst{left, y + cell - size, size, size};
+		const View::Rect box = View::PlayerRect(layout, world.player_x, world.player_y);
+		const SDL_FRect dst{box.x, box.y, box.w, box.h};
 
 		// 无敌时压暗，与色块版本的观感保持一致
 		if(world.invincible)

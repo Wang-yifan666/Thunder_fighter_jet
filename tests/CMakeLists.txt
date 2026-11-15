@@ -8,6 +8,7 @@ add_executable(thunder_logic_tests
     world_test.cpp
     rng_test.cpp
     session_test.cpp
+    view_layout_test.cpp
 )
 
 target_include_directories(thunder_logic_tests PRIVATE
@@ -30,5 +31,6 @@ add_test(NAME isolation.no_platform_in_logic
     COMMAND ${CMAKE_COMMAND}
         -DLOGIC_INC_DIR=${CMAKE_SOURCE_DIR}/inc/game
         -DLOGIC_SRC_DIR=${CMAKE_SOURCE_DIR}/src/game
+        -DVIEW_INC_DIR=${CMAKE_SOURCE_DIR}/inc/view
         -P ${CMAKE_CURRENT_SOURCE_DIR}/check_isolation.cmake
 )

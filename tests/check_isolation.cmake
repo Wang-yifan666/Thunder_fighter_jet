@@ -4,6 +4,7 @@
 file(GLOB_RECURSE logic_files
     "${LOGIC_INC_DIR}/*.h"
     "${LOGIC_SRC_DIR}/*.cpp"
+    "${VIEW_INC_DIR}/*.h"
 )
 
 if(NOT logic_files)

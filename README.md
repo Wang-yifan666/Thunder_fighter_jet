@@ -114,6 +114,7 @@ ctest --test-dir build --output-on-failure
 | `--frames N` | 跑 N 帧后退出（无头冒烟用） |
 | `--demo` | 注入脚本化输入：菜单 → 游戏 → 结算 |
 | `--screenshot PATH` | 把最后一帧导出为原始 RGBA（配合 `--frames`，用于生成文档截图） |
+| `--seed N` | 固定随机种子，让 `--demo` 场景完全可复现（截图与冒烟用） |
 | `--no-vsync` | 关闭垂直同步 |
 | `--max-fps N` | 限帧（配合 `--no-vsync`） |
 | `--help` | 帮助 |
@@ -145,7 +146,8 @@ Thunder_fighter_jet/
 │   │   ├── session_snapshot.h # 会话只读快照
 │   │   ├── highscore.h        # 排行榜规则
 │   │   └── score_store.h      # 分数存储接口
-│   └── io/                    # 文件存取（thunder_io）
+│   ├── io/                    # 文件存取（thunder_io）
+│   └── view/                  # 平台无关的场景布局与精灵元数据
 ├── src/
 │   ├── game/                  # thunder_logic 实现
 │   ├── io/                    # thunder_io 实现
@@ -173,10 +175,14 @@ GameWorld（全部可变对局状态，Tick 推进）
 SDL 前端（只读快照，负责绘制与输入采集）
 ```
 
-- **逻辑层不认识 SDL / windows.h / 文件系统 / 系统时钟**
+- **逻辑层与布局层都不认识 SDL / windows.h / 文件系统 / 系统时钟**
   —— 由 `tests/check_isolation.cmake` 在 ctest 里强制检查
 - 时间通过 `Tick(input, dt)` 注入，暂停时前端直接不调用 `Tick`
 - 存档通过 `ScoreStore` 接口注入，逻辑层不碰文件
+- **格子坐标到像素的换算集中在 `inc/view/scene_layout.h`**：
+  `PlayerRect` / `EnemyRect` / `PickupRect` / `BulletRect` 定义了每个精灵的锚点
+  （玩家底边对齐、敌机与判定等大、子弹格子居中）。SDL 后端只负责"把算好的
+  矩形画出来"。移植到 Android 等新平台时，这一层可以直接复用。
 
 ### 素材与烘焙
 
@@ -221,6 +227,8 @@ python tools/make_screenshots.py # 重新生成 README 截图
   - 作弊模式默认关闭，主菜单按 `F` 切换
   - 主菜单退出改为 `Q`
   - exe 内置图标与中英双语版本信息
+  - 抽出平台无关的 `inc/view/scene_layout.h`（布局与精灵锚点），
+    为移植预留接口；`--seed` 让演示与截图完全可复现
 - **v1.6** 逻辑与平台分离（`thunder_logic` / `thunder_io`）、新增 SDL3 前端、
   引入 GoogleTest 回归测试与隔离检查
 - **v1.5** 难度选择、主菜单排行榜
