@@ -34,13 +34,19 @@ import zlib
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SPRITE_DIR = os.path.join(ROOT, "assets", "sprites")
 
-# 母版文件名 -> (输出基础名, 输出宽, 输出高)
+# 母版文件名 -> [(输出基础名, 输出宽, 输出高), ...]
 # 尺寸 = 游戏里实际绘制的像素尺寸，按 GameConfig::kCellSize 与格子数换算。
+# 一个母版可以出多份产物（例如护盾泡：小怪用 32，精英和玩家用 48）。
 SPRITES = {
-    "player.png": ("player", 32, 32),   # 3x1 格命中框，精灵 4 格宽、底边对齐
-    "enemy.png": ("enemy", 24, 16),     # 3x2 格命中框，精灵与判定等大
-    "health_pack.png": ("health", 24, 24),  # 3x3 格，精灵与判定等大
-    "ammo_pack.png": ("ammo", 24, 24),      # 3x3 格，精灵与判定等大
+    "player.png": [("player", 32, 32)],  # 3x1 格命中框，精灵 4 格宽、底边对齐
+    "enemy.png": [("enemy", 24, 16)],    # 3x2 格命中框，精灵与判定等大
+    "elite.png": [("elite", 32, 24)],    # 精英：4x3 格
+    "health_pack.png": [("health", 24, 24)],  # 3x3 格，精灵与判定等大
+    "ammo_pack.png": [("ammo", 24, 24)],      # 3x3 格，精灵与判定等大
+    "shield_pack.png": [("shield_pack", 24, 24)],
+    "firepower_pack.png": [("firepower", 24, 24)],
+    # 护盾泡：小怪 32x32 刚好罩住 3x2；精英 4x3 和玩家 32x32 精灵都用 48x48
+    "shield_bubble.png": [("shield_bubble", 32, 32), ("shield_bubble_big", 48, 48)],
 }
 
 # 已经在全分辨率做过反预乘的母版：烘焙时不再重复检测，
@@ -229,16 +235,12 @@ def fit_into(width, height, pixels, box_w, box_h):
 def bake(name, size_override, fringe_report):
     if name not in SPRITES:
         print("未登记素材：%s" % name, file=sys.stderr)
-        return None
-
-    base, out_w, out_h = SPRITES[name]
-    if size_override and out_w == out_h:
-        out_w = out_h = size_override
+        return []
 
     src_path = os.path.join(SPRITE_DIR, name)
     if not os.path.exists(src_path):
         print("跳过（母版不存在）：%s" % src_path)
-        return None
+        return []
 
     width, height, _, pixels = read_png(src_path)
 
@@ -249,23 +251,29 @@ def bake(name, size_override, fringe_report):
             after, _ = edge_fringe(width, height, pixels)
             fringe_report.append((name, ratio, after, edge_count))
 
-    small = fit_into(width, height, pixels, out_w, out_h)
+    built = []
+    for base, out_w, out_h in SPRITES[name]:
+        if size_override and out_w == out_h:
+            out_w = out_h = size_override
 
-    flat = bytearray()
-    for row in small:
-        for r, g, b, a in row:
-            flat.extend((r, g, b, a))
+        small = fit_into(width, height, pixels, out_w, out_h)
 
-    out_path = os.path.join(SPRITE_DIR,
-                            "%s_%dx%d.rgba" % (base, out_w, out_h))
-    with open(out_path, "wb") as handle:
-        handle.write(bytes(flat))
+        flat = bytearray()
+        for row in small:
+            for r, g, b, a in row:
+                flat.extend((r, g, b, a))
 
-    opaque = sum(1 for i in range(3, len(flat), 4) if flat[i] > 8)
-    print("%-12s %4dx%-4d -> %-22s %5d B  覆盖 %5.1f%%"
-          % (name, width, height, os.path.basename(out_path),
-             len(flat), 100.0 * opaque / (out_w * out_h)))
-    return out_path
+        out_path = os.path.join(SPRITE_DIR,
+                                "%s_%dx%d.rgba" % (base, out_w, out_h))
+        with open(out_path, "wb") as handle:
+            handle.write(bytes(flat))
+
+        opaque = sum(1 for i in range(3, len(flat), 4) if flat[i] > 8)
+        print("%-18s %4dx%-4d -> %-26s %5d B  覆盖 %5.1f%%"
+              % (name, width, height, os.path.basename(out_path),
+                 len(flat), 100.0 * opaque / (out_w * out_h)))
+        built.append(out_path)
+    return built
 
 
 def main():

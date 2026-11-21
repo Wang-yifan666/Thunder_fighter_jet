@@ -43,8 +43,16 @@ inline constexpr int kPlayerSpriteSize = 32;
 inline constexpr int kEnemySpriteWidth = 24;
 inline constexpr int kEnemySpriteHeight = 16;
 
+/// 精英精灵：32x24（4x3 格），与命中框严格等大。
+inline constexpr int kEliteSpriteWidth = 32;
+inline constexpr int kEliteSpriteHeight = 24;
+
 /// 掉落物精灵：24x24（3x3 格），与拾取判定等大。
 inline constexpr int kPickupSpriteSize = 24;
+
+/// 护盾泡：小怪 32x32 罩住 3x2；精英 4x3 与玩家 32x32 精灵共用 48x48。
+inline constexpr int kShieldBubbleSize = 32;
+inline constexpr int kShieldBubbleBigSize = 48;
 
 // ============ 网格换算 ============
 struct Rect
@@ -107,6 +115,28 @@ inline Rect BulletRect(const Layout& layout, int bullet_x, int bullet_y, float w
 	const float cx = CellX(layout, bullet_x) + cell * 0.5f;
 	const float cy = CellY(layout, bullet_y) + cell * 0.5f;
 	return Rect{cx - width * 0.5f, cy - height * 0.5f, width, height};
+}
+
+/// 以某个像素点为中心的正方形（护盾泡用：比本体大一整圈）。
+inline Rect CenteredSquare(float center_x, float center_y, int size)
+{
+	const float s = static_cast<float>(size);
+	return Rect{center_x - s * 0.5f, center_y - s * 0.5f, s, s};
+}
+
+/// 敌机护盾泡：以敌机矩形中心为中心，小怪 32、精英 48。
+inline Rect EnemyShieldRect(const Layout& layout, int enemy_x, int enemy_y, int enemy_w,
+                            int enemy_h, int size)
+{
+	const Rect body = EnemyRect(layout, enemy_x, enemy_y, enemy_w, enemy_h);
+	return CenteredSquare(body.x + body.w * 0.5f, body.y + body.h * 0.5f, size);
+}
+
+/// 玩家护盾泡：以玩家精灵矩形中心为中心。
+inline Rect PlayerShieldRect(const Layout& layout, int player_x, int player_y)
+{
+	const Rect body = PlayerRect(layout, player_x, player_y);
+	return CenteredSquare(body.x + body.w * 0.5f, body.y + body.h * 0.5f, kShieldBubbleBigSize);
 }
 
 } // namespace View

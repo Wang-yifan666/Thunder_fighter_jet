@@ -5,6 +5,7 @@
 #include "game/game_config.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdlib>
 #include <random>
@@ -35,15 +36,55 @@ BatchLimits BatchLimitsFor(Difficulty difficulty)
 	return {GameConfig::kNormalMaxBatchCount, GameConfig::kNormalMaxPerBatch};
 }
 
+/// 精英出现的概率上限（百分比），随难度提高。
+int EliteCapPercent(Difficulty difficulty)
+{
+	switch(difficulty)
+	{
+	case Difficulty::Easy:
+		return GameConfig::kEliteCapEasyPercent;
+	case Difficulty::Normal:
+		return GameConfig::kEliteCapNormalPercent;
+	case Difficulty::Hard:
+		return GameConfig::kEliteCapHardPercent;
+	}
+	return GameConfig::kEliteCapNormalPercent;
+}
+
 } //namespace
 
 namespace thunder
 {
 
+int GameWorld::EliteSpawnPercent() const
+{
+	if(level_ <= GameConfig::kEliteMinLevel)
+		return 0;
+
+	// 指数饱和：p(L) = cap * (1 - exp(-(L - L0) / K))
+	// 前 10 级慢慢出现，到 40 级左右过半，100 级前后基本顶到 cap。
+	const double t = static_cast<double>(level_ - GameConfig::kEliteMinLevel)
+	    / static_cast<double>(GameConfig::kEliteSpawnCurveK);
+	const double p = static_cast<double>(EliteCapPercent(difficulty_)) * (1.0 - std::exp(-t));
+	return static_cast<int>(std::lround(p));
+}
+
+int GameWorld::CrowdBatchBonus(int backlog)
+{
+	if(backlog <= GameConfig::kCrowdBatchThreshold)
+		return 0;
+
+	// 超过阈值后每多 kCrowdBatchPerStep 只加 1，最多加 kCrowdBatchMaxBonus 只
+	const int extra =
+	    1 + (backlog - GameConfig::kCrowdBatchThreshold) / GameConfig::kCrowdBatchPerStep;
+	return std::min(extra, GameConfig::kCrowdBatchMaxBonus);
+}
+
 void GameWorld::SpawnEnemyWave()
 {
 	std::uniform_int_distribution<int> randSpeed(GameConfig::kMinEnemySpeed,
 	                                             GameConfig::kMaxEnemySpeed);
+	std::uniform_int_distribution<int> randPercent(1, 100);
 
 	int base = level_ * 2;
 	int total_to_spawn = base; // Normal 档默认值（switch 已覆盖全部枚举）
@@ -60,8 +101,23 @@ void GameWorld::SpawnEnemyWave()
 		break;
 	}
 
+	const int elite_percent = EliteSpawnPercent();
+
 	for(int i = 0; i < total_to_spawn; ++i)
-		pending_enemies_.emplace_back(0, 0, randSpeed(rng_));
+	{
+		const int speed = randSpeed(rng_);
+
+		// 等级够了以后按概率出精英；精英自身再按概率带盾（带盾 = 要多打一下）。
+		if(elite_percent > 0 && randPercent(rng_) <= elite_percent)
+		{
+			const bool has_shield = randPercent(rng_) <= GameConfig::kEliteShieldPercent;
+			pending_enemies_.push_back(Enemy::Elite(0, 0, speed, has_shield));
+		}
+		else
+		{
+			pending_enemies_.emplace_back(0, 0, speed);
+		}
+	}
 
 	//开启一波新的刷新
 	remaining_rows_in_batch_ = 0;
@@ -93,34 +149,42 @@ void GameWorld::SpawnEnemiesFromPending()
 		remaining_rows_in_batch_ = batch_dist(rng_);
 	}
 
-	// 新一批敌机生成在 y = 0，占据 0 .. kEnemyHeight-1 这几行，
-	// 所以"顶部这几行全空"才允许生成。
+	// 新一批敌机生成在 y = 0；精英高 3 行，所以要求这 3 行都空着。
 	// 曾经这里写死成 e.y < 1（只清 1 行）：命中框加高到 2 行之后，
 	// y == 1 的旧敌机正好和新敌机压在第 1 行上，视觉上叠在一起。
 	bool top_row_clear = std::none_of(enemies_.begin(), enemies_.end(), [](const Enemy& e) {
-		return e.y < GameConfig::kEnemyHeight;
+		return e.y < GameConfig::kEliteHeight;
 	});
 
 	if(!top_row_clear)
 		return; // 顶部还没空出来，等下一帧再说
 
-	//生成当前这一批：1~3 个敌人，全部放在 y = 0，x 随机且尽量不重叠
-	const int enemy_width = GameConfig::kEnemyWidth;
-	const int max_x = GameConfig::kScreenWidth - enemy_width;
+	// 生成当前这一批：个数随机，全部放在 y = 0，x 随机且尽量不重叠
+	const int max_x_pad = GameConfig::kEliteWidth; // 两架之间至少留出精英那么宽
 
 	int remaining = static_cast<int>(pending_enemies_.size());
 	if(remaining <= 0)
 		return;
 
-	int max_in_row = std::min<int>(limits.max_per_batch, remaining);
+	// 后期堆怪时的泄压阀：场上 + 排队的超过阈值就每批多放几只，
+	// 免得全挤在看不见的排队里、场上反而越来越稀。
+	const int backlog = static_cast<int>(enemies_.size()) + remaining;
+	const int crowd_bonus = CrowdBatchBonus(backlog);
+
+	int max_in_row = std::min<int>(limits.max_per_batch + crowd_bonus, remaining);
 	std::uniform_int_distribution<int> count_dist(1, max_in_row);
 	int enemies_in_row = count_dist(rng_);
 
 	std::vector<int> used_x;
 	std::vector<Enemy> spawned_row;
 
-	for(int i = 0; i < enemies_in_row; ++i)
+	for(int i = 0; i < enemies_in_row && !pending_enemies_.empty(); ++i)
 	{
+		Enemy e = pending_enemies_.front();
+		pending_enemies_.erase(pending_enemies_.begin());
+
+		const int max_x = GameConfig::kScreenWidth - e.width;
+
 		int x = 0;
 		int attempts = 0;
 		do
@@ -130,14 +194,11 @@ void GameWorld::SpawnEnemiesFromPending()
 			attempts++;
 		} while(std::any_of(used_x.begin(), used_x.end(),
 		                    [&](int ux) {
-			                    return std::abs(ux - x) < enemy_width;
+			                    return std::abs(ux - x) < max_x_pad;
 		                    })
 		        && attempts < 100);
 
 		used_x.push_back(x);
-
-		Enemy e = pending_enemies_.front();
-		pending_enemies_.erase(pending_enemies_.begin());
 
 		e.x = x;
 		e.y = 0; //顶行生成

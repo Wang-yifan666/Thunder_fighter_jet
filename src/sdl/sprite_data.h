@@ -17,6 +17,10 @@ extern const std::size_t kPlayerPixelsSize;
 extern const unsigned char kEnemyPixels[];
 extern const std::size_t kEnemyPixelsSize;
 
+/// 精英敌机：32x24（4x3 格，血量 2，可能带护盾）
+extern const unsigned char kElitePixels[];
+extern const std::size_t kElitePixelsSize;
+
 /// 血包：24x24（与 3x3 格判定等大）
 extern const unsigned char kHealthPixels[];
 extern const std::size_t kHealthPixelsSize;
@@ -24,5 +28,21 @@ extern const std::size_t kHealthPixelsSize;
 /// 弹药包：24x24（与 3x3 格判定等大）
 extern const unsigned char kAmmoPixels[];
 extern const std::size_t kAmmoPixelsSize;
+
+/// 护盾包：24x24（拾取后玩家获得一层护盾）
+extern const unsigned char kShieldPackPixels[];
+extern const std::size_t kShieldPackPixelsSize;
+
+/// 火力强化包：24x24（拾取后 15 秒三路开火）
+extern const unsigned char kFirepowerPixels[];
+extern const std::size_t kFirepowerPixelsSize;
+
+/// 护盾泡：小怪用 32x32（罩住 3x2 格的敌机）
+extern const unsigned char kShieldBubblePixels[];
+extern const std::size_t kShieldBubblePixelsSize;
+
+/// 护盾泡：精英 4x3 与玩家 32x32 精灵共用 48x48
+extern const unsigned char kShieldBubbleBigPixels[];
+extern const std::size_t kShieldBubbleBigPixelsSize;
 
 } // namespace SpriteData

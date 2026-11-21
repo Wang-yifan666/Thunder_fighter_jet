@@ -1,0 +1,285 @@
+// 新战斗机制回归测试：射速节奏、火力强化、敌人护盾与多段血、精英、玩家护盾与冲击波。
+#include <gtest/gtest.h>
+
+#include <chrono>
+
+#include "game/game_config.h"
+#include "game/game_types.h"
+#include "game/game_world.h"
+#include "world_test_access.h"
+
+using namespace std::chrono;
+using thunder::GameWorld;
+using thunder::WorldSnapshot;
+using thunder::WorldTestAccess;
+
+namespace
+{
+
+constexpr auto kFrame = milliseconds(GameConfig::kFrameDelayMs);
+
+/// 清干净的一局：不刷怪、无子弹、无道具，方便手工摆位。
+GameWorld MakeQuietWorld(Difficulty difficulty = Difficulty::Easy)
+{
+	GameWorld world(20260101);
+	world.Reset(difficulty);
+	WorldTestAccess::ClearEnemies(world);
+	WorldTestAccess::ClearPending(world);
+	WorldTestAccess::ClearBullets(world);
+	WorldTestAccess::ClearPickups(world);
+	WorldTestAccess::SetPlayer(world, 50, GameConfig::kScreenHeight - 1);
+	return world;
+}
+
+} // namespace
+
+// ============ 射速节奏 ============
+
+TEST(WorldFire, FiresEveryOtherFrame)
+{
+	GameWorld world = MakeQuietWorld();
+
+	thunder::GameInput fire;
+	fire.fire = true;
+
+	int shots = 0;
+	int last = 0;
+	for(int i = 0; i < 10; ++i)
+	{
+		world.Tick(fire, kFrame);
+		const int now = WorldTestAccess::BulletCount(world);
+		// 子弹会一路飞出屏幕外，这里只看"有没有增加"
+		if(now > last)
+			++shots;
+		last = now;
+	}
+
+	// 10 帧、每 2 帧一发 => 5 发
+	EXPECT_EQ(shots, 5) << "射速应该是每 2 帧一发";
+}
+
+TEST(WorldFire, FireCooldownCountsDownWhenNotFiring)
+{
+	GameWorld world = MakeQuietWorld();
+
+	thunder::GameInput fire;
+	fire.fire = true;
+	world.Tick(fire, kFrame);
+	EXPECT_EQ(WorldTestAccess::FireCooldown(world), GameConfig::kFireIntervalFrames);
+
+	world.Tick(thunder::GameInput{}, kFrame);
+	EXPECT_EQ(WorldTestAccess::FireCooldown(world), GameConfig::kFireIntervalFrames - 1);
+}
+
+// ============ 火力强化 ============
+
+TEST(WorldFire, FirepowerPickupAddsTwoExtraBulletsForOneAmmo)
+{
+	GameWorld world = MakeQuietWorld();
+	WorldTestAccess::AddPickup(world, 50, GameConfig::kScreenHeight - 1,
+	                           PickupKind::Firepower);
+	world.Tick(thunder::GameInput{}, kFrame); // 拾取
+	EXPECT_GT(WorldTestAccess::FirepowerFramesLeft(world), 0);
+
+	WorldTestAccess::ClearBullets(world);
+	const int ammo_before = world.Snapshot().bullets_remaining;
+
+	thunder::GameInput fire;
+	fire.fire = true;
+	world.Tick(fire, kFrame);
+
+	EXPECT_EQ(WorldTestAccess::BulletCount(world), 3) << "三路开火";
+	EXPECT_EQ(world.Snapshot().bullets_remaining, ammo_before - 1) << "只消耗 1 发弹药";
+}
+
+TEST(WorldFire, FirepowerExpires)
+{
+	GameWorld world = MakeQuietWorld();
+	WorldTestAccess::AddPickup(world, 50, GameConfig::kScreenHeight - 1,
+	                           PickupKind::Firepower);
+	world.Tick(thunder::GameInput{}, kFrame);
+
+	const int frames = WorldTestAccess::FirepowerFramesLeft(world);
+	ASSERT_GT(frames, 0);
+
+	// 跑满时长（每次 Tick 让 dt 正好一帧，计时才不会漂）
+	for(int i = 0; i < frames; ++i)
+		world.Tick(thunder::GameInput{}, kFrame);
+
+	EXPECT_EQ(WorldTestAccess::FirepowerFramesLeft(world), 0);
+	EXPECT_EQ(world.Snapshot().firepower_seconds_left, 0);
+}
+
+// ============ 敌人血量与护盾 ============
+
+TEST(WorldEnemy, EliteTakesTwoHits)
+{
+	GameWorld world = MakeQuietWorld();
+	WorldTestAccess::AddElite(world, 20, 10, 0);
+
+	WorldTestAccess::AddBullet(world, 21, 11);
+	world.Tick(thunder::GameInput{}, kFrame);
+	EXPECT_EQ(WorldTestAccess::EnemyCount(world), 1) << "第一下打不死精英";
+	EXPECT_EQ(WorldTestAccess::EnemyAt(world, 0).hp, GameConfig::kEliteHp - 1);
+
+	WorldTestAccess::AddBullet(world, 21, 11);
+	world.Tick(thunder::GameInput{}, kFrame);
+	EXPECT_EQ(WorldTestAccess::EnemyCount(world), 0) << "第二下击毁";
+}
+
+TEST(WorldEnemy, ShieldedEliteTakesThreeHits)
+{
+	GameWorld world = MakeQuietWorld();
+	WorldTestAccess::AddElite(world, 20, 10, 0, true);
+	ASSERT_TRUE(WorldTestAccess::EnemyAt(world, 0).has_shield);
+
+	WorldTestAccess::AddBullet(world, 21, 11);
+	world.Tick(thunder::GameInput{}, kFrame);
+	ASSERT_EQ(WorldTestAccess::EnemyCount(world), 1);
+	EXPECT_FALSE(WorldTestAccess::EnemyAt(world, 0).has_shield) << "第一发破盾";
+	EXPECT_EQ(WorldTestAccess::EnemyAt(world, 0).hp, GameConfig::kEliteHp) << "破盾不掉血";
+	EXPECT_TRUE(WorldTestAccess::EnemyAt(world, 0).invuln_frames > 0);
+
+	// 无敌期内打不中（子弹穿过）
+	WorldTestAccess::AddBullet(world, 21, 11);
+	world.Tick(thunder::GameInput{}, kFrame);
+	EXPECT_EQ(WorldTestAccess::EnemyAt(world, 0).hp, GameConfig::kEliteHp);
+
+	// 等无敌结束再补两发
+	for(int i = 0; i < GameConfig::kEnemyShieldBreakInvulnFrames; ++i)
+		world.Tick(thunder::GameInput{}, kFrame);
+
+	WorldTestAccess::AddBullet(world, 21, 11);
+	world.Tick(thunder::GameInput{}, kFrame);
+	EXPECT_EQ(WorldTestAccess::EnemyAt(world, 0).hp, GameConfig::kEliteHp - 1);
+
+	WorldTestAccess::AddBullet(world, 21, 11);
+	world.Tick(thunder::GameInput{}, kFrame);
+	EXPECT_EQ(WorldTestAccess::EnemyCount(world), 0);
+}
+
+TEST(WorldEnemy, BulletPassesThroughInvulnerableEnemy)
+{
+	GameWorld world = MakeQuietWorld();
+	WorldTestAccess::AddElite(world, 20, 10, 0, true);
+
+	// 破盾
+	WorldTestAccess::AddBullet(world, 21, 11);
+	world.Tick(thunder::GameInput{}, kFrame);
+	ASSERT_TRUE(WorldTestAccess::EnemyAt(world, 0).invuln_frames > 0);
+
+	// 再打一发：子弹不该被吃掉
+	WorldTestAccess::AddBullet(world, 21, 11);
+	world.Tick(thunder::GameInput{}, kFrame);
+	EXPECT_EQ(WorldTestAccess::BulletCount(world), 1) << "无敌期子弹穿过，不消耗";
+}
+
+TEST(WorldEnemy, EliteScoresTwoAndHalfTimesAndPaysMoreAmmo)
+{
+	GameWorld world = MakeQuietWorld();
+	const int score_before = world.Score();
+	const int ammo_before = world.Snapshot().bullets_remaining;
+
+	WorldTestAccess::AddElite(world, 20, 10, 0);
+	WorldTestAccess::AddBullet(world, 21, 11);
+	world.Tick(thunder::GameInput{}, kFrame);
+	WorldTestAccess::AddBullet(world, 21, 11);
+	world.Tick(thunder::GameInput{}, kFrame);
+	ASSERT_EQ(WorldTestAccess::EnemyCount(world), 0);
+
+	const int gained = world.Score() - score_before;
+	EXPECT_GE(gained, GameConfig::kScorePerEliteKill) << "精英分数 2.5 倍";
+	EXPECT_GE(world.Snapshot().bullets_remaining - ammo_before, GameConfig::kBulletsPerEliteKill);
+}
+
+TEST(WorldEnemy, EliteSpawnPercentFollowsCurveAndCaps)
+{
+	GameWorld world = MakeQuietWorld(Difficulty::Normal);
+
+	WorldTestAccess::SetLevel(world, GameConfig::kEliteMinLevel);
+	EXPECT_EQ(WorldTestAccess::EliteSpawnPercent(world), 0) << "阈值等级不出精英";
+
+	WorldTestAccess::SetLevel(world, 20);
+	const int at20 = WorldTestAccess::EliteSpawnPercent(world);
+	EXPECT_GT(at20, 0);
+	EXPECT_LT(at20, GameConfig::kEliteCapNormalPercent);
+
+	WorldTestAccess::SetLevel(world, 100);
+	const int at100 = WorldTestAccess::EliteSpawnPercent(world);
+	EXPECT_NEAR(at100, GameConfig::kEliteCapNormalPercent, 1) << "100 级顶到上限";
+
+	WorldTestAccess::SetLevel(world, 200);
+	EXPECT_EQ(WorldTestAccess::EliteSpawnPercent(world), at100) << "封顶后不再提高";
+}
+
+TEST(WorldEnemy, CrowdBatchBonusOnlyAboveThreshold)
+{
+	EXPECT_EQ(WorldTestAccess::CrowdBatchBonus(GameConfig::kCrowdBatchThreshold), 0);
+	EXPECT_EQ(WorldTestAccess::CrowdBatchBonus(GameConfig::kCrowdBatchThreshold + 1), 1);
+	EXPECT_EQ(WorldTestAccess::CrowdBatchBonus(GameConfig::kCrowdBatchThreshold + 150), 1);
+	EXPECT_EQ(WorldTestAccess::CrowdBatchBonus(GameConfig::kCrowdBatchThreshold + 250), 2);
+
+	const int huge = GameConfig::kCrowdBatchThreshold + 5000;
+	EXPECT_EQ(WorldTestAccess::CrowdBatchBonus(huge), GameConfig::kCrowdBatchMaxBonus)
+	    << "再拥堵也不会无限加";
+}
+
+// ============ 玩家护盾与冲击波 ============
+
+TEST(WorldShield, PickupGrantsShieldAndDoesNotStack)
+{
+	GameWorld world = MakeQuietWorld();
+	const int score_before = world.Score();
+
+	WorldTestAccess::AddPickup(world, 50, GameConfig::kScreenHeight - 1,
+	                           PickupKind::Shield);
+	world.Tick(thunder::GameInput{}, kFrame);
+	EXPECT_TRUE(WorldTestAccess::PlayerShield(world));
+
+	WorldTestAccess::AddPickup(world, 50, GameConfig::kScreenHeight - 1,
+	                           PickupKind::Shield);
+	world.Tick(thunder::GameInput{}, kFrame);
+	EXPECT_TRUE(WorldTestAccess::PlayerShield(world)) << "护盾不能叠层";
+	EXPECT_GE(world.Score() - score_before, GameConfig::kDuplicateShieldScore);
+}
+
+TEST(WorldShield, ShieldAbsorbsHitAndShockwaveClearsNearby)
+{
+	GameWorld world = MakeQuietWorld();
+	WorldTestAccess::AddPickup(world, 50, GameConfig::kScreenHeight - 1,
+	                           PickupKind::Shield);
+	world.Tick(thunder::GameInput{}, kFrame);
+	ASSERT_TRUE(WorldTestAccess::PlayerShield(world));
+
+	const int life_before = world.Snapshot().life;
+
+	// 玩家正上方摆一只小怪：破盾冲击波应该把它清掉
+	WorldTestAccess::AddEnemy(world, 50, GameConfig::kScreenHeight - 1, 0);
+	world.Tick(thunder::GameInput{}, kFrame);
+
+	EXPECT_EQ(world.Snapshot().life, life_before) << "护盾挡下这次撞击，不掉血";
+	EXPECT_FALSE(WorldTestAccess::PlayerShield(world));
+	EXPECT_EQ(WorldTestAccess::EnemyCount(world), 0) << "冲击波清掉了贴脸的敌机";
+	EXPECT_TRUE(WorldTestAccess::IsInvincible(world)) << "破盾后照样进入无敌时间";
+	EXPECT_GT(WorldTestAccess::EffectCount(world), 0) << "有冲击波特效";
+}
+
+TEST(WorldShield, ShockwaveRespectsRadius)
+{
+	GameWorld world = MakeQuietWorld();
+	WorldTestAccess::AddPickup(world, 50, GameConfig::kScreenHeight - 1,
+	                           PickupKind::Shield);
+	world.Tick(thunder::GameInput{}, kFrame);
+
+	// 远处（超过冲击波半径）的小怪不该被波及
+	const int far_y = GameConfig::kScreenHeight - 1
+	    - static_cast<int>(GameConfig::kShockwaveRadiusCells) - 4;
+	ASSERT_GT(far_y, 0);
+	WorldTestAccess::AddEnemy(world, 50, far_y, 0);
+
+	// 触发破盾
+	WorldTestAccess::AddEnemy(world, 50, GameConfig::kScreenHeight - 1, 0);
+	world.Tick(thunder::GameInput{}, kFrame);
+
+	EXPECT_EQ(WorldTestAccess::EnemyCount(world), 1) << "半径外的敌机活着";
+}

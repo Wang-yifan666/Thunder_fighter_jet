@@ -23,7 +23,7 @@ struct Bullet
 };
 
 /// 敌人被击毁后掉落的道具；与玩家接触即拾取。
-/// 血包与弹药包共用同一套下落 / 判定逻辑，只有 kind 决定拾取效果。
+/// 四种道具共用同一套下落 / 判定逻辑，只有 kind 决定拾取效果。
 struct Pickup
 {
 	int x;
@@ -31,6 +31,22 @@ struct Pickup
 	PickupKind kind;
 
 	Pickup(int _x = 0, int _y = 0, PickupKind _kind = PickupKind::Health): x(_x), y(_y), kind(_kind)
+	{
+	}
+};
+
+/// 纯视觉特效：逻辑层只记位置与寿命，怎么画由前端决定（不影响任何判定）。
+struct Effect
+{
+	int x; ///< 格子坐标
+	int y;
+	EffectKind kind;
+	int age; ///< 已存活帧数
+	int life; ///< 总帧数
+	float radius; ///< 冲击波半径（格），其它特效为 0
+
+	Effect(int _x, int _y, EffectKind _kind, int _life, float _radius = 0.0f):
+	x(_x), y(_y), kind(_kind), age(0), life(_life), radius(_radius)
 	{
 	}
 };
@@ -105,14 +121,44 @@ private:
 	std::vector<Pickup> pickups_;
 	int pickup_move_counter_ = 0;
 
+	// ========== 射击 / 护盾 / 特效 ==========
+	int fire_cooldown_frames_ = 0;   // 距离下一次开火还要等几帧
+	int firepower_frames_left_ = 0;  // 火力强化剩余帧数（0 = 单路）
+	bool player_shield_ = false;     // 玩家是否还有一层护盾
+	std::vector<Effect> effects_;    // 纯视觉特效（火花 / 冲击波）
+
 	// ========== update ==========
 	void UpdateLevel(const GameInput& input);
 	void AccrueScore();
 	void UpdateBullets();
+	void UpdateEffects();
 	void CheckPlayerCollision();
 	void UpdatePickups();
 	void CheckPickupCollect();
 	void MaybeDropPickup(int enemy_x, int enemy_y);
+	void FirePlayerBullets();
+	void AddEffect(EffectKind kind, int cell_x, int cell_y, int life);
+
+	/// 一次命中的结果：无敌帧穿过 / 破盾 / 掉血 / 击毁。
+	enum class HitResult
+	{
+		Blocked,
+		ShieldBroken,
+		Damaged,
+		Destroyed
+	};
+
+	/// 对一只敌机结算一次伤害（先破盾、遵守无敌帧），击毁时负责加分、给弹药、掉落。
+	HitResult ApplyHit(Enemy& enemy);
+
+	/// 玩家破盾冲击波：圆形范围内每只敌机吃一次伤害。
+	void ApplyShockwave();
+
+	/// 当前等级下精英的出现概率（百分比）。
+	int EliteSpawnPercent() const;
+
+	/// 拥堵泄压：场上 + 排队的小怪超过阈值时，每次刷怪额外多放几只。
+	static int CrowdBatchBonus(int backlog);
 
 	void SpawnEnemyWave();
 	void ClearActiveEnemies();

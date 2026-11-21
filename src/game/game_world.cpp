@@ -5,8 +5,41 @@
 #include "game/game_world.h"
 
 #include <algorithm>
+#include <cmath>
 
 using namespace std::chrono;
+
+namespace
+{
+
+/// 四种道具的掉落率（百分比，顺序即掷骰区间顺序）。
+struct DropRates
+{
+	int health;
+	int ammo;
+	int shield;
+	int firepower;
+};
+
+DropRates DropRatesFor(Difficulty difficulty)
+{
+	switch(difficulty)
+	{
+	case Difficulty::Easy:
+		return {GameConfig::kEasyHealthDropPercent, GameConfig::kEasyAmmoDropPercent,
+		        GameConfig::kEasyShieldDropPercent, GameConfig::kEasyFirepowerDropPercent};
+	case Difficulty::Normal:
+		return {GameConfig::kNormalHealthDropPercent, GameConfig::kNormalAmmoDropPercent,
+		        GameConfig::kNormalShieldDropPercent, GameConfig::kNormalFirepowerDropPercent};
+	case Difficulty::Hard:
+		return {GameConfig::kHardHealthDropPercent, GameConfig::kHardAmmoDropPercent,
+		        GameConfig::kHardShieldDropPercent, GameConfig::kHardFirepowerDropPercent};
+	}
+	return {GameConfig::kNormalHealthDropPercent, GameConfig::kNormalAmmoDropPercent,
+	        GameConfig::kNormalShieldDropPercent, GameConfig::kNormalFirepowerDropPercent};
+}
+
+} // namespace
 
 namespace thunder
 {
@@ -35,6 +68,11 @@ void GameWorld::Reset(Difficulty difficulty)
 	bullets_.clear();
 	pickups_.clear();
 	pickup_move_counter_ = 0;
+
+	effects_.clear();
+	fire_cooldown_frames_ = 0;
+	firepower_frames_left_ = 0;
+	player_shield_ = false;
 
 	switch(difficulty_)
 	{
@@ -102,16 +140,17 @@ void GameWorld::Tick(const GameInput& input, steady_clock::duration dt)
 	const int player_w = GameConfig::kPlayerWidth;
 	const int player_h = GameConfig::kPlayerHeight;
 
-	if(input.fire && bullets_remaining_ > 0)
+	// 开火节奏：先递减冷却再判断，kFireIntervalFrames = 2 就是"每 2 帧一发"。
+	if(fire_cooldown_frames_ > 0)
+		--fire_cooldown_frames_;
+	if(firepower_frames_left_ > 0)
+		--firepower_frames_left_;
+
+	if(input.fire && bullets_remaining_ > 0 && fire_cooldown_frames_ == 0)
 	{
-		int bx = player_x_ + 1;
-		int by = player_y_ - 1;
-
-		if(by < 0)
-			by = 0;
-
-		bullets_.emplace_back(bx, by);
+		FirePlayerBullets();
 		bullets_remaining_--;
+		fire_cooldown_frames_ = GameConfig::kFireIntervalFrames;
 	}
 
 	if(input.left)
@@ -151,6 +190,24 @@ void GameWorld::Tick(const GameInput& input, steady_clock::duration dt)
 	CheckPlayerCollision();
 
 	UpdateBullets();
+
+	// 统一清理被标记死亡的敌机：子弹、冲击波都只负责标记，容器操作集中在这里。
+	// （不能只放在 UpdateBullets 里——没有子弹时会提前返回，冲击波的击杀就漏掉了。）
+	enemies_.erase(std::remove_if(enemies_.begin(), enemies_.end(),
+	                              [](const Enemy& e) {
+		                              return !e.alive;
+	                              }),
+	               enemies_.end());
+
+	// 破盾后的无敌帧逐帧递减（不能放进 MoveEnemies：它按移动间隔才跑一次）
+	for(auto& enemy: enemies_)
+	{
+		if(enemy.invuln_frames > 0)
+			--enemy.invuln_frames;
+	}
+
+	// 特效只影响画面，放在最后推进，避免和判定抢顺序
+	UpdateEffects();
 }
 
 void GameWorld::UpdateLevel(const GameInput& input)
@@ -198,13 +255,17 @@ WorldSnapshot GameWorld::Snapshot() const
 	snapshot.player_y = player_y_;
 	snapshot.life = life_;
 	snapshot.invincible = is_invincible_ || cheat_invincible_;
+	snapshot.shielded = player_shield_;
+	snapshot.firepower_seconds_left =
+	    firepower_frames_left_ * GameConfig::kFrameDelayMs / 1000;
 
 	snapshot.enemies.reserve(enemies_.size());
 	for(const auto& e: enemies_)
 	{
 		if(!e.alive)
 			continue;
-		snapshot.enemies.push_back(EntityView{e.x, e.y, e.width, e.height});
+		snapshot.enemies.push_back(
+		    EnemyView{e.x, e.y, e.width, e.height, e.kind, e.has_shield, e.invuln_frames > 0});
 	}
 
 	snapshot.bullets.reserve(bullets_.size());
@@ -215,6 +276,10 @@ WorldSnapshot GameWorld::Snapshot() const
 	for(const auto& p: pickups_)
 		snapshot.pickups.push_back(
 		    PickupView{p.x, p.y, GameConfig::kPickupSize, GameConfig::kPickupSize, p.kind});
+
+	snapshot.effects.reserve(effects_.size());
+	for(const auto& fx: effects_)
+		snapshot.effects.push_back(EffectView{fx.x, fx.y, fx.kind, fx.age, fx.life, fx.radius});
 
 	snapshot.score = score_;
 	snapshot.level = level_;
@@ -253,15 +318,107 @@ void GameWorld::CheckPlayerCollision()
 		if(no_overlap)
 			continue;
 
-		life_--;
+		// 有护盾：先破盾——不掉血、放一次冲击波清场，然后照样进入无敌时间。
+		// 无敌用和受伤相同的 1 秒：只给 0.32 秒的话，刚破盾就会被旁边的怪直接撞掉血。
+		if(player_shield_)
+		{
+			player_shield_ = false;
+			AddEffect(EffectKind::Shockwave, px + player_w / 2, py,
+			          GameConfig::kShockwaveEffectFrames);
+			ApplyShockwave();
+		}
+		else
+		{
+			life_--;
+			if(life_ < 0)
+				life_ = 0;
+		}
+
 		is_invincible_ = true;
 		invincible_remaining_ = std::chrono::seconds(GameConfig::kInvincibleDurationSec);
 
-		if(life_ < 0)
-			life_ = 0;
-
 		break;
 	}
+}
+
+void GameWorld::ApplyShockwave()
+{
+	const float cx = static_cast<float>(player_x_) + static_cast<float>(GameConfig::kPlayerWidth) * 0.5f;
+	const float cy = static_cast<float>(player_y_) + static_cast<float>(GameConfig::kPlayerHeight) * 0.5f;
+	const float radius = GameConfig::kShockwaveRadiusCells;
+	const float radius_sq = radius * radius;
+
+	// 先收集目标再结算：ApplyHit 可能把敌机标记为死亡，
+	// 直接在遍历里改容器会出问题。
+	for(auto& enemy: enemies_)
+	{
+		if(!enemy.alive)
+			continue;
+
+		const float ex = static_cast<float>(enemy.x) + static_cast<float>(enemy.width) * 0.5f;
+		const float ey = static_cast<float>(enemy.y) + static_cast<float>(enemy.height) * 0.5f;
+		const float dx = ex - cx;
+		const float dy = ey - cy;
+		if(dx * dx + dy * dy > radius_sq)
+			continue;
+
+		ApplyHit(enemy);
+	}
+}
+
+GameWorld::HitResult GameWorld::ApplyHit(Enemy& enemy)
+{
+	// 破盾后的无敌帧：这一下完全不算（子弹会穿过去，冲击波也打不动）
+	if(enemy.invuln_frames > 0)
+		return HitResult::Blocked;
+
+	if(enemy.has_shield)
+	{
+		enemy.has_shield = false;
+		enemy.invuln_frames = GameConfig::kEnemyShieldBreakInvulnFrames;
+		AddEffect(EffectKind::Spark, enemy.x + enemy.width / 2, enemy.y,
+		          GameConfig::kShieldBreakSparkFrames);
+		return HitResult::ShieldBroken;
+	}
+
+	enemy.hp--;
+	if(enemy.hp > 0)
+	{
+		AddEffect(EffectKind::Spark, enemy.x + enemy.width / 2, enemy.y,
+		          GameConfig::kShieldBreakSparkFrames);
+		return HitResult::Damaged;
+	}
+
+	enemy.alive = false;
+
+	const bool elite = (enemy.kind == EnemyKind::Elite);
+	score_ += elite ? GameConfig::kScorePerEliteKill : GameConfig::kScorePerKill;
+	bullets_remaining_ += elite ? GameConfig::kBulletsPerEliteKill : GameConfig::kBulletsPerKill;
+	MaybeDropPickup(enemy.x, enemy.y);
+
+	return HitResult::Destroyed;
+}
+
+void GameWorld::UpdateEffects()
+{
+	if(effects_.empty())
+		return;
+
+	for(auto& fx: effects_)
+		++fx.age;
+
+	effects_.erase(std::remove_if(effects_.begin(), effects_.end(),
+	                              [](const Effect& fx) {
+		                              return fx.age >= fx.life;
+	                              }),
+	               effects_.end());
+}
+
+void GameWorld::AddEffect(EffectKind kind, int cell_x, int cell_y, int life)
+{
+	// 特效纯视觉，不参与判定；数量天然有限（每帧最多几发子弹、破盾一次一个）
+	effects_.emplace_back(cell_x, cell_y, kind, life,
+	                      kind == EffectKind::Shockwave ? GameConfig::kShockwaveRadiusCells : 0.0f);
 }
 
 void GameWorld::UpdateBullets()
@@ -301,19 +458,22 @@ void GameWorld::UpdateBullets()
 			bool hit =
 			    (b_it->y >= ey) && (b_it->y < ey + eh) && (b_it->x >= ex) && (b_it->x < ex + ew);
 
-			if(hit)
-			{
-				e_it = enemies_.erase(e_it);
-				score_ += GameConfig::kScorePerKill;
-				bullet_consumed = true;
-				bullets_remaining_ += GameConfig::kBulletsPerKill;
-				MaybeDropPickup(ex, ey);
-				break;
-			}
-			else
+			if(!hit)
 			{
 				e_it++;
+				continue;
 			}
+
+			// 破盾无敌期内子弹直接穿过去（不消耗），玩家看得见子弹继续飞；
+			// 敌人自身在闪烁，配上火花，不会像"打中了却不算"。
+			if(ApplyHit(e) == HitResult::Blocked)
+			{
+				e_it++;
+				continue;
+			}
+
+			bullet_consumed = true;
+			break;
 		}
 
 		if(bullet_consumed)
@@ -327,36 +487,41 @@ void GameWorld::UpdateBullets()
 	}
 }
 
+void GameWorld::FirePlayerBullets()
+{
+	const int bx = player_x_ + 1;
+	const int by = std::max(0, player_y_ - 1);
+
+	bullets_.emplace_back(bx, by);
+
+	// 火力强化：左右各加一路。贴在屏幕边上时那一侧自然没有子弹（格子坐标越界）。
+	if(firepower_frames_left_ > 0)
+	{
+		if(bx - 1 >= 0)
+			bullets_.emplace_back(bx - 1, by);
+		if(bx + 1 < GameConfig::kScreenWidth)
+			bullets_.emplace_back(bx + 1, by);
+	}
+}
+
 void GameWorld::MaybeDropPickup(int enemy_x, int enemy_y)
 {
 	// 掉落率随难度变化：低难度给新手保护，高难度少给补给
-	int health_percent = GameConfig::kNormalHealthDropPercent;
-	int ammo_percent = GameConfig::kNormalAmmoDropPercent;
-	switch(difficulty_)
-	{
-	case Difficulty::Easy:
-		health_percent = GameConfig::kEasyHealthDropPercent;
-		ammo_percent = GameConfig::kEasyAmmoDropPercent;
-		break;
-	case Difficulty::Normal:
-		health_percent = GameConfig::kNormalHealthDropPercent;
-		ammo_percent = GameConfig::kNormalAmmoDropPercent;
-		break;
-	case Difficulty::Hard:
-		health_percent = GameConfig::kHardHealthDropPercent;
-		ammo_percent = GameConfig::kHardAmmoDropPercent;
-		break;
-	}
+	const DropRates rates = DropRatesFor(difficulty_);
 
-	// 一次掷骰切分两个区间：先血包，再弹药包，其余不掉
+	// 一次掷骰切四个区间：先血包、再弹药、护盾、火力，其余不掉
 	std::uniform_int_distribution<int> roll(1, 100);
 	const int value = roll(rng_);
 
 	PickupKind kind;
-	if(value <= health_percent)
+	if(value <= rates.health)
 		kind = PickupKind::Health;
-	else if(value <= health_percent + ammo_percent)
+	else if(value <= rates.health + rates.ammo)
 		kind = PickupKind::Ammo;
+	else if(value <= rates.health + rates.ammo + rates.shield)
+		kind = PickupKind::Shield;
+	else if(value <= rates.health + rates.ammo + rates.shield + rates.firepower)
+		kind = PickupKind::Firepower;
 	else
 		return;
 
@@ -457,6 +622,17 @@ void GameWorld::CheckPickupCollect()
 			break;
 		case PickupKind::Ammo:
 			bullets_remaining_ += GameConfig::kAmmoPickupBullets;
+			break;
+		case PickupKind::Shield:
+			// 护盾最多一层：已有盾时再捡只给补偿分，避免变成可叠加的"血包加强版"
+			if(player_shield_)
+				score_ += GameConfig::kDuplicateShieldScore;
+			else
+				player_shield_ = true;
+			break;
+		case PickupKind::Firepower:
+			// 重复拾取刷新时长，不累加
+			firepower_frames_left_ = GameConfig::kFirepowerFrames;
 			break;
 		}
 

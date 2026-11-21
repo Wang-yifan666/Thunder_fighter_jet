@@ -6,6 +6,7 @@ include(GoogleTest)
 add_executable(thunder_logic_tests
     highscore_test.cpp
     world_test.cpp
+    combat_test.cpp
     rng_test.cpp
     session_test.cpp
     view_layout_test.cpp

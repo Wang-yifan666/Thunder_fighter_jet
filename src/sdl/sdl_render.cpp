@@ -30,6 +30,13 @@ constexpr SDL_Color kEnemyWing{150, 34, 42, 255};
 constexpr SDL_Color kEnemyCore{255, 150, 90, 255};
 constexpr SDL_Color kBullet{255, 120, 200, 255};
 constexpr SDL_Color kBulletCore{255, 240, 250, 255};
+constexpr SDL_Color kShockwave{150, 230, 255, 255};
+constexpr SDL_Color kHealthBody{232, 64, 64, 255};
+constexpr SDL_Color kHealthMark{255, 245, 240, 255};
+constexpr SDL_Color kAmmoBody{250, 196, 32, 255};
+constexpr SDL_Color kShieldBody{64, 176, 232, 255};
+constexpr SDL_Color kFirepowerBody{138, 84, 220, 255};
+constexpr SDL_Color kDarkMark{40, 40, 52, 255};
 constexpr SDL_Color kText{235, 235, 240, 255};
 constexpr SDL_Color kTextDim{150, 150, 165, 255};
 constexpr SDL_Color kTextAccent{255, 214, 64, 255};
@@ -160,6 +167,45 @@ SDL_Texture* AmmoTexture(SDL_Renderer* renderer)
 	                      View::kPickupSpriteSize, View::kPickupSpriteSize);
 }
 
+SDL_Texture* EliteTexture(SDL_Renderer* renderer)
+{
+	static SpriteSlot slot;
+	return AcquireTexture(slot, renderer, SpriteData::kElitePixels, SpriteData::kElitePixelsSize,
+	                      View::kEliteSpriteWidth, View::kEliteSpriteHeight);
+}
+
+SDL_Texture* ShieldPackTexture(SDL_Renderer* renderer)
+{
+	static SpriteSlot slot;
+	return AcquireTexture(slot, renderer, SpriteData::kShieldPackPixels,
+	                      SpriteData::kShieldPackPixelsSize, View::kPickupSpriteSize,
+	                      View::kPickupSpriteSize);
+}
+
+SDL_Texture* FirepowerTexture(SDL_Renderer* renderer)
+{
+	static SpriteSlot slot;
+	return AcquireTexture(slot, renderer, SpriteData::kFirepowerPixels,
+	                      SpriteData::kFirepowerPixelsSize, View::kPickupSpriteSize,
+	                      View::kPickupSpriteSize);
+}
+
+/// 护盾泡：小怪 32x32、精英 / 玩家 48x48
+SDL_Texture* ShieldBubbleTexture(SDL_Renderer* renderer, bool big)
+{
+	static SpriteSlot small_slot;
+	static SpriteSlot big_slot;
+	if(big)
+	{
+		return AcquireTexture(big_slot, renderer, SpriteData::kShieldBubbleBigPixels,
+		                      SpriteData::kShieldBubbleBigPixelsSize, View::kShieldBubbleBigSize,
+		                      View::kShieldBubbleBigSize);
+	}
+	return AcquireTexture(small_slot, renderer, SpriteData::kShieldBubblePixels,
+	                      SpriteData::kShieldBubblePixelsSize, View::kShieldBubbleSize,
+	                      View::kShieldBubbleSize);
+}
+
 /// 掉落物：带轻微上下浮动，便于和敌机区分（纯视觉，不影响判定）
 void DrawPickup(SDL_Renderer* renderer, const SdlRender::Layout& layout,
                 const thunder::PickupView& item, double seconds)
@@ -172,8 +218,23 @@ void DrawPickup(SDL_Renderer* renderer, const SdlRender::Layout& layout,
 	const float w = box.w;
 	const float h = box.h;
 
-	const bool is_ammo = (item.kind == PickupKind::Ammo);
-	SDL_Texture* texture = is_ammo ? AmmoTexture(renderer) : HealthTexture(renderer);
+	SDL_Texture* texture = nullptr;
+	switch(item.kind)
+	{
+	case PickupKind::Health:
+		texture = HealthTexture(renderer);
+		break;
+	case PickupKind::Ammo:
+		texture = AmmoTexture(renderer);
+		break;
+	case PickupKind::Shield:
+		texture = ShieldPackTexture(renderer);
+		break;
+	case PickupKind::Firepower:
+		texture = FirepowerTexture(renderer);
+		break;
+	}
+
 	if(texture != nullptr)
 	{
 		const SDL_FRect dst{x, y, w, h};
@@ -181,20 +242,31 @@ void DrawPickup(SDL_Renderer* renderer, const SdlRender::Layout& layout,
 		return;
 	}
 
-	// 回退：血包画红十字，弹药包画黄底加弹形
+	// 回退：四种道具各画一个色块 + 记号
 	const float pad = cell * 0.5f;
-	const SDL_Color body = is_ammo ? SDL_Color{250, 196, 32, 255} : SDL_Color{232, 64, 64, 255};
-	const SDL_Color mark = is_ammo ? SDL_Color{58, 66, 86, 255} : SDL_Color{255, 245, 240, 255};
+	SDL_Color body = kHealthBody;
+	switch(item.kind)
+	{
+	case PickupKind::Health:
+		body = kHealthBody;
+		break;
+	case PickupKind::Ammo:
+		body = kAmmoBody;
+		break;
+	case PickupKind::Shield:
+		body = kShieldBody;
+		break;
+	case PickupKind::Firepower:
+		body = kFirepowerBody;
+		break;
+	}
+	const SDL_Color mark = (item.kind == PickupKind::Health) ? kHealthMark : kDarkMark;
 
 	Fill(renderer, x + pad, y + pad, w - pad * 2, h - pad * 2, body);
 
 	const float cx = x + w * 0.5f;
 	const float cy = y + h * 0.5f;
-	if(is_ammo)
-	{
-		Fill(renderer, cx - 5.0f, cy - 4.0f, 10.0f, 8.0f, mark);
-	}
-	else
+	if(item.kind == PickupKind::Health)
 	{
 		const float bar = (w - pad * 2) * 0.28f;
 		Fill(renderer, cx - bar * 0.5f, cy - (h - pad * 2) * 0.5f + 2.0f, bar, h - pad * 2 - 4.0f,
@@ -202,29 +274,113 @@ void DrawPickup(SDL_Renderer* renderer, const SdlRender::Layout& layout,
 		Fill(renderer, cx - (w - pad * 2) * 0.5f + 2.0f, cy - bar * 0.5f, w - pad * 2 - 4.0f, bar,
 		     mark);
 	}
+	else
+	{
+		Fill(renderer, cx - 5.0f, cy - 4.0f, 10.0f, 8.0f, mark);
+	}
+}
+
+/// 用短线段拼一个圆环（SDL 没有直接画圆的接口）
+void StrokeRing(SDL_Renderer* renderer, float center_x, float center_y, float radius,
+                SDL_Color color, int alpha)
+{
+	if(radius <= 0.5f)
+		return;
+
+	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+	SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, static_cast<Uint8>(alpha));
+
+	const int segments = std::max(16, static_cast<int>(radius));
+	const float step = 6.2831853f / static_cast<float>(segments);
+	float prev_x = center_x + radius;
+	float prev_y = center_y;
+	for(int i = 1; i <= segments; ++i)
+	{
+		const float angle = step * static_cast<float>(i);
+		const float x = center_x + std::cos(angle) * radius;
+		const float y = center_y + std::sin(angle) * radius;
+		SDL_RenderLine(renderer, prev_x, prev_y, x, y);
+		prev_x = x;
+		prev_y = y;
+	}
+}
+
+/// 纯视觉特效：命中火花 + 破盾冲击波（不参与任何判定）
+void DrawEffects(SDL_Renderer* renderer, const SdlRender::Layout& layout,
+                 const std::vector<thunder::EffectView>& effects)
+{
+	const float cell = static_cast<float>(layout.cell);
+
+	for(const auto& fx: effects)
+	{
+		const float progress = (fx.life > 0)
+		    ? static_cast<float>(fx.age) / static_cast<float>(fx.life)
+		    : 1.0f;
+		const float cx = View::CellX(layout, fx.x) + cell * 0.5f;
+		const float cy = View::CellY(layout, fx.y) + cell * 0.5f;
+
+		if(fx.kind == EffectKind::Shockwave)
+		{
+			const int alpha = static_cast<int>(220.0f * (1.0f - progress));
+			StrokeRing(renderer, cx, cy, fx.radius * cell * progress, kShockwave, alpha);
+			StrokeRing(renderer, cx, cy, fx.radius * cell * progress * 0.7f, kShockwave, alpha / 2);
+			continue;
+		}
+
+		const float fade = 1.0f - progress;
+		const float len = 2.0f + 4.0f * fade;
+		const int alpha = static_cast<int>(230.0f * fade);
+		const SDL_Color spark{255, 255, 255, static_cast<Uint8>(alpha)};
+		Blend(renderer, cx - len, cy - 1.0f, len * 2.0f, 2.0f, spark);
+		Blend(renderer, cx - 1.0f, cy - len, 2.0f, len * 2.0f, spark);
+	}
 }
 
 void DrawEnemy(SDL_Renderer* renderer, const SdlRender::Layout& layout,
-               const thunder::EntityView& enemy)
+               const thunder::EnemyView& enemy, double seconds)
 {
+	const bool elite = (enemy.kind == EnemyKind::Elite);
 	const View::Rect box = View::EnemyRect(layout, enemy.x, enemy.y, enemy.width, enemy.height);
 	const float x = box.x;
 	const float y = box.y;
 	const float w = box.w - 1.0f;
 	const float h = box.h - 1.0f;
 
-	if(SDL_Texture* texture = EnemyTexture(renderer))
+	// 破盾无敌期闪烁：子弹会穿过去，这里必须能一眼看出"暂时打不动"
+	const bool flicker = enemy.invulnerable && std::fmod(seconds, 0.16) >= 0.08;
+
+	SDL_Texture* texture = elite ? EliteTexture(renderer) : EnemyTexture(renderer);
+	if(texture != nullptr)
 	{
+		if(flicker)
+			SDL_SetTextureAlphaMod(texture, 110);
 		const SDL_FRect dst{box.x, box.y, box.w, box.h};
 		SDL_RenderTexture(renderer, texture, nullptr, &dst);
-		return;
+		if(flicker)
+			SDL_SetTextureAlphaMod(texture, 255);
+	}
+	else
+	{
+		// 回退：机身 + 左右翼 + 引擎光点
+		Fill(renderer, x + 3.0f, y + 1.0f, w - 6.0f, h - 1.0f, kEnemyBody);
+		Fill(renderer, x, y + h * 0.45f, 3.0f, h * 0.55f, kEnemyWing);
+		Fill(renderer, x + w - 3.0f, y + h * 0.45f, 3.0f, h * 0.55f, kEnemyWing);
+		Fill(renderer, x + w * 0.5f - 1.0f, y + h - 2.0f, 2.0f, 2.0f, kEnemyCore);
 	}
 
-	// 回退：机身 + 左右翼 + 引擎光点
-	Fill(renderer, x + 3.0f, y + 1.0f, w - 6.0f, h - 1.0f, kEnemyBody);
-	Fill(renderer, x, y + h * 0.45f, 3.0f, h * 0.55f, kEnemyWing);
-	Fill(renderer, x + w - 3.0f, y + h * 0.45f, 3.0f, h * 0.55f, kEnemyWing);
-	Fill(renderer, x + w * 0.5f - 1.0f, y + h - 2.0f, 2.0f, 2.0f, kEnemyCore);
+	// 护盾泡画在敌机之上：一圈青光，明确告诉玩家"先打盾"
+	if(enemy.shielded)
+	{
+		if(SDL_Texture* bubble = ShieldBubbleTexture(renderer, elite))
+		{
+			const int size =
+			    elite ? View::kShieldBubbleBigSize : View::kShieldBubbleSize;
+			const View::Rect ring =
+			    View::EnemyShieldRect(layout, enemy.x, enemy.y, enemy.width, enemy.height, size);
+			const SDL_FRect dst{ring.x, ring.y, ring.w, ring.h};
+			SDL_RenderTexture(renderer, bubble, nullptr, &dst);
+		}
+	}
 }
 
 void DrawBullet(SDL_Renderer* renderer, const SdlRender::Layout& layout,
@@ -263,18 +419,33 @@ void DrawPlayer(SDL_Renderer* renderer, const SdlRender::Layout& layout,
 		SDL_RenderTexture(renderer, texture, nullptr, &dst);
 		if(world.invincible)
 			SDL_SetTextureColorMod(texture, 255, 255, 255);
-		return;
+	}
+	else
+	{
+		const SDL_Color body = world.invincible ? kTextDim : kPlayer;
+		const SDL_Color wing = world.invincible ? kTextDim : kPlayerWing;
+
+		// 回退：主体（中间一格）+ 两侧机翼 + 驾驶舱
+		Fill(renderer, x + w / 3.0f, y, w / 3.0f, h, body);
+		Fill(renderer, x, y + h * 0.55f, w / 3.0f, h * 0.45f, wing);
+		Fill(renderer, x + w * 2.0f / 3.0f, y + h * 0.55f, w / 3.0f, h * 0.45f, wing);
+		Fill(renderer, x + w / 2.0f - 1.0f, y + 1.0f, 2.0f, 2.0f, kPlayerCore);
 	}
 
-	const SDL_Color body = world.invincible ? kTextDim : kPlayer;
-	const SDL_Color wing = world.invincible ? kTextDim : kPlayerWing;
-
-	// 回退：主体（中间一格）+ 两侧机翼 + 驾驶舱
-	Fill(renderer, x + w / 3.0f, y, w / 3.0f, h, body);
-	Fill(renderer, x, y + h * 0.55f, w / 3.0f, h * 0.45f, wing);
-	Fill(renderer, x + w * 2.0f / 3.0f, y + h * 0.55f, w / 3.0f, h * 0.45f, wing);
-	Fill(renderer, x + w / 2.0f - 1.0f, y + 1.0f, 2.0f, 2.0f, kPlayerCore);
+	// 玩家护盾泡：和敌机用同一张青光贴图，读到"这层盾会挡住一次撞击"
+	if(world.shielded)
+	{
+		if(SDL_Texture* bubble = ShieldBubbleTexture(renderer, true))
+		{
+			const View::Rect ring = View::PlayerShieldRect(layout, world.player_x, world.player_y);
+			const SDL_FRect dst{ring.x, ring.y, ring.w, ring.h};
+			SDL_RenderTexture(renderer, bubble, nullptr, &dst);
+		}
+	}
 }
+
+void DrawStatus(SDL_Renderer* renderer, const SdlRender::Layout& layout,
+                const thunder::WorldSnapshot& world);
 
 void DrawWorld(SDL_Renderer* renderer, const thunder::WorldSnapshot& world,
                const SdlRender::Layout& layout, bool paused, double seconds)
@@ -308,7 +479,7 @@ void DrawWorld(SDL_Renderer* renderer, const thunder::WorldSnapshot& world,
 	SDL_SetRenderClipRect(renderer, &clip);
 
 	for(const auto& enemy: world.enemies)
-		DrawEnemy(renderer, layout, enemy);
+		DrawEnemy(renderer, layout, enemy, seconds);
 
 	for(const auto& bullet: world.bullets)
 		DrawBullet(renderer, layout, bullet);
@@ -318,7 +489,12 @@ void DrawWorld(SDL_Renderer* renderer, const thunder::WorldSnapshot& world,
 
 	DrawPlayer(renderer, layout, world, seconds);
 
+	// 特效画在最上层：火花与冲击波要压过精灵才看得清
+	DrawEffects(renderer, layout, world.effects);
+
 	SDL_SetRenderClipRect(renderer, nullptr);
+
+	DrawStatus(renderer, layout, world);
 
 	if(paused)
 	{
@@ -343,6 +519,25 @@ void DrawHud(SDL_Renderer* renderer, const thunder::WorldSnapshot& world, int be
 
 	SdlFont::DrawText(renderer, layout.grid_x, 8, 2, line1, kTextAccent);
 	SdlFont::DrawText(renderer, layout.grid_x, 28, 2, line2, kText);
+}
+
+/// 玩家状态角标：护盾 / 火力强化只在生效时显示，贴在棋盘左下角。
+void DrawStatus(SDL_Renderer* renderer, const SdlRender::Layout& layout,
+                const thunder::WorldSnapshot& world)
+{
+	int y = layout.grid_y + GameConfig::kScreenHeight * layout.cell - 12;
+
+	if(world.firepower_seconds_left > 0)
+	{
+		SdlFont::DrawText(renderer, layout.grid_x + 4, y, 1,
+		                  "POWER " + std::to_string(world.firepower_seconds_left) + "S",
+		                  kTextAccent);
+		y -= 10;
+	}
+	if(world.shielded)
+	{
+		SdlFont::DrawText(renderer, layout.grid_x + 4, y, 1, "SHIELD", kShockwave);
+	}
 }
 
 void DrawHint(SDL_Renderer* renderer, const SdlRender::Layout& layout, const std::string& text)

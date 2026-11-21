@@ -11,7 +11,7 @@
 #include "game/world_snapshot.h"
 
 using namespace std::chrono;
-using thunder::EntityView;
+using thunder::EnemyView;
 using thunder::GameInput;
 using thunder::GameWorld;
 
@@ -19,7 +19,7 @@ namespace
 {
 
 /// 跑一段包含刷怪与横向移动（4 级起）的场景。
-std::vector<EntityView> RunScene(std::uint32_t seed)
+std::vector<EnemyView> RunScene(std::uint32_t seed)
 {
 	GameWorld world(seed);
 	world.Reset(Difficulty::Hard);
@@ -34,7 +34,7 @@ std::vector<EntityView> RunScene(std::uint32_t seed)
 	return world.Snapshot().enemies;
 }
 
-bool SameScene(const std::vector<EntityView>& a, const std::vector<EntityView>& b)
+bool SameScene(const std::vector<EnemyView>& a, const std::vector<EnemyView>& b)
 {
 	if(a.size() != b.size())
 		return false;

@@ -50,6 +50,52 @@ struct WorldTestAccess
 		world.enemies_.emplace_back(x, y, speed, width, height);
 	}
 
+	/// 摆一只精英：4x3 格、2 血，可选带盾。
+	static void AddElite(GameWorld& world, int x, int y, int speed = 1, bool has_shield = false)
+	{
+		world.enemies_.push_back(Enemy::Elite(x, y, speed, has_shield));
+	}
+
+	static const Enemy& EnemyAt(const GameWorld& world, int index)
+	{
+		return world.enemies_[static_cast<std::size_t>(index)];
+	}
+
+	static void SetLevel(GameWorld& world, int level)
+	{
+		world.level_ = level;
+	}
+
+	static int EliteSpawnPercent(const GameWorld& world)
+	{
+		return world.EliteSpawnPercent();
+	}
+
+	static int FirepowerFramesLeft(const GameWorld& world)
+	{
+		return world.firepower_frames_left_;
+	}
+
+	static bool PlayerShield(const GameWorld& world)
+	{
+		return world.player_shield_;
+	}
+
+	static int EffectCount(const GameWorld& world)
+	{
+		return static_cast<int>(world.effects_.size());
+	}
+
+	static int FireCooldown(const GameWorld& world)
+	{
+		return world.fire_cooldown_frames_;
+	}
+
+	static int CrowdBatchBonus(int backlog)
+	{
+		return GameWorld::CrowdBatchBonus(backlog);
+	}
+
 	static void AddBullet(GameWorld& world, int x, int y)
 	{
 		world.bullets_.emplace_back(x, y);
