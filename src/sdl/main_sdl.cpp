@@ -4,6 +4,7 @@
 #include <SDL3/SDL.h>
 
 #include <chrono>
+#include <cstddef>
 #include <cstdio>
 #include <cstdlib>
 #include <cstdint>

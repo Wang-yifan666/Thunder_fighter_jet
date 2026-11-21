@@ -5,6 +5,7 @@
 #include "game/game_config.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdlib>
 #include <random>
 

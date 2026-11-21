@@ -4,6 +4,8 @@
 #include "sdl_render.h"
 
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <iomanip>
 #include <sstream>
 #include <string>
@@ -205,7 +207,6 @@ void DrawPickup(SDL_Renderer* renderer, const SdlRender::Layout& layout,
 void DrawEnemy(SDL_Renderer* renderer, const SdlRender::Layout& layout,
                const thunder::EntityView& enemy)
 {
-	const float cell = static_cast<float>(layout.cell);
 	const View::Rect box = View::EnemyRect(layout, enemy.x, enemy.y, enemy.width, enemy.height);
 	const float x = box.x;
 	const float y = box.y;
@@ -244,7 +245,6 @@ void DrawPlayer(SDL_Renderer* renderer, const SdlRender::Layout& layout,
 	if(world.invincible && std::fmod(seconds, 0.24) >= 0.16)
 		return;
 
-	const float cell = static_cast<float>(layout.cell);
 	const View::Rect hitbox = View::CellRect(layout, world.player_x, world.player_y,
 	                                         GameConfig::kPlayerWidth, GameConfig::kPlayerHeight);
 	const float x = hitbox.x;

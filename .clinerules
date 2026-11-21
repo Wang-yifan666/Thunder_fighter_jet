@@ -38,6 +38,15 @@
 8. **敌机之间不得重叠**
    由 `WorldEnemy.EnemiesNeverOverlapEachOther` 锁定，改移动逻辑时别破坏它。
 
+## 工具链差异（重要）
+
+本地开发用的是 MinGW GCC 11.2.0，**CI 用的是 GCC 15**。11.2 的头文件包含关系
+更宽松，很多标准头会被间接带进来；15 收紧之后就会暴露"漏 include"的问题
+（例如 `std::uint32_t` 少了 `<cstdint>`）。
+
+所以：**本地编译通过不代表 CI 能过**。新增/改动代码时按"用到什么就 include 什么"
+写，最终以 CI 的绿灯为准。
+
 ## 开发流程
 
 - 改动后必须：`cmake --build build` + `ctest --test-dir build --output-on-failure`
