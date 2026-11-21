@@ -3,7 +3,9 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <chrono>
+#include <string>
 
 #include "game/game_config.h"
 #include "game/game_types.h"
@@ -652,4 +654,79 @@ TEST(WorldEnemy, EnemiesNeverOverlapEachOther)
 	}
 
 	EXPECT_EQ(first_bad, -1) << "第 " << first_bad << " 帧出现 " << bad_pairs << " 对重叠敌机";
+}
+// ===================================================================
+// 掉落物不能叠在一起
+// ===================================================================
+
+namespace
+{
+
+/// 返回第一对互相重叠的道具（测试失败时用来定位），没有重叠时返回空串。
+std::string FirstOverlappingPickupPair(const WorldSnapshot& snap)
+{
+	for(std::size_t i = 0; i < snap.pickups.size(); ++i)
+	{
+		for(std::size_t j = i + 1; j < snap.pickups.size(); ++j)
+		{
+			const auto& a = snap.pickups[i];
+			const auto& b = snap.pickups[j];
+			const bool apart = (a.x + a.width <= b.x) || (b.x + b.width <= a.x)
+			    || (a.y + a.height <= b.y) || (b.y + b.height <= a.y);
+			if(apart)
+				continue;
+			return "A(" + std::to_string(a.x) + "," + std::to_string(a.y) + ") B("
+			    + std::to_string(b.x) + "," + std::to_string(b.y) + ")";
+		}
+	}
+	return {};
+}
+
+} // namespace
+
+TEST(WorldPickup, PickupsNeverOverlapEachOther)
+{
+	GameWorld world(20260101);
+	world.Reset(Difficulty::Easy); // 掉率最高，最容易撞
+	WorldTestAccess::ClearEnemies(world);
+	WorldTestAccess::ClearPending(world);
+	WorldTestAccess::ClearBullets(world);
+	WorldTestAccess::ClearPickups(world);
+
+	int overlaps = 0;
+	int first_tick = -1;
+	std::string first_pair;
+	std::size_t most_seen = 0;
+	for(int i = 0; i < 3000; ++i)
+	{
+		// 真实成因：同一列上下两只敌机（间隔 2 行，彼此不重叠）几乎同时被击毁，
+		// 掉落的两个 3x3 道具在竖直方向就会压在一起
+		if(i % 40 == 0)
+		{
+			const int x = 20 + (i * 13) % 40;
+			WorldTestAccess::AddEnemy(world, x, 20, 0);
+			WorldTestAccess::AddEnemy(world, x, 22, 0);
+			WorldTestAccess::AddBullet(world, x + 1, 21);
+			WorldTestAccess::AddBullet(world, x + 1, 23);
+		}
+
+		world.Tick(GameInput{}, kFrame);
+
+		const WorldSnapshot snap = world.Snapshot();
+		most_seen = std::max(most_seen, snap.pickups.size());
+
+		const std::string pair = FirstOverlappingPickupPair(snap);
+		if(pair.empty())
+			continue;
+
+		++overlaps;
+		if(first_pair.empty())
+		{
+			first_pair = pair;
+			first_tick = i;
+		}
+	}
+
+	EXPECT_GE(most_seen, 3u) << "应该同时存在多个掉落物，这条测试才有意义";
+	EXPECT_EQ(overlaps, 0) << "掉落物叠在一起了（第 " << first_tick << " 帧：" << first_pair << "）";
 }

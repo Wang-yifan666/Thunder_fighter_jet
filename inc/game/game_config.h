@@ -65,15 +65,17 @@ constexpr int kPickupSpeed = 1;         // 每次移动的格子数
 constexpr int kPickupMoveInterval = 16; // 每多少帧移动一次（约 12 秒穿过全屏）
 constexpr int kHealthPickupLife = 1;    // 血包回复的生命值
 constexpr int kAmmoPickupBullets = 50;  // 弹药包补充的子弹数
+// 落点被其它道具占用时，向两侧各尝试几个身位；都占满就放弃这次掉落
+constexpr int kPickupPlacementTries = 4;
 
 // 掉落率随难度变化（百分比）。
 // 难度越低补给越慷慨：Easy 是新手保护，Hard 靠自己本事——高手不需要救济。
-constexpr int kEasyHealthDropPercent = 10;
-constexpr int kEasyAmmoDropPercent = 12;
-constexpr int kNormalHealthDropPercent = 8;
-constexpr int kNormalAmmoDropPercent = 8;
-constexpr int kHardHealthDropPercent = 6;
-constexpr int kHardAmmoDropPercent = 6;
+constexpr int kEasyHealthDropPercent = 5;
+constexpr int kEasyAmmoDropPercent = 6;
+constexpr int kNormalHealthDropPercent = 4;
+constexpr int kNormalAmmoDropPercent = 4;
+constexpr int kHardHealthDropPercent = 3;
+constexpr int kHardAmmoDropPercent = 3;
 
 // ========== 作弊 ==========
 constexpr int kCheatAddScore = 1000;

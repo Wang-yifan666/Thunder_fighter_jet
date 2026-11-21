@@ -363,11 +363,40 @@ void GameWorld::MaybeDropPickup(int enemy_x, int enemy_y)
 	const int size = GameConfig::kPickupSize;
 	const int enemy_w = GameConfig::kEnemyWidth;
 
-	// 对齐到敌机中心，并保证整块道具在屏幕内
-	int x = enemy_x + enemy_w / 2 - size / 2;
-	x = std::clamp(x, 0, GameConfig::kScreenWidth - size);
+	// 掉落物同速下落，相对位置一旦确定就不会变，
+	// 所以"两个道具叠在一起"只可能发生在生成瞬间——在这里避开就行。
+	auto overlaps_existing = [&](int candidate_x) {
+		for(const auto& other: pickups_)
+		{
+			const bool apart = (candidate_x + size <= other.x)
+			    || (other.x + size <= candidate_x)
+			    || (enemy_y + size <= other.y) || (other.y + size <= enemy_y);
+			if(!apart)
+				return true;
+		}
+		return false;
+	};
 
-	pickups_.emplace_back(x, enemy_y, kind);
+	// 优先落在敌机正下方，被占了就往两侧找，一个宽度一个宽度地试
+	const int base = std::clamp(enemy_x + enemy_w / 2 - size / 2, 0,
+	                            GameConfig::kScreenWidth - size);
+
+	const int max_offset = size * GameConfig::kPickupPlacementTries;
+	for(int offset = 0; offset <= max_offset; offset += size)
+	{
+		const int candidates[2] = {base + offset, base - offset};
+		for(int x: candidates)
+		{
+			if(x < 0 || x > GameConfig::kScreenWidth - size)
+				continue;
+			if(overlaps_existing(x))
+				continue;
+			pickups_.emplace_back(x, enemy_y, kind);
+			return;
+		}
+	}
+
+	// 附近实在挤不下（例如道具刷得太密），这次就不掉了
 }
 
 void GameWorld::UpdatePickups()
