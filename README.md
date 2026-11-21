@@ -113,6 +113,18 @@ ctest --test-dir build --output-on-failure
 
 产物：`build/Naidan.exe`（完全静态链接）。
 
+### 生成安装包
+
+需要 [Inno Setup 6](https://jrsoftware.org/isdl.php)（`winget install JRSoftware.InnoSetup`）：
+
+```powershell
+pwsh tools/build_installer.ps1          # 产物在 build/installer/
+```
+
+安装包特性：每用户安装到 `%LOCALAPPDATA%\Programs\Naidan`（不需要管理员权限）、
+开始菜单快捷方式、可选桌面图标、自带卸载程序、中英双语界面。
+简体中文语言包在 `packaging/languages/ChineseSimplified.isl`，随仓库分发。
+
 - SDL3 缺失时配置阶段直接报错（SDL3 现在是必需依赖）
 - SDL3_ttf 缺失或字体文件缺失时，自动回退到内置 5×7 点阵字体
 - 需要调试输出时加 `-DTHUNDER_SDL_CONSOLE=ON`，改回控制台子系统
@@ -166,7 +178,9 @@ Thunder_fighter_jet/
 ├── tests/                     # GoogleTest 回归测试
 ├── tools/
 │   ├── bake_sprites.py        # PNG -> 内嵌 RGBA 数据
-│   └── make_screenshots.py    # 生成 README 截图
+│   ├── make_screenshots.py    # 生成 README 截图
+│   └── build_installer.ps1    # 生成 Inno Setup 安装包
+├── packaging/                 # 安装包脚本与载荷（README/许可/中文语言包）
 ├── assets/
 │   ├── fonts/                 # Ubuntu Mono（构建时内嵌）
 │   ├── icons/                 # 应用图标

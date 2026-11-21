@@ -106,3 +106,29 @@ jobs:
           name: Naidan-windows-x64
           path: build/*.exe
           if-no-files-found: error
+
+      # ---------------- 以下只在打 tag 时执行：产出安装包 ----------------
+      - name: 安装 Inno Setup
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        run: |
+          choco install innosetup --no-progress -y
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup 安装失败" }
+
+      - name: 构建安装包
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        run: |
+          # tag 形如 v1.7，安装包只取数字部分
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          pwsh -NoProfile -File tools/build_installer.ps1 `
+            -Exe build/Naidan.exe -Version $version
+          if ($LASTEXITCODE -ne 0) { throw "安装包构建失败" }
+
+      - name: 上传安装包
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/upload-artifact@v4
+        with:
+          name: Naidan-installer
+          path: build/installer/*.exe
+          if-no-files-found: error

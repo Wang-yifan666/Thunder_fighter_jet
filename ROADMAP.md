@@ -45,13 +45,17 @@
 
 配套测试 `tests/score_path_test.cpp` 覆盖了四种分支与写入格式。
 
-### 3. 安装包（Inno Setup）
+### 3. ~~安装包（Inno Setup）~~（已完成）
 
-- 每用户安装到 `%LOCALAPPDATA%\Programs\Naidan\`，不需要管理员权限
-- 开始菜单快捷方式、可选桌面图标、卸载程序
-- 中英双语安装界面，附带 README 与字体授权
-- 同时保留便携 zip
-- 接进 CI：打 tag → 构建 →（签名）→ 出安装包 → 发 Release
+`packaging/naidan.iss` + `tools/build_installer.ps1`：
+
+- 每用户安装到 `%LOCALAPPDATA%\Programs\Naidan`，全程不需要管理员权限
+- 开始菜单快捷方式、可选桌面图标、自带卸载程序
+- 中英双语界面（简体中文语言包随仓库分发）
+- 卸载时清理安装目录里的便携存档，不动 `%APPDATA%` 里的用户数据
+- CI 打 tag 时自动构建安装包并作为 artifact 上传
+
+实测：安装 → 启动 → 卸载 全流程通过，注册表项与安装目录都能干净清除。
 
 ### 4. 代码签名
 
