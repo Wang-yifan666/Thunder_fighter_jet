@@ -10,7 +10,11 @@
 
 #define AppNameZh "奶蛋的火力不足恐惧症"
 #define AppNameEn "Naidan's Fear of Insufficient Firepower"
-#define AppVersion "1.7"
+; 版本由 tools\build_installer.ps1 的 -Version 传入（CI 从 tag 取数字部分），
+; 直接编译本文件时用下面的默认值。
+#ifndef AppVersion
+  #define AppVersion "1.8"
+#endif
 #define AppExeName "Naidan.exe"
 #define AppPublisher "Wang-yifan666"
 #define AppUrl "https://github.com/Wang-yifan666/Thunder_fighter_jet"
@@ -47,6 +51,15 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 ; 允许用户改安装目录（便携用户的习惯）
 AllowNoIcons=yes
+
+; 版本资源：FileVersion 留空会让部分安全软件把安装包当"来路不明的封装器"，
+; 这里把四项版本信息补全（Inno 默认只写 ProductVersion）。
+VersionInfoVersion={#AppVersion}.0.0
+VersionInfoCompany={#AppPublisher}
+VersionInfoDescription={#AppNameEn} Setup
+VersionInfoCopyright={#AppPublisher}
+VersionInfoProductName={#AppNameZh}
+VersionInfoProductVersion={#AppVersion}
 
 [Languages]
 ; 第一个语言是默认语言

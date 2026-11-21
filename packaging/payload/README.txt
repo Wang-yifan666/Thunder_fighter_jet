@@ -1,4 +1,4 @@
-奶蛋的火力不足恐惧症 v1.7
+奶蛋的火力不足恐惧症 v1.8
 Naidan's Fear of Insufficient Firepower
 ================================
 
