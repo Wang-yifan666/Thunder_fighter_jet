@@ -328,8 +328,9 @@ void DrawEffects(SDL_Renderer* renderer, const SdlRender::Layout& layout,
 		}
 
 		const float fade = 1.0f - progress;
-		const float len = 2.0f + 4.0f * fade;
-		const int alpha = static_cast<int>(230.0f * fade);
+		// 火花是小十字，贴在命中点上，很快就淡掉——别让它看起来像"没打完的子弹"
+		const float len = 1.0f + 3.0f * fade;
+		const int alpha = static_cast<int>(220.0f * fade);
 		const SDL_Color spark{255, 255, 255, static_cast<Uint8>(alpha)};
 		Blend(renderer, cx - len, cy - 1.0f, len * 2.0f, 2.0f, spark);
 		Blend(renderer, cx - 1.0f, cy - len, 2.0f, len * 2.0f, spark);
@@ -389,6 +390,12 @@ void DrawBullet(SDL_Renderer* renderer, const SdlRender::Layout& layout,
 	const View::Rect body = View::BulletRect(layout, bullet.x, bullet.y, 4.0f, 8.0f);
 	const float cx = body.x + body.w * 0.5f;
 	const float cy = body.y + body.h * 0.5f;
+
+	// 尾焰：现在每 2 帧才发一发，子弹之间本来就隔着一格；
+	// 往"后方"补一小段渐隐，弹流看起来才不像碎掉的线段。
+	// 只朝后方延伸——前方边缘仍严格等于 1 格命中框，不会出现"看着打到却没算"。
+	const SDL_Color tail{255, 120, 200, 90};
+	Blend(renderer, body.x, body.y + body.h, body.w, 5.0f, tail);
 
 	Fill(renderer, body.x, body.y, body.w, body.h, kBullet);
 	Fill(renderer, cx - 1.0f, cy - 3.0f, 2.0f, 5.0f, kBulletCore);

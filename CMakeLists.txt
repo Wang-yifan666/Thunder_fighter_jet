@@ -117,8 +117,8 @@ set(_sprite_specs
     "ammo_24x24|kAmmoPixels"
     "shield_pack_24x24|kShieldPackPixels"
     "firepower_24x24|kFirepowerPixels"
-    "shield_bubble_32x32|kShieldBubblePixels"
-    "shield_bubble_big_48x48|kShieldBubbleBigPixels"
+    "shield_bubble_40x40|kShieldBubblePixels"
+    "shield_bubble_big_56x56|kShieldBubbleBigPixels"
 )
 file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/generated")
 foreach(_spec IN LISTS _sprite_specs)

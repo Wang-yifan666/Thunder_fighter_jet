@@ -149,7 +149,8 @@ private:
 	};
 
 	/// 对一只敌机结算一次伤害（先破盾、遵守无敌帧），击毁时负责加分、给弹药、掉落。
-	HitResult ApplyHit(Enemy& enemy);
+	/// hit_x / hit_y 是命中点的格子坐标，只用来放火花特效。
+	HitResult ApplyHit(Enemy& enemy, int hit_x, int hit_y);
 
 	/// 玩家破盾冲击波：圆形范围内每只敌机吃一次伤害。
 	void ApplyShockwave();

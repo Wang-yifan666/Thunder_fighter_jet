@@ -56,6 +56,30 @@ struct WorldTestAccess
 		world.enemies_.push_back(Enemy::Elite(x, y, speed, has_shield));
 	}
 
+	/// 摆一只带盾的普通小怪（3x2 格、1 血 + 1 层盾）。
+	static void AddShieldedEnemy(GameWorld& world, int x, int y, int speed = 0)
+	{
+		world.enemies_.emplace_back(x, y, speed, GameConfig::kEnemyWidth,
+		                            GameConfig::kEnemyHeight, EnemyKind::Normal, true);
+	}
+
+	/// 直接刷一波怪（用于验证"几级开始带盾"这类概率逻辑）。
+	static void SpawnWave(GameWorld& world)
+	{
+		world.SpawnEnemyWave();
+	}
+
+	static int ShieldedNormalPendingCount(const GameWorld& world)
+	{
+		int count = 0;
+		for(const auto& e: world.pending_enemies_)
+		{
+			if(e.kind == EnemyKind::Normal && e.has_shield)
+				++count;
+		}
+		return count;
+	}
+
 	static const Enemy& EnemyAt(const GameWorld& world, int index)
 	{
 		return world.enemies_[static_cast<std::size_t>(index)];

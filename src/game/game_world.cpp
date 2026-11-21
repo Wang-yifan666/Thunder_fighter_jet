@@ -362,11 +362,11 @@ void GameWorld::ApplyShockwave()
 		if(dx * dx + dy * dy > radius_sq)
 			continue;
 
-		ApplyHit(enemy);
+		ApplyHit(enemy, enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
 	}
 }
 
-GameWorld::HitResult GameWorld::ApplyHit(Enemy& enemy)
+GameWorld::HitResult GameWorld::ApplyHit(Enemy& enemy, int hit_x, int hit_y)
 {
 	// 破盾后的无敌帧：这一下完全不算（子弹会穿过去，冲击波也打不动）
 	if(enemy.invuln_frames > 0)
@@ -376,16 +376,14 @@ GameWorld::HitResult GameWorld::ApplyHit(Enemy& enemy)
 	{
 		enemy.has_shield = false;
 		enemy.invuln_frames = GameConfig::kEnemyShieldBreakInvulnFrames;
-		AddEffect(EffectKind::Spark, enemy.x + enemy.width / 2, enemy.y,
-		          GameConfig::kShieldBreakSparkFrames);
+		AddEffect(EffectKind::Spark, hit_x, hit_y, GameConfig::kShieldBreakSparkFrames);
 		return HitResult::ShieldBroken;
 	}
 
 	enemy.hp--;
 	if(enemy.hp > 0)
 	{
-		AddEffect(EffectKind::Spark, enemy.x + enemy.width / 2, enemy.y,
-		          GameConfig::kShieldBreakSparkFrames);
+		AddEffect(EffectKind::Spark, hit_x, hit_y, GameConfig::kShieldBreakSparkFrames);
 		return HitResult::Damaged;
 	}
 
@@ -466,7 +464,7 @@ void GameWorld::UpdateBullets()
 
 			// 破盾无敌期内子弹直接穿过去（不消耗），玩家看得见子弹继续飞；
 			// 敌人自身在闪烁，配上火花，不会像"打中了却不算"。
-			if(ApplyHit(e) == HitResult::Blocked)
+			if(ApplyHit(e, b_it->x, e.y + e.height - 1) == HitResult::Blocked)
 			{
 				e_it++;
 				continue;

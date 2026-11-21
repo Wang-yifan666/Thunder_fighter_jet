@@ -174,6 +174,47 @@ TEST(WorldEnemy, BulletPassesThroughInvulnerableEnemy)
 	EXPECT_EQ(WorldTestAccess::BulletCount(world), 1) << "无敌期子弹穿过，不消耗";
 }
 
+TEST(WorldEnemy, ShieldedNormalEnemyTakesTwoHits)
+{
+	GameWorld world = MakeQuietWorld();
+	WorldTestAccess::AddShieldedEnemy(world, 20, 10);
+	ASSERT_TRUE(WorldTestAccess::EnemyAt(world, 0).has_shield);
+
+	WorldTestAccess::AddBullet(world, 21, 11);
+	world.Tick(thunder::GameInput{}, kFrame);
+	ASSERT_EQ(WorldTestAccess::EnemyCount(world), 1);
+	EXPECT_FALSE(WorldTestAccess::EnemyAt(world, 0).has_shield) << "第一发破盾";
+	EXPECT_EQ(WorldTestAccess::EnemyAt(world, 0).hp, 1) << "破盾不掉血";
+
+	for(int i = 0; i < GameConfig::kEnemyShieldBreakInvulnFrames; ++i)
+		world.Tick(thunder::GameInput{}, kFrame);
+
+	WorldTestAccess::AddBullet(world, 21, 11);
+	world.Tick(thunder::GameInput{}, kFrame);
+	EXPECT_EQ(WorldTestAccess::EnemyCount(world), 0) << "破盾后再一发就死";
+}
+
+TEST(WorldEnemy, NormalEnemiesGetShieldsOnlyAboveLevel5)
+{
+	GameWorld world = MakeQuietWorld(Difficulty::Normal);
+	WorldTestAccess::ClearPending(world);
+
+	// 阈值等级（5 级）还不带盾
+	WorldTestAccess::SetLevel(world, GameConfig::kEnemyShieldMinLevel);
+	WorldTestAccess::SpawnWave(world);
+	EXPECT_GT(WorldTestAccess::PendingCount(world), 0);
+	EXPECT_EQ(WorldTestAccess::ShieldedNormalPendingCount(world), 0)
+	    << "5 级及以下的小怪不该带盾";
+
+	// 高等级下多刷几波，应该能抽到带盾的小怪
+	WorldTestAccess::ClearPending(world);
+	WorldTestAccess::SetLevel(world, 30);
+	for(int i = 0; i < 20; ++i)
+		WorldTestAccess::SpawnWave(world);
+	EXPECT_GT(WorldTestAccess::ShieldedNormalPendingCount(world), 0)
+	    << "6 级之后普通小怪会随机带盾";
+}
+
 TEST(WorldEnemy, EliteScoresTwoAndHalfTimesAndPaysMoreAmmo)
 {
 	GameWorld world = MakeQuietWorld();

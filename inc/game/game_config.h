@@ -80,11 +80,17 @@ constexpr int kEliteCapNormalPercent = 60;
 constexpr int kEliteCapHardPercent = 75;
 
 // ========== 护盾 ==========
+// 小怪护盾：5 级之后随机出现在普通小怪身上，需要先打掉盾（多打一发）。
+constexpr int kEnemyShieldMinLevel = 5;
+constexpr int kEasyShieldedEnemyPercent = 10;
+constexpr int kNormalShieldedEnemyPercent = 15;
+constexpr int kHardShieldedEnemyPercent = 20;
+
 // 敌人破盾后无敌若干帧：子弹穿过（不消耗），敌人闪烁。
 // 20 帧 ≈ 0.32 秒，正好让"破盾 → 补两发"有节奏。
 constexpr int kEnemyShieldBreakInvulnFrames = 20;
 // 玩家破盾沿用受伤后的 1 秒无敌（60 帧），否则 0.32 秒后会被下一只怪直接撞掉血。
-constexpr int kShieldBreakSparkFrames = 8; // 命中火花的存活帧数
+constexpr int kShieldBreakSparkFrames = 6; // 命中火花的存活帧数（短一点，别像残留的子弹）
 
 // 破盾冲击波：以玩家为中心，圆形范围内每只敌机吃 1 点伤害。
 constexpr float kShockwaveRadiusCells = 10.0f;

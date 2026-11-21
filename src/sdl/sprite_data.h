@@ -37,11 +37,11 @@ extern const std::size_t kShieldPackPixelsSize;
 extern const unsigned char kFirepowerPixels[];
 extern const std::size_t kFirepowerPixelsSize;
 
-/// 护盾泡：小怪用 32x32（罩住 3x2 格的敌机）
+/// 护盾泡：小怪用 40x40（3x2 格的敌机 + 一圈余量）
 extern const unsigned char kShieldBubblePixels[];
 extern const std::size_t kShieldBubblePixelsSize;
 
-/// 护盾泡：精英 4x3 与玩家 32x32 精灵共用 48x48
+/// 护盾泡：精英 4x3 与玩家 32x32 精灵共用 56x56
 extern const unsigned char kShieldBubbleBigPixels[];
 extern const std::size_t kShieldBubbleBigPixelsSize;
 

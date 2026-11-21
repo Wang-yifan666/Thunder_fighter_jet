@@ -51,6 +51,21 @@ int EliteCapPercent(Difficulty difficulty)
 	return GameConfig::kEliteCapNormalPercent;
 }
 
+/// 普通小怪自带护盾的概率（百分比），随难度提高。
+int ShieldedEnemyPercent(Difficulty difficulty)
+{
+	switch(difficulty)
+	{
+	case Difficulty::Easy:
+		return GameConfig::kEasyShieldedEnemyPercent;
+	case Difficulty::Normal:
+		return GameConfig::kNormalShieldedEnemyPercent;
+	case Difficulty::Hard:
+		return GameConfig::kHardShieldedEnemyPercent;
+	}
+	return GameConfig::kNormalShieldedEnemyPercent;
+}
+
 } //namespace
 
 namespace thunder
@@ -102,6 +117,9 @@ void GameWorld::SpawnEnemyWave()
 	}
 
 	const int elite_percent = EliteSpawnPercent();
+	// 5 级之后普通小怪也会随机带盾：先破盾、再补一发，共两下
+	const bool shields_enabled = (level_ > GameConfig::kEnemyShieldMinLevel);
+	const int shield_percent = ShieldedEnemyPercent(difficulty_);
 
 	for(int i = 0; i < total_to_spawn; ++i)
 	{
@@ -115,7 +133,10 @@ void GameWorld::SpawnEnemyWave()
 		}
 		else
 		{
-			pending_enemies_.emplace_back(0, 0, speed);
+			const bool has_shield = shields_enabled && randPercent(rng_) <= shield_percent;
+			pending_enemies_.emplace_back(0, 0, speed, GameConfig::kEnemyWidth,
+			                              GameConfig::kEnemyHeight, EnemyKind::Normal,
+			                              has_shield);
 		}
 	}
 
