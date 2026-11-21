@@ -137,6 +137,20 @@ jobs:
           path: build/installer/*.exe
           if-no-files-found: error
 
+      # 未签名的情况下，用户唯一能自证"文件没被掉包"的手段就是核对哈希，
+      # 所以把两个发行物的 SHA256 一起发出去。
+      - name: 计算 SHA256
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        run: |
+          $files = @(Get-ChildItem build/Naidan.exe) + @(Get-ChildItem build/installer/*.exe)
+          $lines = foreach ($f in $files) {
+            $hash = (Get-FileHash $f.FullName -Algorithm SHA256).Hash.ToLower()
+            "$hash  $($f.Name)"
+          }
+          $lines | Set-Content -Path build/SHA256SUMS.txt -Encoding utf8
+          Get-Content build/SHA256SUMS.txt
+
       # 打 tag 就把两个发行物挂到 GitHub Release 上。
       # 网站只链接 Releases，不再往仓库里塞二进制。
       - name: 创建 / 更新 GitHub Release
@@ -158,10 +172,19 @@ jobs:
 
             完整说明见仓库 [README](https://github.com/Wang-yifan666/Thunder_fighter_jet#readme)。
 
+            ## 校验
+
+            `SHA256SUMS.txt` 里是这个 tag 两个发行物的哈希，核对一下就知道文件有没有被换：
+
+            ```powershell
+            Get-FileHash .\Naidan-*-setup.exe -Algorithm SHA256
+            ```
+
             > exe 未做代码签名，首次运行可能遇到 SmartScreen 提示，
             > 点「更多信息 → 仍要运行」即可。
           files: |
             build/Naidan.exe
             build/installer/*.exe
+            build/SHA256SUMS.txt
           generate_release_notes: true
           fail_on_unmatched_files: true
