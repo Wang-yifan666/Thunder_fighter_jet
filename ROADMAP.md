@@ -85,8 +85,6 @@ SDL3 官方支持 Android（NativeActivity + `SDL_main` + Gradle），
 
 ## 发布流程
 
-二进制不再进任何仓库（网站仓库也一样），只通过 GitHub Releases 分发：
-
 ```powershell
 # 1. 改版本号：CMakeLists.txt 的 project(VERSION) 与 inc/game/game_info.h
 # 2. 提交并打 tag
@@ -95,10 +93,19 @@ git tag v1.8
 git push && git push --tags
 ```
 
-CI 会自动：构建 → 跑测试 → 冒烟 → 生成安装包 → 创建 GitHub Release
-并挂上 `Naidan.exe`（便携版）与 `Naidan-1.8-setup.exe`（安装版）。
+CI 会自动：构建 → 跑测试 → 冒烟 → 生成安装包 → 创建 GitHub Release，
+挂上 `Naidan.exe`（便携版）与 `Naidan-1.8-setup.exe`（安装版）。
 
-网站只放链接：<https://github.com/Wang-yifan666/Thunder_fighter_jet/releases/latest>
+### 分发渠道
 
-之所以不放网站仓库：二进制会让 git 历史迅速膨胀，而且下载速度和稳定性都不如
-Releases。历史上放进去的旧 exe 仍留在 git 历史里，但 tip 已经清理干净。
+| 产物 | 位置 | 原因 |
+|---|---|---|
+| 安装包（4 MB） | 网站 `release/` + GitHub Releases | 国内直连比 GitHub 稳，体积也可控 |
+| 便携版 exe（8 MB） | **仅** GitHub Releases | 体积大，不进任何仓库 |
+
+网站上多放一份安装包意味着每次发版要手动做两件事：替换
+`release/Naidan-<版本>-setup.exe`，以及改 `showcase.html` 里那一个链接的版本号。
+如果哪天觉得麻烦，把这行链接改回 `releases/latest` 即可，其余不用动。
+
+历史上塞进网站仓库的旧 exe 仍留在 git 历史里，但 tip 已经清理干净，
+之后也不会再往仓库里加便携版。
