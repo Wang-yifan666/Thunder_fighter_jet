@@ -324,3 +324,22 @@ TEST(WorldShield, ShockwaveRespectsRadius)
 
 	EXPECT_EQ(WorldTestAccess::EnemyCount(world), 1) << "半径外的敌机活着";
 }
+
+TEST(WorldShield, ShockwaveReachesFarEnemiesInsideRadius)
+{
+	GameWorld world = MakeQuietWorld();
+	WorldTestAccess::AddPickup(world, 50, GameConfig::kScreenHeight - 1, PickupKind::Shield);
+	world.Tick(thunder::GameInput{}, kFrame);
+
+	// 12 格远：旧半径 10 打不到，现在的 14 应该扫得到
+	const int far_y = GameConfig::kScreenHeight - 1 - 12;
+	ASSERT_GT(far_y, 0);
+	WorldTestAccess::AddEnemy(world, 50, far_y, 0);
+
+	// 贴脸那只用来触发破盾
+	WorldTestAccess::AddEnemy(world, 50, GameConfig::kScreenHeight - 1, 0);
+	world.Tick(thunder::GameInput{}, kFrame);
+
+	EXPECT_EQ(WorldTestAccess::EnemyCount(world), 0) << "半径内的远处敌机也要被扫掉";
+}
+

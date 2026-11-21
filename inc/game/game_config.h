@@ -93,8 +93,9 @@ constexpr int kEnemyShieldBreakInvulnFrames = 20;
 constexpr int kShieldBreakSparkFrames = 6; // 命中火花的存活帧数（短一点，别像残留的子弹）
 
 // 破盾冲击波：以玩家为中心，圆形范围内每只敌机吃 1 点伤害。
-constexpr float kShockwaveRadiusCells = 10.0f;
-constexpr int kShockwaveEffectFrames = 12; // 冲击波动画帧数
+// 半径 14 格约等于棋盘宽度的 1/7、高度的 3/10，救场时能扫掉眼前一片。
+constexpr float kShockwaveRadiusCells = 14.0f;
+constexpr int kShockwaveEffectFrames = 14; // 冲击波动画帧数（半径变大，扩散多给两帧）
 constexpr int kDuplicateShieldScore = 50;  // 已有护盾时再拾取护盾包的补偿分
 
 // ========== 玩家 ==========
