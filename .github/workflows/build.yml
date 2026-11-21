@@ -11,6 +11,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+# 打 tag 时要往 GitHub Releases 上传产物，需要写权限
+permissions:
+  contents: write
+
 env:
   # 与本地开发保持一致：MinGW + vcpkg 静态 triplet
   VCPKG_TRIPLET: x64-mingw-static
@@ -132,3 +136,32 @@ jobs:
           name: Naidan-installer
           path: build/installer/*.exe
           if-no-files-found: error
+
+      # 打 tag 就把两个发行物挂到 GitHub Release 上。
+      # 网站只链接 Releases，不再往仓库里塞二进制。
+      - name: 创建 / 更新 GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Naidan ${{ github.ref_name }}
+          body: |
+            ## 下载
+
+            - `Naidan-*-setup.exe` —— 安装版（推荐）：每用户安装、带开始菜单快捷方式与卸载程序
+            - `Naidan.exe` —— 便携版：解压即玩，存档留在 exe 同目录
+
+            ## 操作
+
+            `WASD` 移动，`Space` 开火，`P` 暂停，`Q` 返回主菜单，`F` 切换作弊模式，
+            `F11` 全屏，`Esc` 退出。
+
+            完整说明见仓库 [README](https://github.com/Wang-yifan666/Thunder_fighter_jet#readme)。
+
+            > exe 未做代码签名，首次运行可能遇到 SmartScreen 提示，
+            > 点「更多信息 → 仍要运行」即可。
+          files: |
+            build/Naidan.exe
+            build/installer/*.exe
+          generate_release_notes: true
+          fail_on_unmatched_files: true

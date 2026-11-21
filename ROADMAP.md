@@ -82,3 +82,23 @@ SDL3 官方支持 Android（NativeActivity + `SDL_main` + Gradle），
 - vcpkg 对 Android triplet 支持一般，大概率改用 SDL 官方 android 模板
 
 计划先做 spike 验证可行性，再决定是否抽出 `thunder_view` 布局层。
+
+## 发布流程
+
+二进制不再进任何仓库（网站仓库也一样），只通过 GitHub Releases 分发：
+
+```powershell
+# 1. 改版本号：CMakeLists.txt 的 project(VERSION) 与 inc/game/game_info.h
+# 2. 提交并打 tag
+git commit -am "release: v1.8"
+git tag v1.8
+git push && git push --tags
+```
+
+CI 会自动：构建 → 跑测试 → 冒烟 → 生成安装包 → 创建 GitHub Release
+并挂上 `Naidan.exe`（便携版）与 `Naidan-1.8-setup.exe`（安装版）。
+
+网站只放链接：<https://github.com/Wang-yifan666/Thunder_fighter_jet/releases/latest>
+
+之所以不放网站仓库：二进制会让 git 历史迅速膨胀，而且下载速度和稳定性都不如
+Releases。历史上放进去的旧 exe 仍留在 git 历史里，但 tip 已经清理干净。
