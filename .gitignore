@@ -44,6 +44,12 @@ compile_commands.json
 # ============ 运行时生成 ============
 # 排行榜存档：便携模式写在 exe 同目录，用户数据模式写在 %APPDATA%
 highscore.txt
+# 设置（教程进度、当前装扮）：跟排行榜同一个目录
+settings.txt
+
+# Python 工具产生的缓存
+__pycache__/
+*.pyc
 
 # ============ 临时文件 ============
 *.tmp
