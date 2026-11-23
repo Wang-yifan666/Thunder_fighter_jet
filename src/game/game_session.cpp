@@ -265,7 +265,14 @@ void GameSession::SetTutorialStep(TutorialStep step)
 	tutorial_last_y_ = snap.player_y;
 	tutorial_moved_cells_ = 0;
 
+	// 击落 / 升级训练：记下当前累计击毁数，这一步只认"真的又打掉了几架"。
+	// 必须在这里记基线：否则基线一直是 0，教程里随便打掉过两架就把这两步白送了。
+	if(step == TutorialStep::Kill || step == TutorialStep::LevelUp)
+		tutorial_kills_baseline_ = snap.defeated;
 
+	// 升级训练：进入这一步就真的升一级（重摆敌机时不要再升，否则等级会连跳）
+	if(step == TutorialStep::LevelUp)
+		world_.TutorialAdvanceLevel();
 }
 
 void GameSession::AdvanceTutorial()
@@ -311,8 +318,13 @@ void GameSession::ArmTutorialStep()
 
 	switch(tutorial_step_)
 	{
+	case TutorialStep::Fire:
+		world_.TutorialEnsureAmmo(60); // 开火训练至少要打得动 3 发
+		break;
+
 	case TutorialStep::Kill:
 	{
+		world_.TutorialEnsureAmmo(60); // 打光了就卡住，这一步先补足
 		// 两只慢速直线小怪（speed 1 = 每 20 帧下移一格），等级 1 不会左右乱走。
 		// 都摆在玩家所在列、上下错开：站着不动就能依次打掉，不用追。
 		world_.TutorialSpawnEnemy(snap.player_x - 1, 4, 1);
@@ -323,6 +335,7 @@ void GameSession::ArmTutorialStep()
 
 	case TutorialStep::LevelUp:
 		// 升级已经在进入这一步时发生过了；这里只摆两只更快的敌机让玩家打
+		world_.TutorialEnsureAmmo(60);
 		world_.TutorialSpawnEnemy(snap.player_x - 1, 6, 2);
 		world_.TutorialSpawnEnemy(snap.player_x - 1, 14, 2);
 		tutorial_baseline_ammo_ = snap.bullets_remaining;

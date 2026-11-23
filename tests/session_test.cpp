@@ -528,13 +528,10 @@ TEST(Session, TutorialFullPlaythroughUnlocksSkin)
 	for(int i = 0; i < 100; ++i)
 		StepMs(session, 16, Hold(Key::Left));
 
-	// 射击/击落：按住开火（补给训练期间会自动禁火）
-	for(int i = 0; i < 1200 && session.screen() == Screen::Tutorial; ++i)
+	// 之后像真人一样一直按着开火：击落训练和升级训练都必须真的打掉敌机，
+	// 补给也会落在玩家所在列，站着就能接住。
+	for(int i = 0; i < 6000 && session.screen() == Screen::Tutorial; ++i)
 		StepMs(session, 16, Hold(Key::Fire));
-
-	// 补给会落在玩家所在列，站着等它们一个个掉下来（四步 + 升级 + 机制页，给足时间）
-	for(int i = 0; i < 3600 && session.screen() == Screen::Tutorial; ++i)
-		StepMs(session, 16);
 
 	ASSERT_EQ(session.screen(), Screen::TutorialDone)
 	    << "完整走完教程应该进结束页，当前步骤 "
@@ -542,6 +539,7 @@ TEST(Session, TutorialFullPlaythroughUnlocksSkin)
 	EXPECT_TRUE(session.Snapshot().tutorial_solved);
 	EXPECT_TRUE(session.Snapshot().tutorial_newly_unlocked) << "第一次通关要提示解锁";
 	EXPECT_TRUE(settings.Load().tutorial_done) << "进度要落盘";
+	EXPECT_EQ(session.Snapshot().world.level, 2) << "升级训练应该真的把等级升到 2";
 }
 TEST(Session, TutorialAmmoPackIsDetectedWhileFiring)
 {

@@ -703,6 +703,12 @@ void GameWorld::TutorialSetPlayer(int cell_x, int cell_y)
 	player_y_ = std::clamp(cell_y, 0, GameConfig::kScreenHeight - GameConfig::kPlayerHeight);
 }
 
+void GameWorld::TutorialEnsureAmmo(int at_least)
+{
+	// 只补不扣：玩家还剩得多就不动它
+	bullets_remaining_ = std::max(bullets_remaining_, at_least);
+}
+
 void GameWorld::TutorialAdvanceLevel()
 {
 	// 教程不跑正常的升级计时（会打乱脚本），但升级这件事本身要真实发生：

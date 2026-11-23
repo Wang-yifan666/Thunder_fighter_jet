@@ -83,6 +83,8 @@ public:
 	void TutorialSetPlayer(int cell_x, int cell_y);
 	/// 让教程真的升一级（HUD 的 LEVEL 会 +1，敌人移动间隔按等级重算）。
 	void TutorialAdvanceLevel();
+	/// 保证弹药至少还有 at_least 发：教程里打光了就会卡在"要求开火"的步骤上。
+	void TutorialEnsureAmmo(int at_least);
 
 	/// 推进一帧。dt 由调用方提供；暂停时调用方不应调用本函数。
 	void Tick(const GameInput& input, std::chrono::steady_clock::duration dt);
