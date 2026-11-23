@@ -158,5 +158,7 @@ constexpr int kTutorialMechanicsMs = 4200;
 // 移动训练至少挪动这么多格；射击训练至少开这么多枪（避免"随手一按就过关"）
 constexpr int kTutorialMoveCells = 6;
 constexpr int kTutorialFireShots = 3;
+// 击落训练/升级训练必须真的打掉这么多架（自己掉出屏幕不算）
+constexpr int kTutorialKillTarget = 2;
 
 } // namespace GameConfig

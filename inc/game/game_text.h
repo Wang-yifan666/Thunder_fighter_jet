@@ -28,7 +28,7 @@ inline constexpr const char* kTutorialPickupAmmo = "黄 弹药包：子弹 +50 �
 inline constexpr const char* kTutorialPickupAmmoHint = "看顶部的 AMMO：捡到之后会一次涨 50";
 
 inline constexpr const char* kTutorialPickupShield = "蓝 护盾包：挡一次撞击";
-inline constexpr const char* kTutorialPickupShieldHint = "破盾时会放出一圈冲击波，扫掉身边的敌人";
+inline constexpr const char* kTutorialPickupShieldHint = "撞到敌机时先破盾、不掉血，破盾瞬间放出一圈冲击波扫掉身边敌人";
 
 inline constexpr const char* kTutorialPickupFirepower = "紫 火力包：15 秒三路开火";
 inline constexpr const char* kTutorialPickupFirepowerHint = "一次打出三发，但只消耗 1 发弹药";

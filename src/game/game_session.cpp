@@ -322,8 +322,7 @@ void GameSession::ArmTutorialStep()
 	}
 
 	case TutorialStep::LevelUp:
-		// 真的升一级：HUD 的 LEVEL 从 1 变 2，敌人移动间隔按新等级重算
-		world_.TutorialAdvanceLevel();
+		// 升级已经在进入这一步时发生过了；这里只摆两只更快的敌机让玩家打
 		world_.TutorialSpawnEnemy(snap.player_x - 1, 6, 2);
 		world_.TutorialSpawnEnemy(snap.player_x - 1, 14, 2);
 		tutorial_baseline_ammo_ = snap.bullets_remaining;
@@ -420,7 +419,11 @@ void GameSession::StepTutorial(const InputState& input, bool input_ready, steady
 		break;
 
 	case TutorialStep::Kill:
-		goal_met = snap.enemies.empty();
+	case TutorialStep::LevelUp:
+		// 必须是"被打掉的"，从底部漏下去不算：只排掉的话目标永远不达成
+		goal_met = (snap.defeated - tutorial_kills_baseline_) >= GameConfig::kTutorialKillTarget;
+		if(!goal_met && snap.enemies.empty())
+			tutorial_armed_ = false; // 都漏掉了：再摆一批，别让玩家卡住
 		break;
 
 	case TutorialStep::PickupHealth:
@@ -441,10 +444,6 @@ void GameSession::StepTutorial(const InputState& input, bool input_ready, steady
 
 	case TutorialStep::PickupFirepower:
 		goal_met = snap.firepower_seconds_left > 0;
-		break;
-
-	case TutorialStep::LevelUp:
-		goal_met = snap.enemies.empty();
 		break;
 
 	case TutorialStep::Mechanics:

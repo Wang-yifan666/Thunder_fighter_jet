@@ -98,6 +98,10 @@ public:
 	{
 		return score_;
 	}
+	int DefeatedCount() const
+	{
+		return defeated_count_;
+	}
 	Difficulty difficulty() const
 	{
 		return difficulty_;
@@ -115,6 +119,8 @@ private:
 	Difficulty difficulty_ = Difficulty::Easy;
 	int level_ = 1;
 	int score_ = 0;
+	/// 本局累计击毁的敌机数（教程用它判断"真的打掉了"，而不是敌人自己掉出屏幕）
+	int defeated_count_ = 0;
 
 	// ========== randomness ==========
 	std::mt19937 rng_;

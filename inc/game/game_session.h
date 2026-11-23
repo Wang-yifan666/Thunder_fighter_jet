@@ -108,6 +108,7 @@ private:
 	bool tutorial_got_ammo_ = false;
 	bool tutorial_got_shield_ = false;
 	bool tutorial_got_firepower_ = false;
+	int tutorial_kills_baseline_ = 0;
 	int tutorial_prev_life_ = 0;
 	int tutorial_prev_ammo_ = 0;
 };

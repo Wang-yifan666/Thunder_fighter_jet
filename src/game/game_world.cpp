@@ -58,6 +58,7 @@ void GameWorld::Reset(Difficulty difficulty, GameMode mode)
 	difficulty_ = difficulty;
 	score_ = 0;
 	level_ = 1;
+	defeated_count_ = 0;
 
 	elapsed_ = steady_clock::duration::zero();
 	elapsed_seconds_ = 0;
@@ -312,6 +313,7 @@ WorldSnapshot GameWorld::Snapshot() const
 	snapshot.bullets_remaining = bullets_remaining_;
 	snapshot.elapsed_seconds = elapsed_seconds_;
 	snapshot.pending_enemies = static_cast<int>(pending_enemies_.size());
+	snapshot.defeated = defeated_count_;
 	snapshot.over = life_ <= 0;
 
 	return snapshot;
@@ -418,6 +420,7 @@ GameWorld::HitResult GameWorld::ApplyHit(Enemy& enemy, int hit_x, int hit_y)
 	}
 
 	enemy.alive = false;
+	++defeated_count_;
 
 	const bool elite = (enemy.kind == EnemyKind::Elite);
 	score_ += elite ? GameConfig::kScorePerEliteKill : GameConfig::kScorePerKill;

@@ -411,3 +411,33 @@ TEST(WorldTutorial, EnemyCollisionDoesNotHurtPlayer)
 
 	EXPECT_EQ(world.Snapshot().life, life_before) << "教程里撞到不掉命";
 }
+TEST(WorldTutorial, FallenEnemiesDoNotCountAsKills)
+{
+	// 从底部漏下去的敌机不算"击毁"：教程的击落训练靠这个判定
+	GameWorld world = MakeQuietWorld();
+	world.Reset(Difficulty::Easy, GameMode::Tutorial);
+	WorldTestAccess::SetPlayer(world, 50, 40);
+
+	WorldTestAccess::TutorialSpawnEnemy(world, 20, 40, 3);
+	WorldTestAccess::TutorialSpawnEnemy(world, 30, 40, 3);
+
+	for(int i = 0; i < 400 && WorldTestAccess::EnemyCount(world) > 0; ++i)
+		world.Tick(thunder::GameInput{}, kFrame);
+
+	EXPECT_EQ(WorldTestAccess::EnemyCount(world), 0) << "应该都漏出屏幕了";
+	EXPECT_EQ(world.Snapshot().defeated, 0) << "漏下去不能算击毁";
+}
+
+TEST(WorldTutorial, ShootingAnEnemyCountsAsKill)
+{
+	GameWorld world = MakeQuietWorld();
+	world.Reset(Difficulty::Easy, GameMode::Tutorial);
+	WorldTestAccess::SetPlayer(world, 50, 40);
+
+	WorldTestAccess::TutorialSpawnEnemy(world, 50, 20, 0);
+	WorldTestAccess::AddBullet(world, 51, 21);
+	world.Tick(thunder::GameInput{}, kFrame);
+
+	EXPECT_EQ(WorldTestAccess::EnemyCount(world), 0);
+	EXPECT_EQ(world.Snapshot().defeated, 1);
+}

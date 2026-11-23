@@ -75,6 +75,7 @@ struct WorldSnapshot
 	int bullets_remaining = 0;
 	int elapsed_seconds = 0;
 	int pending_enemies = 0;
+	int defeated = 0; ///< 本局累计击毁数量（从底部漏掉的不算）
 
 	bool over = false;
 };
