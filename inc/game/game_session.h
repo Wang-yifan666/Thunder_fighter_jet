@@ -94,6 +94,8 @@ private:
 	std::chrono::steady_clock::duration tutorial_hold_time_{};
 	/// 当前步骤的目标是否已经达成（达成后先显示一下"做得好"再切）
 	bool tutorial_step_done_ = false;
+	/// 目标一达成先锁存：提示停留期间也要记住，不能漏判
+	bool tutorial_goal_latched_ = false;
 	/// 移动训练：累计挪动格数（来回走也算，不能靠原地抖）
 	int tutorial_moved_cells_ = 0;
 	int tutorial_last_x_ = 0;

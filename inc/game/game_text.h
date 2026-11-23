@@ -16,13 +16,22 @@ inline constexpr const char* kTutorialMove = "试着用 W A S D 移动奶蛋！"
 inline constexpr const char* kTutorialMoveHint = "W 上　A 左　S 下　D 右";
 
 inline constexpr const char* kTutorialFire = "按住 Space 开火！注意，弹药是有限的。";
-inline constexpr const char* kTutorialFireHint = "教程里打空了也没关系，补给管够";
+inline constexpr const char* kTutorialFireHint = "击落一架敌机补 5 发，每升 1 级再补 10 发";
 
-inline constexpr const char* kTutorialKill = "击落那只小恶魔，击败敌机会补充弹药！";
-inline constexpr const char* kTutorialKillHint = "它走得很慢，而且不会还手";
+inline constexpr const char* kTutorialKill = "击落这两只小恶魔，它们不会还手。";
+inline constexpr const char* kTutorialKillHint = "击落敌机会补充弹药，所以别怕打空";
 
-inline constexpr const char* kTutorialPickup = "把这四种补给都捡起来：";
-inline constexpr const char* kTutorialPickupHint = "红 回血　　黄 弹药　　蓝 护盾　　紫 三路火力";
+inline constexpr const char* kTutorialPickupHealth = "红 血包：生命 +1";
+inline constexpr const char* kTutorialPickupHealthHint = "撞到敌机掉 1 条命，捡血包补回来";
+
+inline constexpr const char* kTutorialPickupAmmo = "黄 弹药包：子弹 +50 发";
+inline constexpr const char* kTutorialPickupAmmoHint = "弹药打光就开不了火，靠它续命";
+
+inline constexpr const char* kTutorialPickupShield = "蓝 护盾包：挡一次撞击";
+inline constexpr const char* kTutorialPickupShieldHint = "破盾时会放出一圈冲击波，扫掉身边的敌人";
+
+inline constexpr const char* kTutorialPickupFirepower = "紫 火力包：15 秒三路开火";
+inline constexpr const char* kTutorialPickupFirepowerHint = "一次打出三发，但只消耗 1 发弹药";
 
 inline constexpr const char* kTutorialMenu = "3  新手教程";
 inline constexpr const char* kTutorialWellDone = "做得好！";
@@ -31,6 +40,20 @@ inline constexpr const char* kTutorialUnlock = "解锁了新装扮：鲨鱼罩";
 inline constexpr const char* kTutorialSkip = "Q 跳过教程";
 inline constexpr const char* kTutorialStart = "1 开始游戏";
 inline constexpr const char* kTutorialBack = "2 返回主菜单";
+
+// ========== 玩法说明 ==========
+inline constexpr const char* kHelpMenu = "4  玩法说明";
+inline constexpr const char* kHelpTitle = "玩法说明";
+
+inline constexpr const char* kHelpLine1 = "移动 W A S D　　开火 Space（每 2 帧一发）";
+inline constexpr const char* kHelpLine2 = "弹药：击落敌机 +5 发，每升 1 级再 +10 发，打光就打不出子弹";
+inline constexpr const char* kHelpLine3 = "生命：撞到敌机掉 1 条命，之后 1 秒无敌";
+inline constexpr const char* kHelpLine4 = "升级：每 10 秒升 1 级，敌人更快更密（第 1 级只等 5 秒）";
+inline constexpr const char* kHelpLine5 = "精英：9 级起出现，4x3 格、2 血、2.5 倍分数、+8 发弹药";
+inline constexpr const char* kHelpLine6 = "护盾怪：6 级起小怪有概率带盾，先破盾再补一发";
+inline constexpr const char* kHelpLine7 = "四种补给：红 血包　黄 弹药包　蓝 护盾包　紫 火力包";
+inline constexpr const char* kHelpLine8 = "护盾包挡一次撞击，破盾时放冲击波；火力包 15 秒三路开火";
+inline constexpr const char* kHelpBack = "B / Q 返回";
 
 // ========== 装扮 ==========
 inline constexpr const char* kSkinsTitle = "选择装扮";

@@ -4,6 +4,7 @@
 
 #include "game/game_session.h"
 
+#include <cstdio>
 #include <cstdlib>
 
 using namespace std::chrono;
@@ -16,6 +17,18 @@ namespace
 steady_clock::duration ToDuration(milliseconds ms)
 {
 	return duration_cast<steady_clock::duration>(ms);
+}
+
+} // namespace
+
+namespace
+{
+
+/// 教程里"捡补给"的四个步骤：这几步要禁火、要逐帧记账。
+bool IsTutorialPickupStep(TutorialStep step)
+{
+	return step == TutorialStep::PickupHealth || step == TutorialStep::PickupAmmo
+	    || step == TutorialStep::PickupShield || step == TutorialStep::PickupFirepower;
 }
 
 } // namespace
@@ -85,6 +98,11 @@ void GameSession::Step(const RawInput& raw, steady_clock::duration dt)
 		{
 			StartTutorial();
 		}
+		else if(input_.Down(Key::Digit4))
+		{
+			cooldown_ = ToDuration(milliseconds(GameConfig::kKeyDebounceMs));
+			screen_ = Screen::Help;
+		}
 		// Q 与"游戏中返回主菜单"是同一个键，这里必须用按下沿：
 		// 若用按住判定，玩家在游戏中按住 Q 回到主菜单后会立刻退出程序。
 		else if(input_.Pressed(Key::Quit))
@@ -127,6 +145,16 @@ void GameSession::Step(const RawInput& raw, steady_clock::duration dt)
 
 	case Screen::Playing:
 		StepPlaying(input_, input_ready, dt);
+		break;
+
+	case Screen::Help:
+		// 任意键（B / Q / Esc）返回主菜单
+		if(input_ready && (input_.Down(Key::Back) || input_.Pressed(Key::Quit)
+		                   || input_.Pressed(Key::Escape)))
+		{
+			cooldown_ = ToDuration(milliseconds(GameConfig::kKeyDebounceMs));
+			screen_ = Screen::Menu;
+		}
 		break;
 
 	case Screen::Tutorial:
@@ -254,6 +282,7 @@ void GameSession::SetTutorialStep(TutorialStep step)
 	tutorial_step_time_ = steady_clock::duration::zero();
 	tutorial_hold_time_ = steady_clock::duration::zero();
 	tutorial_step_done_ = false;
+	tutorial_goal_latched_ = false;
 
 	const WorldSnapshot snap = world_.Snapshot();
 	tutorial_baseline_x_ = snap.player_x;
@@ -263,14 +292,7 @@ void GameSession::SetTutorialStep(TutorialStep step)
 	tutorial_last_y_ = snap.player_y;
 	tutorial_moved_cells_ = 0;
 
-	// 刚进入拾取训练：四种补给都还没拿到
-	if(step == TutorialStep::Pickup)
-	{
-		tutorial_got_health_ = false;
-		tutorial_got_ammo_ = false;
-		tutorial_got_shield_ = false;
-		tutorial_got_firepower_ = false;
-	}
+
 }
 
 void GameSession::AdvanceTutorial()
@@ -284,9 +306,18 @@ void GameSession::AdvanceTutorial()
 		SetTutorialStep(TutorialStep::Kill);
 		break;
 	case TutorialStep::Kill:
-		SetTutorialStep(TutorialStep::Pickup);
+		SetTutorialStep(TutorialStep::PickupHealth);
 		break;
-	case TutorialStep::Pickup:
+	case TutorialStep::PickupHealth:
+		SetTutorialStep(TutorialStep::PickupAmmo);
+		break;
+	case TutorialStep::PickupAmmo:
+		SetTutorialStep(TutorialStep::PickupShield);
+		break;
+	case TutorialStep::PickupShield:
+		SetTutorialStep(TutorialStep::PickupFirepower);
+		break;
+	case TutorialStep::PickupFirepower:
 		SetTutorialStep(TutorialStep::Done);
 		break;
 	case TutorialStep::Done:
@@ -302,33 +333,41 @@ void GameSession::ArmTutorialStep()
 	switch(tutorial_step_)
 	{
 	case TutorialStep::Kill:
-		// 慢速直线小怪：speed 1（每 20 帧下移一格），等级 1 不会左右乱走。
-		// 对齐玩家当前列，保证站着不动也能打中。
-		world_.TutorialSpawnEnemy(snap.player_x - 1, 6, 1);
+	{
+		// 两只慢速直线小怪（speed 1 = 每 20 帧下移一格），等级 1 不会左右乱走。
+		// 都摆在玩家所在列、上下错开：站着不动就能依次打掉，不用追。
+		world_.TutorialSpawnEnemy(snap.player_x - 1, 4, 1);
+		world_.TutorialSpawnEnemy(snap.player_x - 1, 12, 1);
 		tutorial_baseline_ammo_ = snap.bullets_remaining;
 		break;
+	}
 
-	case TutorialStep::Pickup:
+	case TutorialStep::PickupHealth:
+	case TutorialStep::PickupAmmo:
+	case TutorialStep::PickupShield:
+	case TutorialStep::PickupFirepower:
 	{
-		// 四种补给横着摆一排，从玩家上方落下。
-		// 重新摆的时候只补"还没拿到的"，不能把已经拿到的进度清零。
-		const PickupKind kinds[4] = {PickupKind::Health, PickupKind::Ammo, PickupKind::Shield,
-		                             PickupKind::Firepower};
-		const bool got[4] = {tutorial_got_health_, tutorial_got_ammo_, tutorial_got_shield_,
-		                     tutorial_got_firepower_};
-		// 摆在玩家正上方、一格一格的纵向队列里：新手站着不动也能顺序捡到，
-		// 不用满屏找补给。
-		const int x = std::max(1, snap.player_x);
-		const int top = std::max(1, snap.player_y - 13);
-
-		int slot = 0;
-		for(int i = 0; i < 4; ++i)
+		// 一次只摆一个，而且摆在玩家上方的可见区域。
+		// 不能摆得贴着玩家：道具是在玩家精灵之前画的，贴着会被身体挡住看不见。
+		PickupKind kind = PickupKind::Health;
+		switch(tutorial_step_)
 		{
-			if(got[i])
-				continue;
-			world_.TutorialSpawnPickup(x, top + slot * 4, kinds[i]);
-			++slot;
+		case TutorialStep::PickupAmmo:
+			kind = PickupKind::Ammo;
+			break;
+		case TutorialStep::PickupShield:
+			kind = PickupKind::Shield;
+			break;
+		case TutorialStep::PickupFirepower:
+			kind = PickupKind::Firepower;
+			break;
+		default:
+			break;
 		}
+
+		const int x = std::max(1, std::min(snap.player_x, GameConfig::kScreenWidth - 3));
+		const int y = std::max(1, snap.player_y - 10);
+		world_.TutorialSpawnPickup(x, y, kind);
 
 		tutorial_prev_life_ = snap.life;
 		tutorial_prev_ammo_ = snap.bullets_remaining;
@@ -354,8 +393,8 @@ void GameSession::StepTutorial(const InputState& input, bool input_ready, steady
 	GameInput game_input = input_ready ? GameInput::FromInput(input) : GameInput{};
 	// 教程里禁用作弊键：数字键在教程中是别的用途，也不该把教程打乱
 	game_input.digit.fill(false);
-	// 拾取训练时禁火：否则弹药包刚补的 50 发会被自己打掉，没法判断"捡到了没有"
-	if(tutorial_step_ == TutorialStep::Pickup)
+	// 拾取训练期间禁火：否则弹药包刚补的 50 发会被自己打掉，没法判断"捡到了没有"
+	if(IsTutorialPickupStep(tutorial_step_))
 		game_input.fire = false;
 
 	world_.Tick(game_input, dt);
@@ -385,18 +424,6 @@ void GameSession::StepTutorial(const InputState& input, bool input_ready, steady
 		return;
 	}
 
-	// 提示还没看够就不允许推进
-	if(tutorial_step_time_ < ToDuration(milliseconds(GameConfig::kTutorialStepMinMs)))
-	{
-		// 拾取训练仍要继续记账（补给会一直往下掉）
-		if(tutorial_step_ == TutorialStep::Pickup)
-		{
-			tutorial_prev_life_ = snap.life;
-			tutorial_prev_ammo_ = snap.bullets_remaining;
-		}
-		return;
-	}
-
 	bool goal_met = false;
 	switch(tutorial_step_)
 	{
@@ -412,27 +439,22 @@ void GameSession::StepTutorial(const InputState& input, bool input_ready, steady
 		goal_met = snap.enemies.empty();
 		break;
 
-	case TutorialStep::Pickup:
-		if(snap.life > tutorial_prev_life_)
-			tutorial_got_health_ = true;
-		if(snap.bullets_remaining > tutorial_prev_ammo_)
-			tutorial_got_ammo_ = true;
-		if(snap.shielded)
-			tutorial_got_shield_ = true;
-		if(snap.firepower_seconds_left > 0)
-			tutorial_got_firepower_ = true;
-
+	case TutorialStep::PickupHealth:
+		goal_met = snap.life > tutorial_prev_life_;
 		tutorial_prev_life_ = snap.life;
+		break;
+
+	case TutorialStep::PickupAmmo:
+		goal_met = snap.bullets_remaining > tutorial_prev_ammo_;
 		tutorial_prev_ammo_ = snap.bullets_remaining;
+		break;
 
-		goal_met = tutorial_got_health_ && tutorial_got_ammo_ && tutorial_got_shield_
-		    && tutorial_got_firepower_;
+	case TutorialStep::PickupShield:
+		goal_met = snap.shielded;
+		break;
 
-		if(!goal_met && snap.pickups.empty())
-		{
-			// 漏掉了就补摆缺的那几种，教程不该因为手滑卡死
-			tutorial_armed_ = false;
-		}
+	case TutorialStep::PickupFirepower:
+		goal_met = snap.firepower_seconds_left > 0;
 		break;
 
 	case TutorialStep::Done:
@@ -441,7 +463,16 @@ void GameSession::StepTutorial(const InputState& input, bool input_ready, steady
 		break;
 	}
 
+	// 达成就锁存：提示还没停留够时也要记住"已经做到了"，
+	// 否则玩家在停留期内完成动作（比如补给正好这时落地）会被漏判。
 	if(goal_met)
+		tutorial_goal_latched_ = true;
+
+	// 提示还没看够就不允许推进
+	if(tutorial_step_time_ < ToDuration(milliseconds(GameConfig::kTutorialStepMinMs)))
+		return;
+
+	if(tutorial_goal_latched_)
 	{
 		tutorial_step_done_ = true;
 		tutorial_hold_time_ = steady_clock::duration::zero();

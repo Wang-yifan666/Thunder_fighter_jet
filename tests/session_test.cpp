@@ -543,3 +543,15 @@ TEST(Session, TutorialFullPlaythroughUnlocksSkin)
 	EXPECT_TRUE(session.Snapshot().tutorial_newly_unlocked) << "第一次通关要提示解锁";
 	EXPECT_TRUE(settings.Load().tutorial_done) << "进度要落盘";
 }
+TEST(Session, HelpScreenOpensAndReturns)
+{
+	MemoryScoreStore store;
+	GameSession session(store, 7);
+
+	StepMs(session, 16, Hold(Key::Digit4));
+	EXPECT_EQ(session.screen(), Screen::Help);
+
+	StepMs(session, 250); // 等冷却
+	StepMs(session, 16, Hold(Key::Back));
+	EXPECT_EQ(session.screen(), Screen::Menu);
+}

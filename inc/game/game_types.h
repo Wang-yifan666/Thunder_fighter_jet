@@ -40,11 +40,15 @@ enum class GameMode
 };
 
 /// 教程的步骤。逻辑层只认枚举，文案在 game_text.h，画法由前端决定。
+/// 四种补给是一个一个来的：每步只摆一个、只讲一种，捡到才进下一种。
 enum class TutorialStep
 {
-	Move,    ///< 让玩家动一下
-	Fire,    ///< 让玩家开一枪
-	Kill,    ///< 击落一只慢速小怪
-	Pickup,  ///< 把四种补给都捡起来
-	Done     ///< 全部完成
+	Move,             ///< 让玩家动一下
+	Fire,             ///< 让玩家开一枪
+	Kill,             ///< 击落两只慢速小怪
+	PickupHealth,     ///< 捡血包，讲回血
+	PickupAmmo,       ///< 捡弹药包，讲弹药
+	PickupShield,     ///< 捡护盾包，讲护盾与冲击波
+	PickupFirepower,  ///< 捡火力包，讲三路开火
+	Done              ///< 全部完成
 };

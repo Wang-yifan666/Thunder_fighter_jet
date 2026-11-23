@@ -568,7 +568,8 @@ void DrawMenu(SDL_Renderer* renderer, const SdlRender::Layout& layout, bool chea
 	CenterText(renderer, layout.window_width, 290, 2, "1  START GAME", kText);
 	CenterText(renderer, layout.window_width, 330, 2, "2  LEADERBOARD", kText);
 	CenterText(renderer, layout.window_width, 370, 2, GameText::kTutorialMenu, kText);
-	CenterText(renderer, layout.window_width, 410, 2, "Q  QUIT", kText);
+	CenterText(renderer, layout.window_width, 410, 2, GameText::kHelpMenu, kText);
+	CenterText(renderer, layout.window_width, 450, 2, "Q  QUIT", kText);
 
 	// 作弊状态不常驻显示，只在切换后短暂提示一次
 	if(cheat_notice)
@@ -578,7 +579,7 @@ void DrawMenu(SDL_Renderer* renderer, const SdlRender::Layout& layout, bool chea
 		           cheats_enabled ? kTextAccent : kTextDim);
 	}
 
-	DrawHint(renderer, layout, "PRESS 1 / 2 / 3 / Q");
+	DrawHint(renderer, layout, "PRESS 1 / 2 / 3 / 4 / Q");
 }
 
 void DrawDifficulty(SDL_Renderer* renderer, const SdlRender::Layout& layout)
@@ -638,6 +639,26 @@ void DrawGameOver(SDL_Renderer* renderer, const thunder::SessionSnapshot& snapsh
 	CenterText(renderer, layout.window_width, panel_y + 170, 2, "R RESTART   Q QUIT", kTextDim);
 }
 
+/// 玩法说明：一页讲清弹药、生命、升级、精英、护盾与四种补给。
+void DrawHelp(SDL_Renderer* renderer, const SdlRender::Layout& layout)
+{
+	CenterText(renderer, layout.window_width, 40, 3, GameText::kHelpTitle, kTextAccent);
+
+	const char* lines[] = {
+	    GameText::kHelpLine1, GameText::kHelpLine2, GameText::kHelpLine3,
+	    GameText::kHelpLine4, GameText::kHelpLine5, GameText::kHelpLine6,
+	    GameText::kHelpLine7, GameText::kHelpLine8,
+	};
+	int y = 110;
+	for(const char* line: lines)
+	{
+		CenterText(renderer, layout.window_width, y, 1, line, kText);
+		y += 34;
+	}
+
+	DrawHint(renderer, layout, GameText::kHelpBack);
+}
+
 /// 教程：底部一条提示带，按步骤换文案；上方照常画世界（玩家、敌机、补给）。
 void DrawTutorial(SDL_Renderer* renderer, const thunder::SessionSnapshot& snapshot,
                   const SdlRender::Layout& layout, double seconds)
@@ -660,9 +681,21 @@ void DrawTutorial(SDL_Renderer* renderer, const thunder::SessionSnapshot& snapsh
 		line = GameText::kTutorialKill;
 		hint = GameText::kTutorialKillHint;
 		break;
-	case TutorialStep::Pickup:
-		line = GameText::kTutorialPickup;
-		hint = GameText::kTutorialPickupHint;
+	case TutorialStep::PickupHealth:
+		line = GameText::kTutorialPickupHealth;
+		hint = GameText::kTutorialPickupHealthHint;
+		break;
+	case TutorialStep::PickupAmmo:
+		line = GameText::kTutorialPickupAmmo;
+		hint = GameText::kTutorialPickupAmmoHint;
+		break;
+	case TutorialStep::PickupShield:
+		line = GameText::kTutorialPickupShield;
+		hint = GameText::kTutorialPickupShieldHint;
+		break;
+	case TutorialStep::PickupFirepower:
+		line = GameText::kTutorialPickupFirepower;
+		hint = GameText::kTutorialPickupFirepowerHint;
 		break;
 	case TutorialStep::Done:
 		line = GameText::kTutorialDone;
@@ -736,6 +769,10 @@ void Draw(SDL_Renderer* renderer, const thunder::SessionSnapshot& snapshot, int 
 		DrawHud(renderer, snapshot.world, best, fps, layout);
 		DrawHint(renderer, layout,
 		         "WASD MOVE   SPACE FIRE   P PAUSE   Q MENU   F11 FULLSCREEN   ESC QUIT");
+		break;
+
+	case thunder::Screen::Help:
+		DrawHelp(renderer, layout);
 		break;
 
 	case thunder::Screen::Tutorial:
