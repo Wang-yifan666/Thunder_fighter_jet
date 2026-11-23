@@ -24,6 +24,7 @@ inline constexpr const char* kTutorialKillHint = "它走得很慢，而且不会
 inline constexpr const char* kTutorialPickup = "把这四种补给都捡起来：";
 inline constexpr const char* kTutorialPickupHint = "红 回血　　黄 弹药　　蓝 护盾　　紫 三路火力";
 
+inline constexpr const char* kTutorialMenu = "3  新手教程";
 inline constexpr const char* kTutorialDone = "奶蛋已经准备好迎接真正的战斗了！";
 inline constexpr const char* kTutorialUnlock = "解锁了新装扮：鲨鱼罩";
 inline constexpr const char* kTutorialSkip = "Q 跳过教程";

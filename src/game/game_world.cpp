@@ -52,8 +52,9 @@ GameWorld::GameWorld(std::uint32_t rng_seed)
 		rng_.seed(rng_seed);
 }
 
-void GameWorld::Reset(Difficulty difficulty)
+void GameWorld::Reset(Difficulty difficulty, GameMode mode)
 {
+	mode_ = mode;
 	difficulty_ = difficulty;
 	score_ = 0;
 	level_ = 1;
@@ -101,7 +102,9 @@ void GameWorld::Reset(Difficulty difficulty)
 	cheat_invincible_ = false;
 	invincible_remaining_ = steady_clock::duration::zero();
 
-	SpawnEnemyWave();
+	// 教程不自动刷波：场上摆什么完全由会话层的脚本决定
+	if(mode_ == GameMode::Normal)
+		SpawnEnemyWave();
 }
 
 void GameWorld::Tick(const GameInput& input, steady_clock::duration dt)
@@ -142,7 +145,12 @@ void GameWorld::Tick(const GameInput& input, steady_clock::duration dt)
 		SpawnEnemiesFromPending();
 	}
 
-	UpdateLevel(input);
+	// 教程里不升级、不结算；掉出屏幕的敌机也不回队列，免得又被刷上来
+	if(mode_ == GameMode::Normal)
+		UpdateLevel(input);
+	else if(!pending_enemies_.empty())
+		pending_enemies_.clear();
+
 	AccrueScore();
 
 	const int player_w = GameConfig::kPlayerWidth;
@@ -305,6 +313,10 @@ WorldSnapshot GameWorld::Snapshot() const
 
 void GameWorld::CheckPlayerCollision()
 {
+	// 教程不扣血：撞到也不掉命，玩家可以放心乱撞
+	if(mode_ == GameMode::Tutorial)
+		return;
+
 	if(is_invincible_ || cheat_invincible_)
 		return;
 
@@ -655,6 +667,26 @@ void GameWorld::CheckPickupCollect()
 
 		it = pickups_.erase(it);
 	}
+}
+
+// ========== 教程脚本专用入口 ==========
+// 教程的编排在会话层，这里只负责"把东西摆上去"，不经过刷怪与掉落系统。
+
+void GameWorld::TutorialSpawnEnemy(int cell_x, int cell_y, int speed)
+{
+	enemies_.emplace_back(cell_x, cell_y, speed, GameConfig::kEnemyWidth,
+	                      GameConfig::kEnemyHeight, EnemyKind::Normal, false);
+}
+
+void GameWorld::TutorialSpawnPickup(int cell_x, int cell_y, PickupKind kind)
+{
+	pickups_.emplace_back(cell_x, cell_y, kind);
+}
+
+void GameWorld::TutorialSetPlayer(int cell_x, int cell_y)
+{
+	player_x_ = std::clamp(cell_x, 0, GameConfig::kScreenWidth - GameConfig::kPlayerWidth);
+	player_y_ = std::clamp(cell_y, 0, GameConfig::kScreenHeight - GameConfig::kPlayerHeight);
 }
 
 } // namespace thunder

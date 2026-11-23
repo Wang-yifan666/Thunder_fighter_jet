@@ -63,7 +63,24 @@ public:
 
 	/// 开新一局（重构前为 ThunderFighter::ResetGame）。
 	/// 必须在进入 Playing 前调用。
-	void Reset(Difficulty difficulty);
+	/// 教程模式不刷波、不升级、不结算，玩家也不会掉血。
+	void Reset(Difficulty difficulty, GameMode mode = GameMode::Normal);
+
+	GameMode mode() const
+	{
+		return mode_;
+	}
+
+	// ========== 教程脚本专用 ==========
+	// 教程的编排放在会话层（GameSession），这里只提供"摆一只/摆一堆"的最小入口，
+	// 不经过刷怪与掉落系统，数值完全由调用方指定。
+
+	/// 摆一只直线下落的小怪（教程目标是"不会还手、走得很慢"那种）。
+	void TutorialSpawnEnemy(int cell_x, int cell_y, int speed);
+	/// 摆一个补给。
+	void TutorialSpawnPickup(int cell_x, int cell_y, PickupKind kind);
+	/// 摆好玩家的位置。
+	void TutorialSetPlayer(int cell_x, int cell_y);
 
 	/// 推进一帧。dt 由调用方提供；暂停时调用方不应调用本函数。
 	void Tick(const GameInput& input, std::chrono::steady_clock::duration dt);
@@ -92,6 +109,7 @@ private:
 	int last_level_up_time_ = 0;
 
 	// ========== progression ==========
+	GameMode mode_ = GameMode::Normal;
 	Difficulty difficulty_ = Difficulty::Easy;
 	int level_ = 1;
 	int score_ = 0;

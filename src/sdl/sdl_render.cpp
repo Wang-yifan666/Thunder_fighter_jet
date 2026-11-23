@@ -11,6 +11,7 @@
 #include <string>
 
 #include "game/game_config.h"
+#include "game/game_text.h"
 #include "sdl_font.h"
 #include "sprite_data.h"
 
@@ -564,9 +565,10 @@ void DrawMenu(SDL_Renderer* renderer, const SdlRender::Layout& layout, bool chea
 
 	CenterText(renderer, layout.window_width, 150, title_scale, title, kTextAccent);
 
-	CenterText(renderer, layout.window_width, 300, 2, "1  START GAME", kText);
-	CenterText(renderer, layout.window_width, 344, 2, "2  LEADERBOARD", kText);
-	CenterText(renderer, layout.window_width, 388, 2, "Q  QUIT", kText);
+	CenterText(renderer, layout.window_width, 290, 2, "1  START GAME", kText);
+	CenterText(renderer, layout.window_width, 330, 2, "2  LEADERBOARD", kText);
+	CenterText(renderer, layout.window_width, 370, 2, GameText::kTutorialMenu, kText);
+	CenterText(renderer, layout.window_width, 410, 2, "Q  QUIT", kText);
 
 	// 作弊状态不常驻显示，只在切换后短暂提示一次
 	if(cheat_notice)
@@ -576,7 +578,7 @@ void DrawMenu(SDL_Renderer* renderer, const SdlRender::Layout& layout, bool chea
 		           cheats_enabled ? kTextAccent : kTextDim);
 	}
 
-	DrawHint(renderer, layout, "PRESS 1 / 2 / Q");
+	DrawHint(renderer, layout, "PRESS 1 / 2 / 3 / Q");
 }
 
 void DrawDifficulty(SDL_Renderer* renderer, const SdlRender::Layout& layout)
@@ -636,6 +638,67 @@ void DrawGameOver(SDL_Renderer* renderer, const thunder::SessionSnapshot& snapsh
 	CenterText(renderer, layout.window_width, panel_y + 170, 2, "R RESTART   Q QUIT", kTextDim);
 }
 
+/// 教程：底部一条提示带，按步骤换文案；上方照常画世界（玩家、敌机、补给）。
+void DrawTutorial(SDL_Renderer* renderer, const thunder::SessionSnapshot& snapshot,
+                  const SdlRender::Layout& layout, double seconds)
+{
+	DrawWorld(renderer, snapshot.world, layout, false, seconds);
+
+	const char* line = "";
+	const char* hint = "";
+	switch(snapshot.tutorial_step)
+	{
+	case TutorialStep::Move:
+		line = GameText::kTutorialMove;
+		hint = GameText::kTutorialMoveHint;
+		break;
+	case TutorialStep::Fire:
+		line = GameText::kTutorialFire;
+		hint = GameText::kTutorialFireHint;
+		break;
+	case TutorialStep::Kill:
+		line = GameText::kTutorialKill;
+		hint = GameText::kTutorialKillHint;
+		break;
+	case TutorialStep::Pickup:
+		line = GameText::kTutorialPickup;
+		hint = GameText::kTutorialPickupHint;
+		break;
+	case TutorialStep::Done:
+		line = GameText::kTutorialDone;
+		break;
+	}
+
+	// 顶部/底部各压一条半透明带，中文压在棋盘上也看得清
+	const float band = 30.0f;
+	Blend(renderer, 0.0f, 0.0f, static_cast<float>(layout.window_width), band,
+	      SDL_Color{0, 0, 0, 180});
+	Blend(renderer, 0.0f, static_cast<float>(layout.window_height) - band,
+	      static_cast<float>(layout.window_width), band, SDL_Color{0, 0, 0, 180});
+
+	CenterText(renderer, layout.window_width, 8, 2, line, kTextAccent);
+	if(hint[0] != '\0')
+		CenterText(renderer, layout.window_width, layout.window_height - 24, 1, hint, kTextDim);
+
+	CenterText(renderer, layout.window_width, layout.window_height - 54, 1, GameText::kTutorialSkip,
+	           kTextDim);
+}
+
+/// 教程结束页：走完 / 跳过都到这里，只有走完才显示解锁。
+void DrawTutorialDone(SDL_Renderer* renderer, const thunder::SessionSnapshot& snapshot,
+                      const SdlRender::Layout& layout)
+{
+	CenterText(renderer, layout.window_width, 120, 3, GameText::kTutorialDone, kTextAccent);
+
+	if(snapshot.tutorial_solved)
+		CenterText(renderer, layout.window_width, 210, 2, GameText::kTutorialUnlock, kText);
+
+	CenterText(renderer, layout.window_width, 300, 2, GameText::kTutorialStart, kText);
+	CenterText(renderer, layout.window_width, 350, 2, GameText::kTutorialBack, kText);
+
+	DrawHint(renderer, layout, "PRESS 1 / 2");
+}
+
 } // namespace
 
 namespace SdlRender
@@ -669,6 +732,14 @@ void Draw(SDL_Renderer* renderer, const thunder::SessionSnapshot& snapshot, int 
 		DrawHud(renderer, snapshot.world, best, fps, layout);
 		DrawHint(renderer, layout,
 		         "WASD MOVE   SPACE FIRE   P PAUSE   Q MENU   F11 FULLSCREEN   ESC QUIT");
+		break;
+
+	case thunder::Screen::Tutorial:
+		DrawTutorial(renderer, snapshot, layout, seconds);
+		break;
+
+	case thunder::Screen::TutorialDone:
+		DrawTutorialDone(renderer, snapshot, layout);
 		break;
 
 	case thunder::Screen::GameOver:

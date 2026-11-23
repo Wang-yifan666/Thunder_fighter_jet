@@ -50,10 +50,10 @@ fs::path UserDataDir()
 
 } // namespace
 
-std::string ResolveScorePath(const std::string& executable_dir)
+std::string ResolveDataPath(const std::string& executable_dir, const char* file_name)
 {
 	const fs::path exe_dir(executable_dir);
-	const fs::path local = exe_dir / "highscore.txt";
+	const fs::path local = exe_dir / file_name;
 	std::error_code ec;
 
 	// 显式指定数据目录时优先（测试用，也方便用户强制把存档放到别处）
@@ -63,7 +63,7 @@ std::string ResolveScorePath(const std::string& executable_dir)
 		{
 			const fs::path dir(override_dir);
 			fs::create_directories(dir, ec);
-			return (dir / "highscore.txt").string();
+			return (dir / file_name).string();
 		}
 	}
 
@@ -71,15 +71,25 @@ std::string ResolveScorePath(const std::string& executable_dir)
 	if(DirectoryWritable(exe_dir))
 		return local.string();
 
-	// 兼容旧布局：上一级目录已有存档就用它
-	const fs::path legacy = exe_dir / ".." / "highscore.txt";
+	// 兼容旧布局：上一级目录已有同名文件就用它
+	const fs::path legacy = exe_dir / ".." / file_name;
 	if(fs::exists(legacy, ec))
 		return legacy.string();
 
 	// 装到了不可写的位置（例如 Program Files）：退到用户数据目录
 	const fs::path user_dir = UserDataDir();
 	fs::create_directories(user_dir, ec);
-	return (user_dir / "highscore.txt").string();
+	return (user_dir / file_name).string();
+}
+
+std::string ResolveScorePath(const std::string& executable_dir)
+{
+	return ResolveDataPath(executable_dir, "highscore.txt");
+}
+
+std::string ResolveSettingsPath(const std::string& executable_dir)
+{
+	return ResolveDataPath(executable_dir, "settings.txt");
 }
 
 } // namespace thunder

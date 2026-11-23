@@ -22,6 +22,14 @@ GameSession::GameSession(ScoreStore& store, std::uint32_t rng_seed):
 world_(rng_seed), highscore_(store)
 {
 	highscore_.Load();
+	player_settings_ = settings_->Load();
+}
+
+GameSession::GameSession(ScoreStore& store, SettingsStore& settings, std::uint32_t rng_seed):
+world_(rng_seed), highscore_(store), settings_(&settings)
+{
+	highscore_.Load();
+	player_settings_ = settings_->Load();
 }
 
 void GameSession::Step(const RawInput& raw, steady_clock::duration dt)
@@ -71,6 +79,10 @@ void GameSession::Step(const RawInput& raw, steady_clock::duration dt)
 			highscore_.Load();
 			screen_ = Screen::Leaderboard;
 		}
+		else if(input_.Down(Key::Digit3))
+		{
+			StartTutorial();
+		}
 		// Q 与"游戏中返回主菜单"是同一个键，这里必须用按下沿：
 		// 若用按住判定，玩家在游戏中按住 Q 回到主菜单后会立刻退出程序。
 		else if(input_.Pressed(Key::Quit))
@@ -113,6 +125,26 @@ void GameSession::Step(const RawInput& raw, steady_clock::duration dt)
 
 	case Screen::Playing:
 		StepPlaying(input_, input_ready, dt);
+		break;
+
+	case Screen::Tutorial:
+		StepTutorial(input_, input_ready, dt);
+		break;
+
+	case Screen::TutorialDone:
+		if(!input_ready)
+			break;
+
+		if(input_.Down(Key::Digit1))
+		{
+			cooldown_ = ToDuration(milliseconds(GameConfig::kKeyDebounceMs));
+			screen_ = Screen::DifficultySelect;
+		}
+		else if(input_.Down(Key::Digit2) || input_.Pressed(Key::Quit))
+		{
+			cooldown_ = ToDuration(milliseconds(GameConfig::kKeyDebounceMs));
+			screen_ = Screen::Menu;
+		}
 		break;
 
 	case Screen::GameOver:
@@ -188,6 +220,176 @@ void GameSession::StartGame(Difficulty difficulty)
 	cooldown_ = ToDuration(milliseconds(GameConfig::kKeyDebounceMs));
 }
 
+// ========== 新手教程 ==========
+// 编排放在会话层，GameWorld 只提供"摆一只/摆一堆"的入口。
+// 每一步都由快照里的事实推进（动过没有 / 开过枪没有 / 敌机还在不在 / 补给拿到没有），
+// 不看计时——否则玩家发呆就会卡住。
+
+void GameSession::StartTutorial()
+{
+	tutorial_step_ = TutorialStep::Move;
+	tutorial_solved_ = false;
+	tutorial_armed_ = false;
+
+	world_.Reset(Difficulty::Easy, GameMode::Tutorial);
+	// 放在中下方，四周留出空间方便演示移动与拾取
+	world_.TutorialSetPlayer(GameConfig::kScreenWidth / 2 - 1, GameConfig::kScreenHeight - 7);
+
+	const WorldSnapshot snap = world_.Snapshot();
+	tutorial_baseline_x_ = snap.player_x;
+	tutorial_baseline_y_ = snap.player_y;
+	tutorial_baseline_ammo_ = snap.bullets_remaining;
+
+	screen_ = Screen::Tutorial;
+	cooldown_ = ToDuration(milliseconds(GameConfig::kKeyDebounceMs));
+}
+
+void GameSession::SetTutorialStep(TutorialStep step)
+{
+	tutorial_step_ = step;
+	tutorial_armed_ = false; // 下一步的目标物在下一帧摆
+
+	// 刚进入拾取训练：四种补给都还没拿到
+	if(step == TutorialStep::Pickup)
+	{
+		tutorial_got_health_ = false;
+		tutorial_got_ammo_ = false;
+		tutorial_got_shield_ = false;
+		tutorial_got_firepower_ = false;
+	}
+}
+
+void GameSession::ArmTutorialStep()
+{
+	const WorldSnapshot snap = world_.Snapshot();
+
+	switch(tutorial_step_)
+	{
+	case TutorialStep::Kill:
+		// 慢速直线小怪：speed 1（每 20 帧下移一格），等级 1 不会左右乱走。
+		// 对齐玩家当前列，保证站着不动也能打中。
+		world_.TutorialSpawnEnemy(snap.player_x - 1, 6, 1);
+		tutorial_baseline_ammo_ = snap.bullets_remaining;
+		break;
+
+	case TutorialStep::Pickup:
+	{
+		// 四种补给横着摆一排，从玩家上方落下。
+		// 重新摆的时候只补"还没拿到的"，不能把已经拿到的进度清零。
+		const PickupKind kinds[4] = {PickupKind::Health, PickupKind::Ammo, PickupKind::Shield,
+		                             PickupKind::Firepower};
+		const bool got[4] = {tutorial_got_health_, tutorial_got_ammo_, tutorial_got_shield_,
+		                     tutorial_got_firepower_};
+		// 摆在玩家正上方、一格一格的纵向队列里：新手站着不动也能顺序捡到，
+		// 不用满屏找补给。
+		const int x = std::max(1, snap.player_x);
+		const int top = std::max(1, snap.player_y - 13);
+
+		int slot = 0;
+		for(int i = 0; i < 4; ++i)
+		{
+			if(got[i])
+				continue;
+			world_.TutorialSpawnPickup(x, top + slot * 4, kinds[i]);
+			++slot;
+		}
+
+		tutorial_prev_life_ = snap.life;
+		tutorial_prev_ammo_ = snap.bullets_remaining;
+		break;
+	}
+
+	default:
+		break;
+	}
+
+	tutorial_armed_ = true;
+}
+
+void GameSession::StepTutorial(const InputState& input, bool input_ready, steady_clock::duration dt)
+{
+	// Q / Esc 随时跳过：跳到结束页，但不算通关（不解锁装扮）
+	if(input_ready && (input.Pressed(Key::Quit) || input.Pressed(Key::Escape)))
+	{
+		FinishTutorial(false);
+		return;
+	}
+
+	GameInput game_input = input_ready ? GameInput::FromInput(input) : GameInput{};
+	// 教程里禁用作弊键：数字键在教程中是别的用途，也不该把教程打乱
+	game_input.digit.fill(false);
+	// 拾取训练时禁火：否则弹药包刚补的 50 发会被自己打掉，没法判断"捡到了没有"
+	if(tutorial_step_ == TutorialStep::Pickup)
+		game_input.fire = false;
+
+	world_.Tick(game_input, dt);
+
+	if(!tutorial_armed_)
+		ArmTutorialStep();
+
+	const WorldSnapshot snap = world_.Snapshot();
+
+	switch(tutorial_step_)
+	{
+	case TutorialStep::Move:
+		if(snap.player_x != tutorial_baseline_x_ || snap.player_y != tutorial_baseline_y_)
+			SetTutorialStep(TutorialStep::Fire);
+		break;
+
+	case TutorialStep::Fire:
+		if(snap.bullets_remaining < tutorial_baseline_ammo_)
+			SetTutorialStep(TutorialStep::Kill);
+		break;
+
+	case TutorialStep::Kill:
+		if(snap.enemies.empty())
+			SetTutorialStep(TutorialStep::Pickup);
+		break;
+
+	case TutorialStep::Pickup:
+		if(snap.life > tutorial_prev_life_)
+			tutorial_got_health_ = true;
+		if(snap.bullets_remaining > tutorial_prev_ammo_)
+			tutorial_got_ammo_ = true;
+		if(snap.shielded)
+			tutorial_got_shield_ = true;
+		if(snap.firepower_seconds_left > 0)
+			tutorial_got_firepower_ = true;
+
+		tutorial_prev_life_ = snap.life;
+		tutorial_prev_ammo_ = snap.bullets_remaining;
+
+		if(tutorial_got_health_ && tutorial_got_ammo_ && tutorial_got_shield_
+		   && tutorial_got_firepower_)
+		{
+			FinishTutorial(true);
+		}
+		else if(snap.pickups.empty())
+		{
+			// 漏掉了就重摆一排，教程不该因为手滑卡死
+			tutorial_armed_ = false;
+		}
+		break;
+
+	case TutorialStep::Done:
+		break;
+	}
+}
+
+void GameSession::FinishTutorial(bool solved)
+{
+	tutorial_solved_ = solved;
+
+	if(solved && !player_settings_.tutorial_done)
+	{
+		player_settings_.tutorial_done = true;
+		settings_->Save(player_settings_);
+	}
+
+	screen_ = Screen::TutorialDone;
+	cooldown_ = ToDuration(milliseconds(GameConfig::kKeyDebounceMs));
+}
+
 void GameSession::Settle()
 {
 	const WorldSnapshot snapshot = world_.Snapshot();
@@ -211,6 +413,9 @@ SessionSnapshot GameSession::Snapshot() const
 	snapshot.cheats_enabled = cheats_enabled_;
 	snapshot.cheat_notice = cheat_notice_ > steady_clock::duration::zero();
 	snapshot.difficulty = world_.difficulty();
+	snapshot.tutorial_step = tutorial_step_;
+	snapshot.tutorial_solved = tutorial_solved_;
+	snapshot.tutorial_done = player_settings_.tutorial_done;
 	snapshot.world = world_.Snapshot();
 	snapshot.leaderboard = highscore_.Scores();
 	snapshot.rank = rank_;

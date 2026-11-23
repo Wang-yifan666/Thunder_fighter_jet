@@ -14,6 +14,8 @@ enum class Screen
 	Menu,
 	DifficultySelect,
 	Leaderboard,
+	Tutorial,
+	TutorialDone,
 	Playing,
 	GameOver
 };
@@ -31,7 +33,14 @@ struct SessionSnapshot
 	/// 刚切换过作弊模式：前端应短暂显示一次开/关提示，之后不再显示。
 	bool cheat_notice = false;
 
-	/// 仅 Playing / GameOver 有意义
+	/// 教程当前步骤（仅 Screen::Tutorial 有意义）
+	TutorialStep tutorial_step = TutorialStep::Move;
+	/// 本次教程是否全部走完（按 Q 跳过则为 false）
+	bool tutorial_solved = false;
+	/// 存档里是否已有"通关教程"的记录（决定装扮是否解锁）
+	bool tutorial_done = false;
+
+	/// 仅 Playing / GameOver / Tutorial 有意义
 	WorldSnapshot world;
 
 	// 排行榜 / 结算

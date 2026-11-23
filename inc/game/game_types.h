@@ -30,3 +30,21 @@ enum class EffectKind
 	Spark,    ///< 子弹 / 冲击波命中敌机的火花
 	Shockwave ///< 玩家破盾冲击波
 };
+
+/// 对局模式：正常对局 / 新手教程。
+/// 教程模式只关掉"自动刷波、升级、掉落、掉血"，其余（移动、开火、命中、拾取）完全复用。
+enum class GameMode
+{
+	Normal,
+	Tutorial
+};
+
+/// 教程的步骤。逻辑层只认枚举，文案在 game_text.h，画法由前端决定。
+enum class TutorialStep
+{
+	Move,    ///< 让玩家动一下
+	Fire,    ///< 让玩家开一枪
+	Kill,    ///< 击落一只慢速小怪
+	Pickup,  ///< 把四种补给都捡起来
+	Done     ///< 全部完成
+};

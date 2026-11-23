@@ -8,6 +8,7 @@
 #include "game/highscore.h"
 #include "game/input_state.h"
 #include "game/score_store.h"
+#include "game/settings_store.h"
 #include "game/session_snapshot.h"
 
 namespace thunder
@@ -21,6 +22,9 @@ class GameSession
 {
 public:
 	explicit GameSession(ScoreStore& store, std::uint32_t rng_seed = 0);
+
+	/// 带设置的构造：正式游戏传入 FileSettingsStore，测试用内存实现。
+	GameSession(ScoreStore& store, SettingsStore& settings, std::uint32_t rng_seed = 0);
 
 	void Step(const RawInput& raw, std::chrono::steady_clock::duration dt);
 
@@ -41,10 +45,24 @@ private:
 	                 std::chrono::steady_clock::duration dt);
 	void Settle();
 
+	// ========== 新手教程 ==========
+	void StartTutorial();
+	void StepTutorial(const InputState& input, bool input_ready,
+	                  std::chrono::steady_clock::duration dt);
+	/// 当前步骤要摆的东西（敌机 / 补给）在进入这一步时一次性摆好
+	void ArmTutorialStep();
+	void SetTutorialStep(TutorialStep step);
+	void FinishTutorial(bool solved);
+
 	GameWorld world_;
 	HighScore highscore_;
 	InputTracker tracker_;
 	InputState input_;
+
+	/// 没从外部注入设置存储时用的内存实现（测试默认走这里）
+	MemorySettingsStore owned_settings_;
+	SettingsStore* settings_ = &owned_settings_;
+	PlayerSettings player_settings_;
 
 	Screen screen_ = Screen::Menu;
 	/// 上一局选的难度：结算界面按 R 直接同难度再来一局
@@ -61,6 +79,22 @@ private:
 	bool new_record_ = false;
 	bool entered_top5_ = false;
 	int final_score_ = 0;
+
+	// 教程进度
+	TutorialStep tutorial_step_ = TutorialStep::Move;
+	bool tutorial_solved_ = false;
+	/// 当前步骤的目标物是否已经摆好
+	bool tutorial_armed_ = false;
+	int tutorial_baseline_x_ = 0;
+	int tutorial_baseline_y_ = 0;
+	int tutorial_baseline_ammo_ = 0;
+	/// 拾取训练：四种补给各自有没有拿到
+	bool tutorial_got_health_ = false;
+	bool tutorial_got_ammo_ = false;
+	bool tutorial_got_shield_ = false;
+	bool tutorial_got_firepower_ = false;
+	int tutorial_prev_life_ = 0;
+	int tutorial_prev_ammo_ = 0;
 };
 
 } // namespace thunder

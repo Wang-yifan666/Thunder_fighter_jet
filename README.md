@@ -32,6 +32,13 @@ Get-FileHash .\Naidan-1.8-setup.exe -Algorithm SHA256
 真正消除提示只有一条路：给 exe 和安装包做 **Authenticode 代码签名**
 （`tools/build_installer.ps1 -Thumbprint <证书指纹>` 已经接好，签名工具取 Windows SDK 的 signtool）。
 
+### 新手教程
+
+主菜单按 `3` 进入，四步走完（移动 → 开火 → 击落一只慢速小怪 → 捡齐四种补给），
+中途按 `Q` 随时跳过。**跳过不算通关**：只有完整走完才会解锁鲨鱼罩装扮。
+
+教程里不会掉血、不刷波、不结算，怎么试都不会死。
+
 ### 操作
 
 | 按键 | 功能 |

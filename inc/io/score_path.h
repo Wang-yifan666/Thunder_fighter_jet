@@ -20,4 +20,7 @@ namespace thunder
 /// executable_dir 需要以路径分隔符结尾。
 std::string ResolveScorePath(const std::string& executable_dir);
 
+/// 设置文件（教程进度、当前装扮）走和排行榜完全相同的路径规则。
+std::string ResolveSettingsPath(const std::string& executable_dir);
+
 } // namespace thunder

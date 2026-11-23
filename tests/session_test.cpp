@@ -398,3 +398,31 @@ TEST(Session, HoldingQuitDoesNotExitFromMenu)
 	EXPECT_EQ(session.screen(), Screen::Menu);
 	EXPECT_FALSE(session.exit_requested());
 }
+
+// ========== 新手教程 ==========
+
+TEST(Session, TutorialStartsFromMenu)
+{
+	MemoryScoreStore store;
+	GameSession session(store, 7);
+
+	ASSERT_EQ(session.screen(), Screen::Menu);
+	StepMs(session, 16, Hold(Key::Digit3));
+
+	EXPECT_EQ(session.screen(), Screen::Tutorial);
+	EXPECT_EQ(session.Snapshot().tutorial_step, TutorialStep::Move);
+}
+
+TEST(Session, TutorialSkipLandsOnDoneWithoutUnlock)
+{
+	MemoryScoreStore store;
+	GameSession session(store, 7);
+	StepMs(session, 16, Hold(Key::Digit3));
+	ASSERT_EQ(session.screen(), Screen::Tutorial);
+
+	StepMs(session, 250); // 等开局冷却
+	StepMs(session, 16, Hold(Key::Quit));
+	EXPECT_EQ(session.screen(), Screen::TutorialDone);
+	EXPECT_FALSE(session.Snapshot().tutorial_solved) << "跳过不算通关";
+	EXPECT_FALSE(session.Snapshot().tutorial_done) << "跳过不该解锁装扮";
+}

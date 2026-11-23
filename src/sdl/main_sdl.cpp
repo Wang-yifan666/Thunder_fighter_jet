@@ -13,6 +13,8 @@
 
 #include "game/game_config.h"
 #include "game/game_session.h"
+#include "io/file_settings_store.h"
+#include "io/score_path.h"
 #include "game/game_info.h"
 #include "game/input_state.h"
 #include "io/file_score_store.h"
@@ -196,7 +198,10 @@ int main(int argc, char** argv)
 
 	thunder::FileScoreStore score_store(
 	    thunder::ResolveScorePath(exe_dir.empty() ? ".\\" : exe_dir));
-	thunder::GameSession session(score_store, seed);
+	// 设置（教程进度 / 当前装扮）和排行榜放同一个目录
+	thunder::FileSettingsStore settings_store(
+	    thunder::ResolveSettingsPath(exe_dir.empty() ? ".\\" : exe_dir));
+	thunder::GameSession session(score_store, settings_store, seed);
 
 	SdlInput::State input;
 	std::chrono::steady_clock::duration accumulator{};

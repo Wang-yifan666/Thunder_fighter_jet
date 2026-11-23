@@ -11,6 +11,7 @@ add_executable(thunder_logic_tests
     session_test.cpp
     view_layout_test.cpp
     score_path_test.cpp
+    settings_test.cpp
 )
 
 target_include_directories(thunder_logic_tests PRIVATE
