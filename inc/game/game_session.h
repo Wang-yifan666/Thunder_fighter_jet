@@ -85,6 +85,8 @@ private:
 	// 教程进度
 	TutorialStep tutorial_step_ = TutorialStep::Move;
 	bool tutorial_solved_ = false;
+	/// 本次是否"刚刚"解锁（第一次通关才算，第二次不该再喊解锁）
+	bool tutorial_unlocked_now_ = false;
 	/// 当前步骤的目标物是否已经摆好
 	bool tutorial_armed_ = false;
 	/// 当前步骤已经停留了多久 / 达成目标后又停了多久

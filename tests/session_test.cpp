@@ -464,3 +464,82 @@ TEST(Session, TutorialWobbleStillCountsAsMovement)
 
 	EXPECT_EQ(session.Snapshot().tutorial_step, TutorialStep::Fire);
 }
+TEST(Session, TutorialRestartsFromTheBeginning)
+{
+	MemoryScoreStore store;
+	thunder::MemorySettingsStore settings;
+	GameSession session(store, settings, 7);
+
+	// 第一次进教程，走一段把移动训练完成
+	StepMs(session, 16, Hold(Key::Digit3));
+	StepMs(session, 250);
+	for(int i = 0; i < 200; ++i)
+		StepMs(session, 16, Hold(Key::Left));
+	ASSERT_EQ(session.Snapshot().tutorial_step, TutorialStep::Fire);
+
+	// 跳过 -> 回主菜单
+	StepMs(session, 16, Hold(Key::Quit));
+	ASSERT_EQ(session.screen(), Screen::TutorialDone);
+	StepMs(session, 250);
+	StepMs(session, 16, Hold(Key::Digit2));
+	ASSERT_EQ(session.screen(), Screen::Menu);
+	StepMs(session, 250);
+
+	// 再进一次：必须从"移动"这一步重新开始
+	StepMs(session, 16, Hold(Key::Digit3));
+	ASSERT_EQ(session.screen(), Screen::Tutorial);
+	EXPECT_EQ(session.Snapshot().tutorial_step, TutorialStep::Move);
+
+	// 站着不动等过最短停留：仍然要停在移动训练（累计移动距离被清零了）
+	for(int i = 0; i < 160; ++i)
+		StepMs(session, 16);
+	EXPECT_EQ(session.Snapshot().tutorial_step, TutorialStep::Move)
+	    << "第二次进入教程不该直接跳过移动训练";
+}
+
+TEST(Session, TutorialCompletionOnlyAnnouncesUnlockOnce)
+{
+	MemoryScoreStore store;
+	thunder::MemorySettingsStore settings;
+
+	thunder::PlayerSettings already_done;
+	already_done.tutorial_done = true;
+	settings.Save(already_done);
+
+	GameSession session(store, settings, 7);
+	StepMs(session, 16, Hold(Key::Digit3));
+	StepMs(session, 250);
+	StepMs(session, 16, Hold(Key::Quit));
+
+	EXPECT_EQ(session.screen(), Screen::TutorialDone);
+	EXPECT_FALSE(session.Snapshot().tutorial_newly_unlocked)
+	    << "已经解锁过，第二次通关不该再喊一次解锁";
+}
+TEST(Session, TutorialFullPlaythroughUnlocksSkin)
+{
+	MemoryScoreStore store;
+	thunder::MemorySettingsStore settings;
+	GameSession session(store, settings, 7);
+
+	StepMs(session, 16, Hold(Key::Digit3));
+	StepMs(session, 250);
+
+	// 移动训练：往左走一段
+	for(int i = 0; i < 100; ++i)
+		StepMs(session, 16, Hold(Key::Left));
+
+	// 射击/击落：按住开火（补给训练期间会自动禁火）
+	for(int i = 0; i < 1200 && session.screen() == Screen::Tutorial; ++i)
+		StepMs(session, 16, Hold(Key::Fire));
+
+	// 补给会落在玩家所在列，站着等它们掉下来
+	for(int i = 0; i < 1200 && session.screen() == Screen::Tutorial; ++i)
+		StepMs(session, 16);
+
+	ASSERT_EQ(session.screen(), Screen::TutorialDone)
+	    << "完整走完教程应该进结束页，当前步骤 "
+	    << static_cast<int>(session.Snapshot().tutorial_step);
+	EXPECT_TRUE(session.Snapshot().tutorial_solved);
+	EXPECT_TRUE(session.Snapshot().tutorial_newly_unlocked) << "第一次通关要提示解锁";
+	EXPECT_TRUE(settings.Load().tutorial_done) << "进度要落盘";
+}

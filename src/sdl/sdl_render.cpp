@@ -694,7 +694,7 @@ void DrawTutorialDone(SDL_Renderer* renderer, const thunder::SessionSnapshot& sn
 {
 	CenterText(renderer, layout.window_width, 120, 3, GameText::kTutorialDone, kTextAccent);
 
-	if(snapshot.tutorial_solved)
+	if(snapshot.tutorial_newly_unlocked)
 		CenterText(renderer, layout.window_width, 210, 2, GameText::kTutorialUnlock, kText);
 
 	CenterText(renderer, layout.window_width, 300, 2, GameText::kTutorialStart, kText);

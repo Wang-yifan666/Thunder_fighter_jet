@@ -375,3 +375,39 @@ TEST(WorldShield, ShockwaveReachesFarEnemiesInsideRadius)
 	EXPECT_EQ(WorldTestAccess::EnemyCount(world), 0) << "半径内的远处敌机也要被扫掉";
 }
 
+
+// ========== 教程模式 ==========
+
+TEST(WorldTutorial, KilledEnemiesNeverDropSupplies)
+{
+	// 教程里的补给全是脚本摆的：打死怪不该再随机掉东西出来
+	GameWorld world = MakeQuietWorld();
+	world.Reset(Difficulty::Easy, GameMode::Tutorial);
+	WorldTestAccess::SetPlayer(world, 50, 40);
+
+	int drops = 0;
+	for(int i = 0; i < 150; ++i)
+	{
+		WorldTestAccess::ClearPickups(world);
+		WorldTestAccess::TutorialSpawnEnemy(world, 50, 20, 0);
+		WorldTestAccess::AddBullet(world, 51, 21);
+		world.Tick(thunder::GameInput{}, kFrame);
+		if(WorldTestAccess::PickupCount(world) > 0)
+			++drops;
+	}
+
+	EXPECT_EQ(drops, 0) << "教程里击毁敌机不该掉落补给";
+}
+
+TEST(WorldTutorial, EnemyCollisionDoesNotHurtPlayer)
+{
+	GameWorld world = MakeQuietWorld();
+	world.Reset(Difficulty::Easy, GameMode::Tutorial);
+	WorldTestAccess::SetPlayer(world, 50, 40);
+
+	const int life_before = world.Snapshot().life;
+	WorldTestAccess::TutorialSpawnEnemy(world, 50, 40, 0); // 直接压在玩家身上
+	world.Tick(thunder::GameInput{}, kFrame);
+
+	EXPECT_EQ(world.Snapshot().life, life_before) << "教程里撞到不掉命";
+}

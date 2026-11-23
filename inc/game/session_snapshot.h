@@ -37,6 +37,8 @@ struct SessionSnapshot
 	TutorialStep tutorial_step = TutorialStep::Move;
 	/// 当前这一步的目标已经达成（前端可以显示"做得好"）
 	bool tutorial_step_done = false;
+	/// 本次是否刚刚解锁了装扮（第二次通关不再提示）
+	bool tutorial_newly_unlocked = false;
 	/// 本次教程是否全部走完（按 Q 跳过则为 false）
 	bool tutorial_solved = false;
 	/// 存档里是否已有"通关教程"的记录（决定装扮是否解锁）

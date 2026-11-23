@@ -122,6 +122,22 @@ set(_sprite_specs
     "shield_bubble_big_56x56|kShieldBubbleBigPixels"
 )
 file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/generated")
+
+# 精灵和字体都是在 **configure 阶段** 用 file(READ) 读成 C++ 数组的。
+# 如果只改素材不重新 configure，生成的 .cpp 会一直是旧的（表现为"改了图/加了字，
+# 编出来的 exe 还是老样子"）。这里把这些文件登记成 configure 依赖，
+# 它们一变就自动重新 configure。
+set(_asset_inputs
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets/fonts/UbuntuMono-Regular.ttf"
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets/fonts/NotoSansSC-Subset.ttf"
+)
+foreach(_spec IN LISTS _sprite_specs)
+    string(REPLACE "|" ";" _parts "${_spec}")
+    list(GET _parts 0 _file)
+    list(APPEND _asset_inputs "${CMAKE_CURRENT_SOURCE_DIR}/assets/sprites/${_file}.rgba")
+endforeach()
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${_asset_inputs})
+
 foreach(_spec IN LISTS _sprite_specs)
     string(REPLACE "|" ";" _parts "${_spec}")
     list(GET _parts 0 _file)

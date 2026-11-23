@@ -535,6 +535,11 @@ void GameWorld::FirePlayerBullets()
 
 void GameWorld::MaybeDropPickup(int enemy_x, int enemy_y)
 {
+	// 教程里不掉补给：教程的补给都是脚本摆好的，随机掉落会打乱节奏、
+	// 也会让玩家误以为"打死怪就会掉东西"。
+	if(mode_ == GameMode::Tutorial)
+		return;
+
 	// 掉落率随难度变化：低难度给新手保护，高难度少给补给
 	const DropRates rates = DropRatesFor(difficulty_);
 

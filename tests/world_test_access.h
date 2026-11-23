@@ -152,6 +152,11 @@ struct WorldTestAccess
 	}
 
 	/// 把移动计数器推到指定值，用来让"下一帧正好是敌机的移动帧"。
+	static void TutorialSpawnEnemy(GameWorld& world, int x, int y, int speed)
+	{
+		world.TutorialSpawnEnemy(x, y, speed);
+	}
+
 	static void SetEnemyMoveCounter(GameWorld& world, int value)
 	{
 		world.enemy_move_counter_ = value;

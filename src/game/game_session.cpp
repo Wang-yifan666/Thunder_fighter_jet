@@ -229,18 +229,17 @@ void GameSession::StartGame(Difficulty difficulty)
 
 void GameSession::StartTutorial()
 {
-	tutorial_step_ = TutorialStep::Move;
 	tutorial_solved_ = false;
+	tutorial_unlocked_now_ = false;
 	tutorial_armed_ = false;
 
 	world_.Reset(Difficulty::Easy, GameMode::Tutorial);
 	// 放在中下方，四周留出空间方便演示移动与拾取
 	world_.TutorialSetPlayer(GameConfig::kScreenWidth / 2 - 1, GameConfig::kScreenHeight - 7);
 
-	const WorldSnapshot snap = world_.Snapshot();
-	tutorial_baseline_x_ = snap.player_x;
-	tutorial_baseline_y_ = snap.player_y;
-	tutorial_baseline_ammo_ = snap.bullets_remaining;
+	// 走 SetTutorialStep 而不是直接赋值：它会一并清掉上一步的计时、
+	// 累计移动距离和"已完成"标记，否则第二次进教程会直接跳过移动训练。
+	SetTutorialStep(TutorialStep::Move);
 
 	screen_ = Screen::Tutorial;
 	cooldown_ = ToDuration(milliseconds(GameConfig::kKeyDebounceMs));
@@ -453,7 +452,9 @@ void GameSession::FinishTutorial(bool solved)
 {
 	tutorial_solved_ = solved;
 
-	if(solved && !player_settings_.tutorial_done)
+	// 只有"第一次通关"才提示解锁：第二次再走完不该再喊一遍
+	tutorial_unlocked_now_ = solved && !player_settings_.tutorial_done;
+	if(tutorial_unlocked_now_)
 	{
 		player_settings_.tutorial_done = true;
 		settings_->Save(player_settings_);
@@ -488,6 +489,7 @@ SessionSnapshot GameSession::Snapshot() const
 	snapshot.difficulty = world_.difficulty();
 	snapshot.tutorial_step = tutorial_step_;
 	snapshot.tutorial_step_done = tutorial_step_done_;
+	snapshot.tutorial_newly_unlocked = tutorial_unlocked_now_;
 	snapshot.tutorial_solved = tutorial_solved_;
 	snapshot.tutorial_done = player_settings_.tutorial_done;
 	snapshot.world = world_.Snapshot();
