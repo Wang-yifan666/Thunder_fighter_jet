@@ -9,6 +9,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <random>
+#include <utility>
 
 namespace
 {
@@ -201,8 +202,8 @@ void GameWorld::SpawnEnemiesFromPending()
 
 	for(int i = 0; i < enemies_in_row && !pending_enemies_.empty(); ++i)
 	{
-		Enemy e = pending_enemies_.front();
-		pending_enemies_.erase(pending_enemies_.begin());
+		Enemy e = std::move(pending_enemies_.front());
+		pending_enemies_.pop_front();
 
 		const int max_x = GameConfig::kScreenWidth - e.width;
 

@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <cstdint>
+#include <deque>
 #include <random>
 #include <vector>
 
@@ -112,7 +113,9 @@ private:
 
 	// ========== enemies ==========
 	std::vector<Enemy> enemies_;
-	std::vector<Enemy> pending_enemies_;
+	// 排队中的敌机：只从头部取、尾部放回，用 deque 而不是 vector，
+	// 否则每次 pop 头部都要搬整个数组（后期这里能积压几百上千只）。
+	std::deque<Enemy> pending_enemies_;
 	int enemy_move_counter_ = 0;
 	int enemy_move_interval_ = GameConfig::kInitialEnemyMoveInterval;
 	int remaining_rows_in_batch_ = 0;
