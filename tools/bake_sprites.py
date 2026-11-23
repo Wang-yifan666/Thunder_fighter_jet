@@ -46,8 +46,8 @@ SPRITES = {
     "ammo_pack.png": [("ammo", 24, 24)],      # 3x3 格，精灵与判定等大
     "shield_pack.png": [("shield_pack", 24, 24)],
     "firepower_pack.png": [("firepower", 24, 24)],
-    # 护盾泡：小怪 40x40 罩住 3x2（留一圈余量）；精英 4x3 和玩家 32x32 精灵都用 56x56
-    "shield_bubble.png": [("shield_bubble", 40, 40), ("shield_bubble_big", 56, 56)],
+    # 护盾泡：小怪 36x36 罩住 3x2（留一点余量）；精英 4x3 和玩家 32x32 精灵都用 44x44
+    "shield_bubble.png": [("shield_bubble", 36, 36), ("shield_bubble_big", 44, 44)],
 }
 
 # 已经在全分辨率做过反预乘的母版：烘焙时不再重复检测，

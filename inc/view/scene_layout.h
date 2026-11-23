@@ -50,9 +50,9 @@ inline constexpr int kEliteSpriteHeight = 24;
 /// 掉落物精灵：24x24（3x3 格），与拾取判定等大。
 inline constexpr int kPickupSpriteSize = 24;
 
-/// 护盾泡：小怪 40x40 罩住 3x2；精英 4x3 与玩家 32x32 精灵共用 56x56。
-inline constexpr int kShieldBubbleSize = 40;
-inline constexpr int kShieldBubbleBigSize = 56;
+/// 护盾泡：小怪 36x36 罩住 3x2；精英 4x3 与玩家 32x32 精灵共用 44x44。
+inline constexpr int kShieldBubbleSize = 36;
+inline constexpr int kShieldBubbleBigSize = 44;
 
 // ============ 网格换算 ============
 struct Rect
