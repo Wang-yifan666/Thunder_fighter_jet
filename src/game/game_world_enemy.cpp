@@ -224,6 +224,10 @@ void GameWorld::SpawnEnemiesFromPending()
 
 		e.x = x;
 		e.y = 0; //顶行生成
+		// 上一帧坐标一并重置：排队回来的敌机还留着上次在场上的落点，
+		// 不清干净会让扫掠判定的区间算错
+		e.prev_x = x;
+		e.prev_y = 0;
 		spawned_row.push_back(e);
 	}
 
