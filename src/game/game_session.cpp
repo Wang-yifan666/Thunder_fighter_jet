@@ -118,7 +118,9 @@ void GameSession::Step(const RawInput& raw, steady_clock::duration dt)
 	case Screen::GameOver:
 		if(input_.Down(Key::Restart))
 		{
-			screen_ = Screen::Menu;
+			// 直接同难度重开：结算界面上写的就是 "R RESTART"，
+			// 回主菜单再选一次难度既慢又和界面承诺不符。
+			StartGame(last_difficulty_);
 		}
 		else if(input_.Down(Key::Quit))
 		{
@@ -173,6 +175,7 @@ void GameSession::StepPlaying(const InputState& input, bool input_ready, steady_
 
 void GameSession::StartGame(Difficulty difficulty)
 {
+	last_difficulty_ = difficulty;
 	world_.Reset(difficulty);
 
 	paused_ = false;

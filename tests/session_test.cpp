@@ -42,6 +42,15 @@ void StartEasy(GameSession& session)
 	StepMs(session, 250); // 清开局冷却
 }
 
+/// Menu -> 难度选择 -> Hard -> Playing，并清掉开局冷却。
+void StartHard(GameSession& session)
+{
+	StepMs(session, 16, Hold(Key::Digit1));
+	StepMs(session, 250); // 清菜单冷却
+	StepMs(session, 16, Hold(Key::Digit3));
+	StepMs(session, 250); // 清开局冷却
+}
+
 /// 在主菜单按一次 F 打开作弊模式（游戏内数字键才会生效）。
 void EnableCheats(GameSession& session)
 {
@@ -257,8 +266,30 @@ TEST(Session, GameOverSubmitsScoreAndRestarts)
 	ASSERT_FALSE(persisted.empty());
 	EXPECT_EQ(persisted.front(), expected);
 
+	// R 直接同难度重开（结算界面写的就是 "R RESTART"）
 	StepMs(session, 16, Hold(Key::Restart));
-	EXPECT_EQ(session.screen(), Screen::Menu);
+	EXPECT_EQ(session.screen(), Screen::Playing);
+	EXPECT_EQ(session.Snapshot().difficulty, Difficulty::Easy);
+	EXPECT_GT(session.Snapshot().world.life, 0) << "新一局是满血";
+	EXPECT_EQ(session.Snapshot().world.level, 1);
+}
+
+TEST(Session, RestartKeepsLastDifficulty)
+{
+	MemoryScoreStore store;
+	GameSession session(store, 7);
+
+	EnableCheats(session);
+	StartHard(session);
+	ASSERT_EQ(session.screen(), Screen::Playing);
+	ASSERT_EQ(session.Snapshot().difficulty, Difficulty::Hard);
+
+	StepMs(session, 16, Hold(Key::Digit2)); // 作弊自杀
+	ASSERT_EQ(session.screen(), Screen::GameOver);
+
+	StepMs(session, 16, Hold(Key::Restart));
+	EXPECT_EQ(session.screen(), Screen::Playing);
+	EXPECT_EQ(session.Snapshot().difficulty, Difficulty::Hard) << "重开要保持上次的难度";
 }
 
 TEST(Session, ExitFromGameOverSetsExitRequested)

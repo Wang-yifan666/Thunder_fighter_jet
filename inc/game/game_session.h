@@ -47,6 +47,8 @@ private:
 	InputState input_;
 
 	Screen screen_ = Screen::Menu;
+	/// 上一局选的难度：结算界面按 R 直接同难度再来一局
+	Difficulty last_difficulty_ = Difficulty::Easy;
 	bool paused_ = false;
 	bool exit_requested_ = false;
 	/// 主菜单按 F 切换；关闭时游戏内的数字键作弊被屏蔽
