@@ -86,6 +86,12 @@ void GameSession::Step(const RawInput& raw, steady_clock::duration dt)
 		{
 			StartTutorial();
 		}
+		else if(input_.Down(Key::Digit4))
+		{
+			cooldown_ = ToDuration(milliseconds(GameConfig::kKeyDebounceMs));
+			skin_cursor_ = player_settings_.skin_id;
+			screen_ = Screen::Skins;
+		}
 		// Q 与"游戏中返回主菜单"是同一个键，这里必须用按下沿：
 		// 若用按住判定，玩家在游戏中按住 Q 回到主菜单后会立刻退出程序。
 		else if(input_.Pressed(Key::Quit))
@@ -128,6 +134,10 @@ void GameSession::Step(const RawInput& raw, steady_clock::duration dt)
 
 	case Screen::Playing:
 		StepPlaying(input_, input_ready, dt);
+		break;
+
+	case Screen::Skins:
+		StepSkins(input_, input_ready);
 		break;
 
 	case Screen::Tutorial:
@@ -380,6 +390,41 @@ void GameSession::ArmTutorialStep()
 	tutorial_armed_ = true;
 }
 
+bool GameSession::SkinUnlocked(int skin_id) const
+{
+	if(skin_id < 0 || skin_id >= kSkinCount)
+		return false;
+	if(skin_id == kSkinSharkId)
+		return player_settings_.tutorial_done;
+	return true; // 0 号默认装扮一直可用
+}
+
+void GameSession::StepSkins(const InputState& input, bool input_ready)
+{
+	if(!input_ready)
+		return;
+
+	// 左右切换（A/D 与方向键都收）
+	if(input.Pressed(Key::Left))
+		skin_cursor_ = (skin_cursor_ + kSkinCount - 1) % kSkinCount;
+	else if(input.Pressed(Key::Right))
+		skin_cursor_ = (skin_cursor_ + 1) % kSkinCount;
+
+	// 确认：锁着的装扮选不了，光标留在原地
+	if(input.Down(Key::Digit1) && SkinUnlocked(skin_cursor_))
+	{
+		player_settings_.skin_id = skin_cursor_;
+		settings_->Save(player_settings_);
+		cooldown_ = ToDuration(milliseconds(GameConfig::kKeyDebounceMs));
+	}
+
+	if(input.Down(Key::Back) || input.Pressed(Key::Quit))
+	{
+		cooldown_ = ToDuration(milliseconds(GameConfig::kKeyDebounceMs));
+		screen_ = Screen::Menu;
+	}
+}
+
 void GameSession::StepTutorial(const InputState& input, bool input_ready, steady_clock::duration dt)
 {
 	// Q / Esc 随时跳过：跳到结束页，但不算通关（不解锁装扮）
@@ -525,6 +570,9 @@ SessionSnapshot GameSession::Snapshot() const
 	snapshot.cheats_enabled = cheats_enabled_;
 	snapshot.cheat_notice = cheat_notice_ > steady_clock::duration::zero();
 	snapshot.difficulty = world_.difficulty();
+	snapshot.skin_id = player_settings_.skin_id;
+	snapshot.skin_cursor = skin_cursor_;
+	snapshot.shark_unlocked = SkinUnlocked(kSkinSharkId);
 	snapshot.tutorial_step = tutorial_step_;
 	snapshot.tutorial_step_done = tutorial_step_done_;
 	snapshot.tutorial_newly_unlocked = tutorial_unlocked_now_;

@@ -140,11 +140,25 @@ SDL_Texture* AcquireTexture(SpriteSlot& slot, SDL_Renderer* renderer, const unsi
 	return texture;
 }
 
-SDL_Texture* PlayerTexture(SDL_Renderer* renderer)
+SDL_Texture* PlayerTexture(SDL_Renderer* renderer, bool shark)
 {
-	static SpriteSlot slot;
-	return AcquireTexture(slot, renderer, SpriteData::kPlayerPixels, SpriteData::kPlayerPixelsSize,
-	                      View::kPlayerSpriteSize, View::kPlayerSpriteSize);
+	static SpriteSlot slot_default;
+	static SpriteSlot slot_shark;
+	if(shark)
+	{
+		return AcquireTexture(slot_shark, renderer, SpriteData::kSkinSharkPixels,
+		                      SpriteData::kSkinSharkPixelsSize, View::kPlayerSpriteSize,
+		                      View::kPlayerSpriteSize);
+	}
+	return AcquireTexture(slot_default, renderer, SpriteData::kPlayerPixels,
+	                      SpriteData::kPlayerPixelsSize, View::kPlayerSpriteSize,
+	                      View::kPlayerSpriteSize);
+}
+
+/// 装扮预览/游戏内共用：按 id 取玩家贴图
+SDL_Texture* PlayerTextureForSkin(SDL_Renderer* renderer, int skin_id)
+{
+	return PlayerTexture(renderer, skin_id == kSkinSharkId);
 }
 
 SDL_Texture* EnemyTexture(SDL_Renderer* renderer)
@@ -403,7 +417,7 @@ void DrawBullet(SDL_Renderer* renderer, const SdlRender::Layout& layout,
 }
 
 void DrawPlayer(SDL_Renderer* renderer, const SdlRender::Layout& layout,
-                const thunder::WorldSnapshot& world, double seconds)
+                const thunder::WorldSnapshot& world, double seconds, int skin_id)
 {
 	// 无敌期间闪烁（纯视觉；不影响碰撞判定）
 	if(world.invincible && std::fmod(seconds, 0.24) >= 0.16)
@@ -416,7 +430,7 @@ void DrawPlayer(SDL_Renderer* renderer, const SdlRender::Layout& layout,
 	const float w = hitbox.w - 1.0f;
 	const float h = hitbox.h - 1.0f;
 
-	if(SDL_Texture* texture = PlayerTexture(renderer))
+	if(SDL_Texture* texture = PlayerTextureForSkin(renderer, skin_id))
 	{
 		const View::Rect box = View::PlayerRect(layout, world.player_x, world.player_y);
 		const SDL_FRect dst{box.x, box.y, box.w, box.h};
@@ -456,7 +470,7 @@ void DrawStatus(SDL_Renderer* renderer, const SdlRender::Layout& layout,
                 const thunder::WorldSnapshot& world);
 
 void DrawWorld(SDL_Renderer* renderer, const thunder::WorldSnapshot& world,
-               const SdlRender::Layout& layout, bool paused, double seconds)
+               const SdlRender::Layout& layout, bool paused, double seconds, int skin_id)
 {
 	const int cell = layout.cell;
 	const int grid_w = GameConfig::kScreenWidth * cell;
@@ -495,7 +509,7 @@ void DrawWorld(SDL_Renderer* renderer, const thunder::WorldSnapshot& world,
 	for(const auto& item: world.pickups)
 		DrawPickup(renderer, layout, item, seconds);
 
-	DrawPlayer(renderer, layout, world, seconds);
+	DrawPlayer(renderer, layout, world, seconds, skin_id);
 
 	// 特效画在最上层：火花与冲击波要压过精灵才看得清
 	DrawEffects(renderer, layout, world.effects);
@@ -565,10 +579,11 @@ void DrawMenu(SDL_Renderer* renderer, const SdlRender::Layout& layout, bool chea
 
 	CenterText(renderer, layout.window_width, 150, title_scale, title, kTextAccent);
 
-	CenterText(renderer, layout.window_width, 290, 2, "1  START GAME", kText);
-	CenterText(renderer, layout.window_width, 330, 2, "2  LEADERBOARD", kText);
-	CenterText(renderer, layout.window_width, 370, 2, GameText::kTutorialMenu, kText);
-	CenterText(renderer, layout.window_width, 410, 2, "Q  QUIT", kText);
+	CenterText(renderer, layout.window_width, 270, 2, "1  START GAME", kText);
+	CenterText(renderer, layout.window_width, 310, 2, "2  LEADERBOARD", kText);
+	CenterText(renderer, layout.window_width, 350, 2, GameText::kTutorialMenu, kText);
+	CenterText(renderer, layout.window_width, 390, 2, GameText::kSkinsMenu, kText);
+	CenterText(renderer, layout.window_width, 430, 2, "Q  QUIT", kText);
 
 	// 作弊状态不常驻显示，只在切换后短暂提示一次
 	if(cheat_notice)
@@ -578,7 +593,7 @@ void DrawMenu(SDL_Renderer* renderer, const SdlRender::Layout& layout, bool chea
 		           cheats_enabled ? kTextAccent : kTextDim);
 	}
 
-	DrawHint(renderer, layout, "PRESS 1 / 2 / 3 / Q");
+	DrawHint(renderer, layout, "PRESS 1 / 2 / 3 / 4 / Q");
 }
 
 void DrawDifficulty(SDL_Renderer* renderer, const SdlRender::Layout& layout)
@@ -638,11 +653,44 @@ void DrawGameOver(SDL_Renderer* renderer, const thunder::SessionSnapshot& snapsh
 	CenterText(renderer, layout.window_width, panel_y + 170, 2, "R RESTART   Q QUIT", kTextDim);
 }
 
+/// 装扮选择：左右切换、1 确认，未解锁的显示锁定说明。
+void DrawSkins(SDL_Renderer* renderer, const thunder::SessionSnapshot& snapshot,
+               const SdlRender::Layout& layout)
+{
+	CenterText(renderer, layout.window_width, 60, 3, GameText::kSkinsTitle, kTextAccent);
+
+	const bool shark_cursor = (snapshot.skin_cursor == kSkinSharkId);
+
+	// 大图预览：直接画游戏内的 32x32 精灵，放大 8 倍并临时切到最近邻，
+	// 这样看到的是像素块而不是被插值糊开的一团。
+	const int preview_size = View::kPlayerSpriteSize * 8;
+	const SDL_FRect box{static_cast<float>((layout.window_width - preview_size) / 2),
+	                    static_cast<float>(120), static_cast<float>(preview_size),
+	                    static_cast<float>(preview_size)};
+	if(SDL_Texture* texture = PlayerTextureForSkin(renderer, snapshot.skin_cursor))
+	{
+		SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
+		SDL_RenderTexture(renderer, texture, nullptr, &box);
+		SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_LINEAR);
+	}
+
+	const char* name = shark_cursor ? GameText::kSkinShark : GameText::kSkinDefault;
+	CenterText(renderer, layout.window_width, 400, 3, name, kText);
+
+	const bool locked = (snapshot.skin_cursor == kSkinSharkId && !snapshot.shark_unlocked);
+	if(locked)
+		CenterText(renderer, layout.window_width, 436, 1, GameText::kSkinsLocked, kTextDim);
+	else if(snapshot.skin_cursor == snapshot.skin_id)
+		CenterText(renderer, layout.window_width, 436, 1, GameText::kSkinsCurrent, kTextAccent);
+
+	DrawHint(renderer, layout, GameText::kSkinsHint);
+}
+
 /// 教程：底部一条提示带，按步骤换文案；上方照常画世界（玩家、敌机、补给）。
 void DrawTutorial(SDL_Renderer* renderer, const thunder::SessionSnapshot& snapshot,
                   const SdlRender::Layout& layout, int fps, double seconds)
 {
-	DrawWorld(renderer, snapshot.world, layout, false, seconds);
+	DrawWorld(renderer, snapshot.world, layout, false, seconds, snapshot.skin_id);
 	// 顶部 HUD 照常画：新手要能看见 AMMO 一次涨 50、LIFE 涨 1
 	const int best = snapshot.leaderboard.empty() ? 0 : snapshot.leaderboard.front();
 	DrawHud(renderer, snapshot.world, best, fps, layout);
@@ -757,10 +805,14 @@ void Draw(SDL_Renderer* renderer, const thunder::SessionSnapshot& snapshot, int 
 		break;
 
 	case thunder::Screen::Playing:
-		DrawWorld(renderer, snapshot.world, layout, snapshot.paused, seconds);
+		DrawWorld(renderer, snapshot.world, layout, snapshot.paused, seconds, snapshot.skin_id);
 		DrawHud(renderer, snapshot.world, best, fps, layout);
 		DrawHint(renderer, layout,
 		         "WASD MOVE   SPACE FIRE   P PAUSE   Q MENU   F11 FULLSCREEN   ESC QUIT");
+		break;
+
+	case thunder::Screen::Skins:
+		DrawSkins(renderer, snapshot, layout);
 		break;
 
 	case thunder::Screen::Tutorial:
@@ -772,7 +824,7 @@ void Draw(SDL_Renderer* renderer, const thunder::SessionSnapshot& snapshot, int 
 		break;
 
 	case thunder::Screen::GameOver:
-		DrawWorld(renderer, snapshot.world, layout, false, seconds);
+		DrawWorld(renderer, snapshot.world, layout, false, seconds, snapshot.skin_id);
 		DrawHud(renderer, snapshot.world, best, fps, layout);
 		DrawGameOver(renderer, snapshot, layout);
 		break;

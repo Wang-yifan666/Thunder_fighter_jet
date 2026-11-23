@@ -112,6 +112,7 @@ target_link_libraries(Naidan PRIVATE
 # 格式：<文件名>|<C++ 符号名>
 set(_sprite_specs
     "player_32x32|kPlayerPixels"
+    "skin_shark_32x32|kSkinSharkPixels"
     "enemy_24x16|kEnemyPixels"
     "elite_32x24|kElitePixels"
     "health_24x24|kHealthPixels"

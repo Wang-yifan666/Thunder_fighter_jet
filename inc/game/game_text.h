@@ -46,7 +46,9 @@ inline constexpr const char* kTutorialStart = "1 开始游戏";
 inline constexpr const char* kTutorialBack = "2 返回主菜单";
 
 // ========== 装扮 ==========
+inline constexpr const char* kSkinsMenu = "4  选择装扮";
 inline constexpr const char* kSkinsTitle = "选择装扮";
+inline constexpr const char* kSkinsCurrent = "当前使用中";
 inline constexpr const char* kSkinsLocked = "通关教程后解锁";
 inline constexpr const char* kSkinsHint = "A / D 切换　1 确认　Q 返回";
 inline constexpr const char* kSkinDefault = "奶蛋";

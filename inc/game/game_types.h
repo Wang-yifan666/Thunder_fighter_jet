@@ -39,6 +39,11 @@ enum class GameMode
 	Tutorial
 };
 
+/// 可选装扮数量。0 号是默认奶蛋，1 号是鲨鱼罩（通关教程解锁）。
+constexpr int kSkinCount = 2;
+/// 鲨鱼罩的 id（解锁条件写在会话层）
+constexpr int kSkinSharkId = 1;
+
 /// 教程的步骤。逻辑层只认枚举，文案在 game_text.h，画法由前端决定。
 /// 四种补给是一个一个来的：每步只摆一个、只讲一种，捡到才进下一种。
 enum class TutorialStep

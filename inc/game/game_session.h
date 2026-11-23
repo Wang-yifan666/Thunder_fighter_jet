@@ -47,6 +47,9 @@ private:
 
 	// ========== 新手教程 ==========
 	void StartTutorial();
+	void StepSkins(const InputState& input, bool input_ready);
+	/// 当前装扮是否已解锁（0 号始终可用，鲨鱼罩要通关教程）
+	bool SkinUnlocked(int skin_id) const;
 	void StepTutorial(const InputState& input, bool input_ready,
 	                  std::chrono::steady_clock::duration dt);
 	/// 当前步骤要摆的东西（敌机 / 补给）在进入这一步时一次性摆好
@@ -109,6 +112,8 @@ private:
 	bool tutorial_got_shield_ = false;
 	bool tutorial_got_firepower_ = false;
 	int tutorial_kills_baseline_ = 0;
+	/// 装扮界面里高亮的那一个（未确认前不影响游戏内）
+	int skin_cursor_ = 0;
 	int tutorial_prev_life_ = 0;
 	int tutorial_prev_ammo_ = 0;
 };

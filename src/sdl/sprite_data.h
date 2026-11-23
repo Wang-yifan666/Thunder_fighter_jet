@@ -13,6 +13,10 @@ namespace SpriteData
 extern const unsigned char kPlayerPixels[];
 extern const std::size_t kPlayerPixelsSize;
 
+/// 装扮：鲨鱼罩 32x32（和默认奶蛋同尺寸，走同一套命中和绘制锚点）
+extern const unsigned char kSkinSharkPixels[];
+extern const std::size_t kSkinSharkPixelsSize;
+
 /// 敌机：24x16（与 3x2 格命中框等大）
 extern const unsigned char kEnemyPixels[];
 extern const std::size_t kEnemyPixelsSize;

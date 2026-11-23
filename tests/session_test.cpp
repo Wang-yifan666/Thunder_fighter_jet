@@ -566,3 +566,54 @@ TEST(Session, TutorialAmmoPackIsDetectedWhileFiring)
 	EXPECT_NE(session.Snapshot().tutorial_step, TutorialStep::PickupAmmo)
 	    << "边开火边捡弹药包也要能过关";
 }
+// ========== 装扮 ==========
+
+TEST(Session, SkinsScreenLockedUntilTutorialDone)
+{
+	MemoryScoreStore store;
+	thunder::MemorySettingsStore settings;
+	GameSession session(store, settings, 7);
+
+	StepMs(session, 16, Hold(Key::Digit4));
+	ASSERT_EQ(session.screen(), Screen::Skins);
+	EXPECT_EQ(session.Snapshot().skin_cursor, 0);
+	EXPECT_FALSE(session.Snapshot().shark_unlocked);
+
+	// 切到鲨鱼罩、尝试确认：锁着就不能选中
+	StepMs(session, 250);
+	StepMs(session, 16, Hold(Key::Right));
+	EXPECT_EQ(session.Snapshot().skin_cursor, kSkinSharkId);
+	StepMs(session, 250);
+	StepMs(session, 16, Hold(Key::Digit1));
+	EXPECT_EQ(session.Snapshot().skin_id, 0) << "没解锁不该被选中";
+	EXPECT_EQ(settings.Load().skin_id, 0);
+}
+
+TEST(Session, SkinsScreenSelectsUnlockedSharkAndPersists)
+{
+	MemoryScoreStore store;
+	thunder::MemorySettingsStore settings;
+
+	thunder::PlayerSettings done;
+	done.tutorial_done = true;
+	settings.Save(done);
+
+	GameSession session(store, settings, 7);
+	StepMs(session, 16, Hold(Key::Digit4));
+	ASSERT_EQ(session.screen(), Screen::Skins);
+	EXPECT_TRUE(session.Snapshot().shark_unlocked);
+
+	StepMs(session, 250);
+	StepMs(session, 16, Hold(Key::Right));
+	StepMs(session, 250);
+	StepMs(session, 16, Hold(Key::Digit1));
+
+	EXPECT_EQ(session.Snapshot().skin_id, kSkinSharkId);
+	EXPECT_EQ(settings.Load().skin_id, kSkinSharkId) << "选择要落盘";
+
+	// 返回菜单后仍然生效
+	StepMs(session, 250);
+	StepMs(session, 16, Hold(Key::Back));
+	ASSERT_EQ(session.screen(), Screen::Menu);
+	EXPECT_EQ(session.Snapshot().skin_id, kSkinSharkId);
+}

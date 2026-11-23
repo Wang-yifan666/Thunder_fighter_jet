@@ -99,6 +99,11 @@ def main():
     if os.path.exists(score_file):
         os.remove(score_file)
 
+    # 设置文件（教程进度 / 装扮）同样会影响界面（比如装扮是否解锁），一并清掉
+    settings_file = os.path.join(os.path.dirname(os.path.abspath(args.exe)), "settings.txt")
+    if os.path.exists(settings_file):
+        os.remove(settings_file)
+
     failed = 0
     with tempfile.TemporaryDirectory() as tmp:
         for name, frames, demo in SHOTS:

@@ -39,6 +39,7 @@ SPRITE_DIR = os.path.join(ROOT, "assets", "sprites")
 # 一个母版可以出多份产物（例如护盾泡：小怪用 32，精英和玩家用 48）。
 SPRITES = {
     "player.png": [("player", 32, 32)],  # 3x1 格命中框，精灵 4 格宽、底边对齐
+    "skin_shark.png": [("skin_shark", 32, 32)],  # 鲨鱼罩：玩家装扮，同样 32x32
     "enemy.png": [("enemy", 24, 16)],    # 3x2 格命中框，精灵与判定等大
     "elite.png": [("elite", 32, 24)],    # 精英：4x3 格
     "health_pack.png": [("health", 24, 24)],  # 3x3 格，精灵与判定等大

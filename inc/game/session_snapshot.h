@@ -14,6 +14,7 @@ enum class Screen
 	Menu,
 	DifficultySelect,
 	Leaderboard,
+	Skins,
 	Tutorial,
 	TutorialDone,
 	Playing,
@@ -43,6 +44,12 @@ struct SessionSnapshot
 	bool tutorial_solved = false;
 	/// 存档里是否已有"通关教程"的记录（决定装扮是否解锁）
 	bool tutorial_done = false;
+
+	/// 装扮：当前生效的 id，以及装扮界面里高亮的那一个
+	int skin_id = 0;
+	int skin_cursor = 0;
+	/// 鲨鱼罩是否已解锁（通关教程）
+	bool shark_unlocked = false;
 
 	/// 仅 Playing / GameOver / Tutorial 有意义
 	WorldSnapshot world;
