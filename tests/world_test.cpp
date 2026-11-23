@@ -112,12 +112,35 @@ TEST(WorldReset, LevelUpTimerIsPerGame)
 	for(int round = 0; round < 2; ++round)
 	{
 		GameWorld world = MakeIdleWorld();
-		for(int i = 0; i < GameConfig::kLevelUpTime; ++i)
+		for(int i = 0; i < GameConfig::kFirstLevelUpTime; ++i)
 			world.Tick(none, seconds(1));
 
 		EXPECT_EQ(world.Snapshot().level, 2) << "round " << round;
-		EXPECT_EQ(WorldTestAccess::LastLevelUpTime(world), GameConfig::kLevelUpTime);
+		EXPECT_EQ(WorldTestAccess::LastLevelUpTime(world), GameConfig::kFirstLevelUpTime);
 	}
+}
+
+TEST(WorldLevel, FirstLevelUpComesAtFiveSecondsThenBackToTen)
+{
+	GameWorld world = MakeIdleWorld();
+	GameInput none;
+
+	for(int i = 0; i < GameConfig::kFirstLevelUpTime - 1; ++i)
+		world.Tick(none, seconds(1));
+	EXPECT_EQ(world.Snapshot().level, 1) << "5 秒之前不该升级";
+
+	world.Tick(none, seconds(1));
+	EXPECT_EQ(world.Snapshot().level, 2) << "第 5 秒升到 2 级";
+
+	// 之后恢复到 10 秒一级：14 秒时仍是 2 级，15 秒才到 3 级
+	for(int i = 0; i < 9; ++i)
+		world.Tick(none, seconds(1));
+	EXPECT_EQ(world.Snapshot().level, 2);
+	EXPECT_EQ(WorldTestAccess::LastLevelUpTime(world), GameConfig::kFirstLevelUpTime);
+
+	world.Tick(none, seconds(1));
+	EXPECT_EQ(world.Snapshot().level, 3);
+	EXPECT_EQ(WorldTestAccess::LastLevelUpTime(world), GameConfig::kFirstLevelUpTime + 10);
 }
 
 // ===================================================================
@@ -268,7 +291,9 @@ TEST(WorldLevel, LevelsUpAtTenSeconds)
 	EXPECT_EQ(snap.level, 2);
 	EXPECT_EQ(snap.bullets_remaining, GameConfig::kEasyBullets + GameConfig::kBulletsPerLevelUp);
 	EXPECT_EQ(WorldTestAccess::EnemyMoveInterval(world), 19);
-	EXPECT_EQ(WorldTestAccess::PendingCount(world), 2);
+
+	// 升级带来的这一波（2 只）会陆续从排队刷到场上，所以看总数而不是 pending
+	EXPECT_EQ(WorldTestAccess::EnemyCount(world) + WorldTestAccess::PendingCount(world), 2);
 }
 
 TEST(WorldLevel, SingleLargeDeltaLevelsOnlyOnce)

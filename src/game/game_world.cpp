@@ -212,7 +212,11 @@ void GameWorld::Tick(const GameInput& input, steady_clock::duration dt)
 
 void GameWorld::UpdateLevel(const GameInput& input)
 {
-	if(elapsed_seconds_ - last_level_up_time_ >= GameConfig::kLevelUpTime)
+	// 1 级只等 5 秒，其余每级 10 秒
+	const int interval =
+	    (level_ <= 1) ? GameConfig::kFirstLevelUpTime : GameConfig::kLevelUpTime;
+
+	if(elapsed_seconds_ - last_level_up_time_ >= interval)
 	{
 		level_++;
 		last_level_up_time_ = elapsed_seconds_;

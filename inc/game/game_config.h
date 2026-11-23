@@ -47,6 +47,9 @@ constexpr int kMinEnemyMoveInterval = 5;
 constexpr int kMaxEnemyMoveInterval = 20;
 constexpr int kLevelMoveIntervalDivisor = 9;
 constexpr int kLevelUpTime = 10; // 升级间隔(秒)
+// 第一级单独缩短：1 级场上只有 2 只怪，干等 10 秒太磨人。
+// 只改这一档，不动后面的 10 秒——等级是难度主轴，全局减半会把曲线压扁。
+constexpr int kFirstLevelUpTime = 5;
 constexpr int kStartToMoveLeftRight = 4;
 
 // ========== 刷怪批次 ==========
