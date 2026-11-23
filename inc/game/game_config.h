@@ -146,4 +146,15 @@ constexpr int kCheatNoticeMs = 1500; // 切换作弊模式后提示显示时长
 // ========== 显示 ==========
 constexpr int kMaxHighScores = 5;
 
+// ========== 新手教程的节奏 ==========
+// 每一步的提示至少停留这么久才允许推进：新手要时间读完再动手。
+constexpr int kTutorialStepMinMs = 1600;
+// 达成目标后再停一下，让玩家看清"做对了"，然后才切下一步。
+constexpr int kTutorialStepDoneMs = 700;
+// 最后一步完成后多留一点时间再进结束页。
+constexpr int kTutorialFinishMs = 1200;
+// 移动训练至少挪动这么多格；射击训练至少开这么多枪（避免"随手一按就过关"）
+constexpr int kTutorialMoveCells = 6;
+constexpr int kTutorialFireShots = 3;
+
 } // namespace GameConfig

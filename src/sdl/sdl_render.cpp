@@ -676,7 +676,11 @@ void DrawTutorial(SDL_Renderer* renderer, const thunder::SessionSnapshot& snapsh
 	Blend(renderer, 0.0f, static_cast<float>(layout.window_height) - band,
 	      static_cast<float>(layout.window_width), band, SDL_Color{0, 0, 0, 180});
 
-	CenterText(renderer, layout.window_width, 8, 2, line, kTextAccent);
+	// 达成目标后换成"做得好！"，给玩家一个明确的完成反馈再切下一步
+	if(snapshot.tutorial_step_done && snapshot.tutorial_step != TutorialStep::Done)
+		CenterText(renderer, layout.window_width, 8, 2, GameText::kTutorialWellDone, kShockwave);
+	else
+		CenterText(renderer, layout.window_width, 8, 2, line, kTextAccent);
 	if(hint[0] != '\0')
 		CenterText(renderer, layout.window_width, layout.window_height - 24, 1, hint, kTextDim);
 

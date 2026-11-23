@@ -52,6 +52,8 @@ private:
 	/// 当前步骤要摆的东西（敌机 / 补给）在进入这一步时一次性摆好
 	void ArmTutorialStep();
 	void SetTutorialStep(TutorialStep step);
+	/// 达成目标且停顿够了之后：进入下一步，最后一步则收尾
+	void AdvanceTutorial();
 	void FinishTutorial(bool solved);
 
 	GameWorld world_;
@@ -85,6 +87,15 @@ private:
 	bool tutorial_solved_ = false;
 	/// 当前步骤的目标物是否已经摆好
 	bool tutorial_armed_ = false;
+	/// 当前步骤已经停留了多久 / 达成目标后又停了多久
+	std::chrono::steady_clock::duration tutorial_step_time_{};
+	std::chrono::steady_clock::duration tutorial_hold_time_{};
+	/// 当前步骤的目标是否已经达成（达成后先显示一下"做得好"再切）
+	bool tutorial_step_done_ = false;
+	/// 移动训练：累计挪动格数（来回走也算，不能靠原地抖）
+	int tutorial_moved_cells_ = 0;
+	int tutorial_last_x_ = 0;
+	int tutorial_last_y_ = 0;
 	int tutorial_baseline_x_ = 0;
 	int tutorial_baseline_y_ = 0;
 	int tutorial_baseline_ammo_ = 0;

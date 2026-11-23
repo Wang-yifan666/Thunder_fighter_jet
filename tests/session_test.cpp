@@ -426,3 +426,41 @@ TEST(Session, TutorialSkipLandsOnDoneWithoutUnlock)
 	EXPECT_FALSE(session.Snapshot().tutorial_solved) << "跳过不算通关";
 	EXPECT_FALSE(session.Snapshot().tutorial_done) << "跳过不该解锁装扮";
 }
+TEST(Session, TutorialStepStaysForAWhileBeforeAdvancing)
+{
+	MemoryScoreStore store;
+	GameSession session(store, 7);
+	StepMs(session, 16, Hold(Key::Digit3));
+	ASSERT_EQ(session.screen(), Screen::Tutorial);
+	StepMs(session, 250); // 清开局冷却
+	ASSERT_EQ(session.Snapshot().tutorial_step, TutorialStep::Move);
+
+	// 一路按着左键走满 1 秒：移动量早够了，但提示必须至少停留 kTutorialStepMinMs
+	for(int i = 0; i < 60; ++i)
+		StepMs(session, 16, Hold(Key::Left));
+	EXPECT_EQ(session.Snapshot().tutorial_step, TutorialStep::Move)
+	    << "提示还没停留够，不该切步骤";
+
+	// 再走 2 秒（累计超过最短停留 + 完成停顿）才进入下一步
+	for(int i = 0; i < 120; ++i)
+		StepMs(session, 16, Hold(Key::Left));
+	EXPECT_EQ(session.Snapshot().tutorial_step, TutorialStep::Fire);
+}
+
+TEST(Session, TutorialWobbleStillCountsAsMovement)
+{
+	MemoryScoreStore store;
+	GameSession session(store, 7);
+	StepMs(session, 16, Hold(Key::Digit3));
+	StepMs(session, 250);
+
+	// 左右来回走也算移动：不能因为"回到起点"就判定没动过
+	for(int i = 0; i < 40; ++i)
+		StepMs(session, 16, Hold(Key::Left));
+	for(int i = 0; i < 40; ++i)
+		StepMs(session, 16, Hold(Key::Right));
+	for(int i = 0; i < 120; ++i)
+		StepMs(session, 16);
+
+	EXPECT_EQ(session.Snapshot().tutorial_step, TutorialStep::Fire);
+}

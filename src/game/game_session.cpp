@@ -4,6 +4,8 @@
 
 #include "game/game_session.h"
 
+#include <cstdlib>
+
 using namespace std::chrono;
 
 namespace thunder
@@ -249,6 +251,19 @@ void GameSession::SetTutorialStep(TutorialStep step)
 	tutorial_step_ = step;
 	tutorial_armed_ = false; // 下一步的目标物在下一帧摆
 
+	// 节奏：新一步的提示至少停留 kTutorialStepMinMs，符合条件才允许推进
+	tutorial_step_time_ = steady_clock::duration::zero();
+	tutorial_hold_time_ = steady_clock::duration::zero();
+	tutorial_step_done_ = false;
+
+	const WorldSnapshot snap = world_.Snapshot();
+	tutorial_baseline_x_ = snap.player_x;
+	tutorial_baseline_y_ = snap.player_y;
+	tutorial_baseline_ammo_ = snap.bullets_remaining;
+	tutorial_last_x_ = snap.player_x;
+	tutorial_last_y_ = snap.player_y;
+	tutorial_moved_cells_ = 0;
+
 	// 刚进入拾取训练：四种补给都还没拿到
 	if(step == TutorialStep::Pickup)
 	{
@@ -256,6 +271,28 @@ void GameSession::SetTutorialStep(TutorialStep step)
 		tutorial_got_ammo_ = false;
 		tutorial_got_shield_ = false;
 		tutorial_got_firepower_ = false;
+	}
+}
+
+void GameSession::AdvanceTutorial()
+{
+	switch(tutorial_step_)
+	{
+	case TutorialStep::Move:
+		SetTutorialStep(TutorialStep::Fire);
+		break;
+	case TutorialStep::Fire:
+		SetTutorialStep(TutorialStep::Kill);
+		break;
+	case TutorialStep::Kill:
+		SetTutorialStep(TutorialStep::Pickup);
+		break;
+	case TutorialStep::Pickup:
+		SetTutorialStep(TutorialStep::Done);
+		break;
+	case TutorialStep::Done:
+		FinishTutorial(true);
+		break;
 	}
 }
 
@@ -329,21 +366,51 @@ void GameSession::StepTutorial(const InputState& input, bool input_ready, steady
 
 	const WorldSnapshot snap = world_.Snapshot();
 
+	// 累计移动距离：来回走也算，"原地抖一下"不算
+	tutorial_moved_cells_ += std::abs(snap.player_x - tutorial_last_x_)
+	    + std::abs(snap.player_y - tutorial_last_y_);
+	tutorial_last_x_ = snap.player_x;
+	tutorial_last_y_ = snap.player_y;
+
+	tutorial_step_time_ += dt;
+
+	// 达成目标后先停一下再切：让玩家看清"做对了"
+	if(tutorial_step_done_)
+	{
+		tutorial_hold_time_ += dt;
+		const auto hold = ToDuration(milliseconds(tutorial_step_ == TutorialStep::Done
+		                                             ? GameConfig::kTutorialFinishMs
+		                                             : GameConfig::kTutorialStepDoneMs));
+		if(tutorial_hold_time_ >= hold)
+			AdvanceTutorial();
+		return;
+	}
+
+	// 提示还没看够就不允许推进
+	if(tutorial_step_time_ < ToDuration(milliseconds(GameConfig::kTutorialStepMinMs)))
+	{
+		// 拾取训练仍要继续记账（补给会一直往下掉）
+		if(tutorial_step_ == TutorialStep::Pickup)
+		{
+			tutorial_prev_life_ = snap.life;
+			tutorial_prev_ammo_ = snap.bullets_remaining;
+		}
+		return;
+	}
+
+	bool goal_met = false;
 	switch(tutorial_step_)
 	{
 	case TutorialStep::Move:
-		if(snap.player_x != tutorial_baseline_x_ || snap.player_y != tutorial_baseline_y_)
-			SetTutorialStep(TutorialStep::Fire);
+		goal_met = tutorial_moved_cells_ >= GameConfig::kTutorialMoveCells;
 		break;
 
 	case TutorialStep::Fire:
-		if(snap.bullets_remaining < tutorial_baseline_ammo_)
-			SetTutorialStep(TutorialStep::Kill);
+		goal_met = (tutorial_baseline_ammo_ - snap.bullets_remaining) >= GameConfig::kTutorialFireShots;
 		break;
 
 	case TutorialStep::Kill:
-		if(snap.enemies.empty())
-			SetTutorialStep(TutorialStep::Pickup);
+		goal_met = snap.enemies.empty();
 		break;
 
 	case TutorialStep::Pickup:
@@ -359,20 +426,26 @@ void GameSession::StepTutorial(const InputState& input, bool input_ready, steady
 		tutorial_prev_life_ = snap.life;
 		tutorial_prev_ammo_ = snap.bullets_remaining;
 
-		if(tutorial_got_health_ && tutorial_got_ammo_ && tutorial_got_shield_
-		   && tutorial_got_firepower_)
+		goal_met = tutorial_got_health_ && tutorial_got_ammo_ && tutorial_got_shield_
+		    && tutorial_got_firepower_;
+
+		if(!goal_met && snap.pickups.empty())
 		{
-			FinishTutorial(true);
-		}
-		else if(snap.pickups.empty())
-		{
-			// 漏掉了就重摆一排，教程不该因为手滑卡死
+			// 漏掉了就补摆缺的那几种，教程不该因为手滑卡死
 			tutorial_armed_ = false;
 		}
 		break;
 
 	case TutorialStep::Done:
+		// 最后一步没有目标，停顿到了就收尾（由 tutorial_step_done_ 那条分支推进）
+		goal_met = true;
 		break;
+	}
+
+	if(goal_met)
+	{
+		tutorial_step_done_ = true;
+		tutorial_hold_time_ = steady_clock::duration::zero();
 	}
 }
 
@@ -414,6 +487,7 @@ SessionSnapshot GameSession::Snapshot() const
 	snapshot.cheat_notice = cheat_notice_ > steady_clock::duration::zero();
 	snapshot.difficulty = world_.difficulty();
 	snapshot.tutorial_step = tutorial_step_;
+	snapshot.tutorial_step_done = tutorial_step_done_;
 	snapshot.tutorial_solved = tutorial_solved_;
 	snapshot.tutorial_done = player_settings_.tutorial_done;
 	snapshot.world = world_.Snapshot();
