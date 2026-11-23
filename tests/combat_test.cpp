@@ -215,6 +215,38 @@ TEST(WorldEnemy, NormalEnemiesGetShieldsOnlyAboveLevel5)
 	    << "6 级之后普通小怪会随机带盾";
 }
 
+TEST(WorldEnemy, FastEnemyCannotTunnelThroughBullet)
+{
+	GameWorld world = MakeQuietWorld();
+
+	// 速度 3 的敌机：本帧会从 10..11 直接跳到 13..14，
+	// 而子弹从 12 上行到 11 —— 只看末位置两者永不重叠，必须按扫掠判定算命中。
+	WorldTestAccess::AddEnemy(world, 20, 10, 3, GameConfig::kEnemyWidth,
+	                          GameConfig::kEnemyHeight);
+	WorldTestAccess::AddBullet(world, 21, 12);
+
+	// 让下一帧正好是敌机的移动帧
+	WorldTestAccess::SetEnemyMoveCounter(world, WorldTestAccess::EnemyMoveInterval(world) - 1);
+	world.Tick(thunder::GameInput{}, kFrame);
+
+	EXPECT_EQ(WorldTestAccess::EnemyCount(world), 0) << "高速敌机不该从子弹身上跨过去";
+	EXPECT_EQ(WorldTestAccess::BulletCount(world), 0) << "这一发要算命中并被消耗";
+}
+
+TEST(WorldEnemy, ShotTwoRowsBelowStillMisses)
+{
+	// 反向保护：敌机不动时，下方两格的子弹这一帧只会走到下方一格，不该算命中
+	GameWorld world = MakeQuietWorld();
+	WorldTestAccess::AddEnemy(world, 20, 10, 0, GameConfig::kEnemyWidth,
+	                          GameConfig::kEnemyHeight);
+	WorldTestAccess::AddBullet(world, 21, 13);
+	WorldTestAccess::SetEnemyMoveCounter(world, 0);
+
+	world.Tick(thunder::GameInput{}, kFrame);
+
+	EXPECT_EQ(WorldTestAccess::EnemyCount(world), 1) << "扫掠判定不该产生假命中";
+}
+
 TEST(WorldEnemy, EliteScoresTwoAndHalfTimesAndPaysMoreAmmo)
 {
 	GameWorld world = MakeQuietWorld();

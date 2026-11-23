@@ -151,6 +151,12 @@ struct WorldTestAccess
 		return world.enemy_move_interval_;
 	}
 
+	/// 把移动计数器推到指定值，用来让"下一帧正好是敌机的移动帧"。
+	static void SetEnemyMoveCounter(GameWorld& world, int value)
+	{
+		world.enemy_move_counter_ = value;
+	}
+
 	static int LastLevelUpTime(const GameWorld& world)
 	{
 		return world.last_level_up_time_;

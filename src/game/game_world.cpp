@@ -123,6 +123,14 @@ void GameWorld::Tick(const GameInput& input, steady_clock::duration dt)
 		}
 	}
 
+	// 记录移动前的坐标：子弹一帧上移 1 格、敌机一次可能下移 3 格，
+	// 只比末位置会漏掉"两边同时动、中途擦身而过"，命中判定要用这两个值做扫掠。
+	for(auto& enemy: enemies_)
+	{
+		enemy.prev_x = enemy.x;
+		enemy.prev_y = enemy.y;
+	}
+
 	if(enemy_move_counter_ >= enemy_move_interval_)
 	{
 		MoveEnemies(enemies_, level_, GameConfig::kScreenWidth, GameConfig::kScreenHeight);
@@ -452,13 +460,20 @@ void GameWorld::UpdateBullets()
 				continue;
 			}
 
-			int ex = e.x;
-			int ey = e.y;
-			int ew = e.width;
-			int eh = e.height;
+			// 子弹本帧从 y+1 上移到 y；敌机本帧可能从 prev_y 下移 speed（最多 3）格。
+			// 只比末位置会漏掉"两边同时移动、中途穿过对方"的情况，这里用扫掠区间求交：
+			//   行：子弹扫过 [y, y+1]，敌机扫过 [prev_y, y + height - 1]
+			//   列：子弹是 1 格，敌机扫过 [min(prev_x, x), max(prev_x, x) + width - 1]
+			// 判定偏保守（可能多算一次"擦边"），方向是对玩家有利。
+			const int bullet_top = b_it->y;
+			const int bullet_bottom = b_it->y + 1;
+			const int enemy_top = e.prev_y;
+			const int enemy_bottom = e.y + e.height - 1;
+			const int enemy_left = std::min(e.prev_x, e.x);
+			const int enemy_right = std::max(e.prev_x, e.x) + e.width - 1;
 
-			bool hit =
-			    (b_it->y >= ey) && (b_it->y < ey + eh) && (b_it->x >= ex) && (b_it->x < ex + ew);
+			const bool hit = (bullet_top <= enemy_bottom) && (bullet_bottom >= enemy_top)
+			    && (b_it->x >= enemy_left) && (b_it->x <= enemy_right);
 
 			if(!hit)
 			{

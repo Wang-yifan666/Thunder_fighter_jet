@@ -20,6 +20,11 @@ struct Enemy
 	// 护盾刚破时的无敌帧：> 0 时子弹穿过（不消耗）、敌机闪烁。
 	int invuln_frames;
 
+	// 上一帧的坐标：敌机一次可以下移 speed（最多 3）格，
+	// 只比末位置会漏掉"子弹和敌机中途擦身而过"，命中判定要用这两个值做扫掠。
+	int prev_x;
+	int prev_y;
+
 	Enemy(int _x = 0,                             //
 	      int _y = 0,                             //
 	      int _speed = 1,                         //
@@ -38,7 +43,9 @@ struct Enemy
 	kind(_kind),                          //
 	hp(_kind == EnemyKind::Elite ? GameConfig::kEliteHp : 1), //
 	has_shield(_has_shield),              //
-	invuln_frames(_invuln_frames)         //
+	invuln_frames(_invuln_frames),        //
+	prev_x(_x),                           //
+	prev_y(_y)                            //
 	{
 	}
 
