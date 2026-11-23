@@ -50,6 +50,7 @@ enum class TutorialStep
 	PickupAmmo,       ///< 捡弹药包，讲弹药
 	PickupShield,     ///< 捡护盾包，讲护盾与冲击波
 	PickupFirepower,  ///< 捡火力包，讲三路开火
-	Mechanics,        ///< 只读一页机制说明（升级/精英/护盾怪），到时间自动过
+	LevelUp,          ///< 真升一级（HUD 的 LEVEL 会变），讲升级机制
+	Mechanics,        ///< 只读一页机制说明（精英/护盾怪），到时间自动过
 	Done              ///< 全部完成
 };

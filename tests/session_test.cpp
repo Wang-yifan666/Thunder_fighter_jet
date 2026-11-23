@@ -532,8 +532,8 @@ TEST(Session, TutorialFullPlaythroughUnlocksSkin)
 	for(int i = 0; i < 1200 && session.screen() == Screen::Tutorial; ++i)
 		StepMs(session, 16, Hold(Key::Fire));
 
-	// 补给会落在玩家所在列，站着等它们掉下来
-	for(int i = 0; i < 1200 && session.screen() == Screen::Tutorial; ++i)
+	// 补给会落在玩家所在列，站着等它们一个个掉下来（四步 + 升级 + 机制页，给足时间）
+	for(int i = 0; i < 3600 && session.screen() == Screen::Tutorial; ++i)
 		StepMs(session, 16);
 
 	ASSERT_EQ(session.screen(), Screen::TutorialDone)

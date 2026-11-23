@@ -140,7 +140,8 @@ void GameWorld::Tick(const GameInput& input, steady_clock::duration dt)
 		enemy_move_counter_ = 0;
 	}
 
-	if(!pending_enemies_.empty())
+	// 教程不自动刷波：掉出屏幕的敌机直接丢掉，不能又从排队里刷回来
+	if(mode_ == GameMode::Normal && !pending_enemies_.empty())
 	{
 		SpawnEnemiesFromPending();
 	}
@@ -250,8 +251,13 @@ void GameWorld::UpdateLevel(const GameInput& input)
 		bullets_remaining_ += GameConfig::kBulletsPerLevelUp;
 	}
 
-	int min_interval = GameConfig::kMinEnemyMoveInterval;
-	int max_interval = GameConfig::kMaxEnemyMoveInterval;
+	RefreshEnemyMoveInterval();
+}
+
+void GameWorld::RefreshEnemyMoveInterval()
+{
+	const int min_interval = GameConfig::kMinEnemyMoveInterval;
+	const int max_interval = GameConfig::kMaxEnemyMoveInterval;
 	enemy_move_interval_ = max_interval
 	    - (level_ - 1) * (max_interval - min_interval) / GameConfig::kLevelMoveIntervalDivisor;
 	enemy_move_interval_ = std::max<int>(enemy_move_interval_, min_interval);
@@ -692,6 +698,14 @@ void GameWorld::TutorialSetPlayer(int cell_x, int cell_y)
 {
 	player_x_ = std::clamp(cell_x, 0, GameConfig::kScreenWidth - GameConfig::kPlayerWidth);
 	player_y_ = std::clamp(cell_y, 0, GameConfig::kScreenHeight - GameConfig::kPlayerHeight);
+}
+
+void GameWorld::TutorialAdvanceLevel()
+{
+	// 教程不跑正常的升级计时（会打乱脚本），但升级这件事本身要真实发生：
+	// 等级 +1、移动间隔按等级重算，HUD 上的 LEVEL 会跟着变。
+	++level_;
+	RefreshEnemyMoveInterval();
 }
 
 } // namespace thunder

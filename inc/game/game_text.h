@@ -34,8 +34,10 @@ inline constexpr const char* kTutorialPickupFirepower = "紫 火力包：15 秒�
 inline constexpr const char* kTutorialPickupFirepowerHint = "一次打出三发，但只消耗 1 发弹药";
 
 inline constexpr const char* kTutorialMenu = "3  新手教程";
-inline constexpr const char* kTutorialMechanics = "升级：每 10 秒升 1 级，敌人更快、更密";
-inline constexpr const char* kTutorialMechanicsHint = "9 级起出精英（2 血、2.5 倍分），6 级起小怪可能带盾";
+inline constexpr const char* kTutorialLevelUp = "升级！看顶部 LEVEL 变成了 2，敌人更快了";
+inline constexpr const char* kTutorialLevelUpHint = "每 10 秒升 1 级，等级越高敌人越快越密";
+inline constexpr const char* kTutorialMechanics = "再往后：9 级起出现精英，6 级起小怪可能带盾";
+inline constexpr const char* kTutorialMechanicsHint = "精英 2 血、2.5 倍分、+8 发弹药；带盾的小怪要先破盾再补一发";
 inline constexpr const char* kTutorialWellDone = "做得好！";
 inline constexpr const char* kTutorialDone = "奶蛋已经准备好迎接真正的战斗了！";
 inline constexpr const char* kTutorialUnlock = "解锁了新装扮：鲨鱼罩";

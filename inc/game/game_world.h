@@ -81,6 +81,8 @@ public:
 	void TutorialSpawnPickup(int cell_x, int cell_y, PickupKind kind);
 	/// 摆好玩家的位置。
 	void TutorialSetPlayer(int cell_x, int cell_y);
+	/// 让教程真的升一级（HUD 的 LEVEL 会 +1，敌人移动间隔按等级重算）。
+	void TutorialAdvanceLevel();
 
 	/// 推进一帧。dt 由调用方提供；暂停时调用方不应调用本函数。
 	void Tick(const GameInput& input, std::chrono::steady_clock::duration dt);
@@ -150,6 +152,8 @@ private:
 
 	// ========== update ==========
 	void UpdateLevel(const GameInput& input);
+	/// 按当前等级重算敌机移动间隔（正常升级与教程升级共用）
+	void RefreshEnemyMoveInterval();
 	void AccrueScore();
 	void UpdateBullets();
 	void UpdateEffects();

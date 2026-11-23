@@ -291,6 +291,9 @@ void GameSession::AdvanceTutorial()
 		SetTutorialStep(TutorialStep::PickupFirepower);
 		break;
 	case TutorialStep::PickupFirepower:
+		SetTutorialStep(TutorialStep::LevelUp);
+		break;
+	case TutorialStep::LevelUp:
 		SetTutorialStep(TutorialStep::Mechanics);
 		break;
 	case TutorialStep::Mechanics:
@@ -317,6 +320,14 @@ void GameSession::ArmTutorialStep()
 		tutorial_baseline_ammo_ = snap.bullets_remaining;
 		break;
 	}
+
+	case TutorialStep::LevelUp:
+		// 真的升一级：HUD 的 LEVEL 从 1 变 2，敌人移动间隔按新等级重算
+		world_.TutorialAdvanceLevel();
+		world_.TutorialSpawnEnemy(snap.player_x - 1, 6, 2);
+		world_.TutorialSpawnEnemy(snap.player_x - 1, 14, 2);
+		tutorial_baseline_ammo_ = snap.bullets_remaining;
+		break;
 
 	case TutorialStep::PickupHealth:
 	case TutorialStep::PickupAmmo:
@@ -430,6 +441,10 @@ void GameSession::StepTutorial(const InputState& input, bool input_ready, steady
 
 	case TutorialStep::PickupFirepower:
 		goal_met = snap.firepower_seconds_left > 0;
+		break;
+
+	case TutorialStep::LevelUp:
+		goal_met = snap.enemies.empty();
 		break;
 
 	case TutorialStep::Mechanics:

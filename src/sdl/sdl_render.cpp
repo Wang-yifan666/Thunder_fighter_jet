@@ -679,6 +679,10 @@ void DrawTutorial(SDL_Renderer* renderer, const thunder::SessionSnapshot& snapsh
 		line = GameText::kTutorialPickupFirepower;
 		hint = GameText::kTutorialPickupFirepowerHint;
 		break;
+	case TutorialStep::LevelUp:
+		line = GameText::kTutorialLevelUp;
+		hint = GameText::kTutorialLevelUpHint;
+		break;
 	case TutorialStep::Mechanics:
 		line = GameText::kTutorialMechanics;
 		hint = GameText::kTutorialMechanicsHint;
