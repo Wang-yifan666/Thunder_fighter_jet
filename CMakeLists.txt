@@ -5,7 +5,7 @@ if (DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
 endif()
 
 # 版本号同时提供给 Windows 资源（app.rc.in），改版本只改这里。
-project(Naiden VERSION 1.8 LANGUAGES CXX)
+project(Naiden VERSION 1.9 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

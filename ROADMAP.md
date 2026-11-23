@@ -88,13 +88,13 @@ SDL3 官方支持 Android（NativeActivity + `SDL_main` + Gradle），
 ```powershell
 # 1. 改版本号：CMakeLists.txt 的 project(VERSION) 与 inc/game/game_info.h
 # 2. 提交并打 tag
-git commit -am "release: v1.8"
-git tag v1.8
+git commit -am "release: v1.9"
+git tag v1.9
 git push && git push --tags
 ```
 
 CI 会自动：构建 → 跑测试 → 冒烟 → 生成安装包 → 创建 GitHub Release，
-挂上 `Naidan.exe`（便携版）与 `Naidan-1.8-setup.exe`（安装版）。
+挂上 `Naidan.exe`（便携版）与 `Naidan-1.9-setup.exe`（安装版）。
 
 ### 分发渠道
 

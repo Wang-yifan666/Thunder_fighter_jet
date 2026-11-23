@@ -13,7 +13,7 @@
 ; 版本由 tools\build_installer.ps1 的 -Version 传入（CI 从 tag 取数字部分），
 ; 直接编译本文件时用下面的默认值。
 #ifndef AppVersion
-  #define AppVersion "1.8"
+  #define AppVersion "1.9"
 #endif
 #define AppExeName "Naidan.exe"
 #define AppPublisher "Wang-yifan666"

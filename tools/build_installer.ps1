@@ -14,7 +14,7 @@
 #
 # 用法：
 #   pwsh tools/build_installer.ps1
-#   pwsh tools/build_installer.ps1 -Exe build/Naidan.exe -Version 1.8
+#   pwsh tools/build_installer.ps1 -Exe build/Naidan.exe -Version 1.9
 #   pwsh tools/build_installer.ps1 -Thumbprint 0123ABCD... -TimestampUrl http://timestamp.digicert.com
 #
 # 前置：已安装 Inno Setup 6（winget install JRSoftware.InnoSetup），
@@ -22,7 +22,7 @@
 
 param(
     [string]$Exe = "build/Naidan.exe",
-    [string]$Version = "1.8",
+    [string]$Version = "1.9",
     [string]$IsccPath = "",
     # 代码签名：留空则跳过（产物会是"未知发布者"）
     [string]$Thumbprint = "",
