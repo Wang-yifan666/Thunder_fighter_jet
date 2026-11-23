@@ -152,6 +152,7 @@ vcpkg install sdl3:x64-mingw-static sdl3-ttf:x64-mingw-static gtest:x64-mingw-st
 
 ```powershell
 cmake -S . -B build -G "MinGW Makefiles" `
+      -DCMAKE_BUILD_TYPE=Release `
       -DCMAKE_TOOLCHAIN_FILE=$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake `
       -DVCPKG_TARGET_TRIPLET=x64-mingw-static
 cmake --build build

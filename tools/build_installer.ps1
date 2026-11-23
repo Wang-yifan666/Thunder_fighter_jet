@@ -107,6 +107,7 @@ Copy-Item (Join-Path $root "packaging/payload/README.txt") $packageDir -Force
 Copy-Item (Join-Path $root "packaging/payload/THIRD_PARTY_LICENSES.txt") $packageDir -Force
 Copy-Item (Join-Path $root "LICENSE") (Join-Path $packageDir "LICENSE") -Force
 Copy-Item (Join-Path $root "assets/fonts/LICENSE-Ubuntu-Font-Licence-1.0.txt") $packageDir -Force
+Copy-Item (Join-Path $root "assets/fonts/LICENSE-NotoSansSC-OFL.txt") $packageDir -Force
 
 Write-Host "载荷目录：$packageDir"
 Get-ChildItem $packageDir | ForEach-Object { "  {0,-42} {1,8:N0} B" -f $_.Name, $_.Length }

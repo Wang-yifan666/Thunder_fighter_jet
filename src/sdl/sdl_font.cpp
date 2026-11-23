@@ -22,6 +22,8 @@ namespace
 
 constexpr int kMaxScale = 4;
 TTF_Font* g_fonts[kMaxScale + 1] = {};
+/// 中文 fallback 字体：跟主字体一一对应，同一字号
+TTF_Font* g_cjk_fonts[kMaxScale + 1] = {};
 bool g_ttf_ready = false;
 
 int ClampScale(int scale)
@@ -46,6 +48,20 @@ TTF_Font* OpenEmbeddedFont(float pixel_size)
 		return nullptr;
 
 	// closeio=true：字体对象接管流的生命周期
+	return TTF_OpenFontIO(io, true, pixel_size);
+}
+
+/// 中文子集：只用于给主字体做 fallback，不单独绘制。
+TTF_Font* OpenEmbeddedCjkFont(float pixel_size)
+{
+	if(SdlFontData::kCjkSubsetSize == 0)
+		return nullptr;
+
+	SDL_IOStream* io =
+	    SDL_IOFromMem(const_cast<unsigned char*>(SdlFontData::kCjkSubset), SdlFontData::kCjkSubsetSize);
+	if(io == nullptr)
+		return nullptr;
+
 	return TTF_OpenFontIO(io, true, pixel_size);
 }
 
@@ -78,6 +94,15 @@ std::string FindFontFile()
 void CloseFonts()
 {
 	for(auto& font: g_fonts)
+	{
+		if(font != nullptr)
+		{
+			TTF_CloseFont(font);
+			font = nullptr;
+		}
+	}
+	// fallback 字体要在主字体关闭之后再关
+	for(auto& font: g_cjk_fonts)
 	{
 		if(font != nullptr)
 		{
@@ -122,6 +147,17 @@ bool Init()
 		}
 
 		TTF_SetFontHinting(font, TTF_HINTING_LIGHT);
+
+		// 挂上中文 fallback：ASCII 仍走等宽字体，汉字自动落到子集字体上。
+		// 没有子集字体时中文会渲染成空白方块，但游戏其余部分不受影响。
+		if(TTF_Font* cjk = OpenEmbeddedCjkFont(static_cast<float>(PixelSize(scale))))
+		{
+			TTF_SetFontHinting(cjk, TTF_HINTING_LIGHT);
+			if(!TTF_AddFallbackFont(font, cjk))
+				std::fprintf(stderr, "add CJK fallback failed: %s\n", SDL_GetError());
+			g_cjk_fonts[scale] = cjk;
+		}
+
 		g_fonts[scale] = font;
 	}
 

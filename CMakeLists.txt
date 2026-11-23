@@ -179,6 +179,28 @@ if(SDL3_ttf_FOUND)
     else()
         message(STATUS "font missing: ${_font_file} (built-in bitmap font will be used)")
     endif()
+
+    # 中文子集（Noto Sans SC）作为 Ubuntu Mono 的 fallback 一起嵌入。
+    # 由 tools/subset_cjk_font.py 按 inc/game/game_text.h 的实际用字生成。
+    set(_cjk_file
+        "${CMAKE_CURRENT_SOURCE_DIR}/assets/fonts/NotoSansSC-Subset.ttf")
+    if(EXISTS "${_cjk_file}")
+        file(READ "${_cjk_file}" _cjk_hex HEX)
+        string(REGEX REPLACE "([0-9a-f][0-9a-f])" "0x\\1," _cjk_bytes "${_cjk_hex}")
+        set(_cjk_cpp
+            "${CMAKE_CURRENT_BINARY_DIR}/generated/cjk_subset_data.cpp")
+        file(WRITE "${_cjk_cpp}"
+            "#include <cstddef>\n"
+            "#include \"font_data.h\"\n"
+            "namespace SdlFontData\n{\n"
+            "const unsigned char kCjkSubset[] = {${_cjk_bytes}};\n"
+            "const std::size_t kCjkSubsetSize = sizeof(kCjkSubset);\n"
+            "} // namespace SdlFontData\n")
+        target_sources(Naidan PRIVATE "${_cjk_cpp}")
+    else()
+        message(STATUS "cjk subset missing: ${_cjk_file} "
+                       "(Chinese text will not render; run tools/subset_cjk_font.py)")
+    endif()
 endif()
 
 target_compile_features(Naidan PRIVATE cxx_std_17)
@@ -203,6 +225,7 @@ install(TARGETS Naidan RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 # 字体内嵌进 exe，但授权文件必须随发布一起提供
 install(FILES
     "${CMAKE_CURRENT_SOURCE_DIR}/assets/fonts/LICENSE-Ubuntu-Font-Licence-1.0.txt"
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets/fonts/LICENSE-NotoSansSC-OFL.txt"
     DESTINATION "${CMAKE_INSTALL_BINDIR}/licenses"
 )
 
