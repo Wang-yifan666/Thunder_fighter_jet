@@ -568,8 +568,7 @@ void DrawMenu(SDL_Renderer* renderer, const SdlRender::Layout& layout, bool chea
 	CenterText(renderer, layout.window_width, 290, 2, "1  START GAME", kText);
 	CenterText(renderer, layout.window_width, 330, 2, "2  LEADERBOARD", kText);
 	CenterText(renderer, layout.window_width, 370, 2, GameText::kTutorialMenu, kText);
-	CenterText(renderer, layout.window_width, 410, 2, GameText::kHelpMenu, kText);
-	CenterText(renderer, layout.window_width, 450, 2, "Q  QUIT", kText);
+	CenterText(renderer, layout.window_width, 410, 2, "Q  QUIT", kText);
 
 	// 作弊状态不常驻显示，只在切换后短暂提示一次
 	if(cheat_notice)
@@ -579,7 +578,7 @@ void DrawMenu(SDL_Renderer* renderer, const SdlRender::Layout& layout, bool chea
 		           cheats_enabled ? kTextAccent : kTextDim);
 	}
 
-	DrawHint(renderer, layout, "PRESS 1 / 2 / 3 / 4 / Q");
+	DrawHint(renderer, layout, "PRESS 1 / 2 / 3 / Q");
 }
 
 void DrawDifficulty(SDL_Renderer* renderer, const SdlRender::Layout& layout)
@@ -639,31 +638,14 @@ void DrawGameOver(SDL_Renderer* renderer, const thunder::SessionSnapshot& snapsh
 	CenterText(renderer, layout.window_width, panel_y + 170, 2, "R RESTART   Q QUIT", kTextDim);
 }
 
-/// 玩法说明：一页讲清弹药、生命、升级、精英、护盾与四种补给。
-void DrawHelp(SDL_Renderer* renderer, const SdlRender::Layout& layout)
-{
-	CenterText(renderer, layout.window_width, 40, 3, GameText::kHelpTitle, kTextAccent);
-
-	const char* lines[] = {
-	    GameText::kHelpLine1, GameText::kHelpLine2, GameText::kHelpLine3,
-	    GameText::kHelpLine4, GameText::kHelpLine5, GameText::kHelpLine6,
-	    GameText::kHelpLine7, GameText::kHelpLine8,
-	};
-	int y = 110;
-	for(const char* line: lines)
-	{
-		CenterText(renderer, layout.window_width, y, 1, line, kText);
-		y += 34;
-	}
-
-	DrawHint(renderer, layout, GameText::kHelpBack);
-}
-
 /// 教程：底部一条提示带，按步骤换文案；上方照常画世界（玩家、敌机、补给）。
 void DrawTutorial(SDL_Renderer* renderer, const thunder::SessionSnapshot& snapshot,
-                  const SdlRender::Layout& layout, double seconds)
+                  const SdlRender::Layout& layout, int fps, double seconds)
 {
 	DrawWorld(renderer, snapshot.world, layout, false, seconds);
+	// 顶部 HUD 照常画：新手要能看见 AMMO 一次涨 50、LIFE 涨 1
+	const int best = snapshot.leaderboard.empty() ? 0 : snapshot.leaderboard.front();
+	DrawHud(renderer, snapshot.world, best, fps, layout);
 
 	const char* line = "";
 	const char* hint = "";
@@ -697,23 +679,29 @@ void DrawTutorial(SDL_Renderer* renderer, const thunder::SessionSnapshot& snapsh
 		line = GameText::kTutorialPickupFirepower;
 		hint = GameText::kTutorialPickupFirepowerHint;
 		break;
+	case TutorialStep::Mechanics:
+		line = GameText::kTutorialMechanics;
+		hint = GameText::kTutorialMechanicsHint;
+		break;
 	case TutorialStep::Done:
 		line = GameText::kTutorialDone;
 		break;
 	}
 
-	// 顶部/底部各压一条半透明带，中文压在棋盘上也看得清
+	// 顶部那条带子压在棋盘上沿，给 HUD 让位；底部一条放提示
 	const float band = 30.0f;
-	Blend(renderer, 0.0f, 0.0f, static_cast<float>(layout.window_width), band,
+	const float band_y = static_cast<float>(layout.grid_y);
+	Blend(renderer, 0.0f, band_y, static_cast<float>(layout.window_width), band,
 	      SDL_Color{0, 0, 0, 180});
 	Blend(renderer, 0.0f, static_cast<float>(layout.window_height) - band,
 	      static_cast<float>(layout.window_width), band, SDL_Color{0, 0, 0, 180});
 
 	// 达成目标后换成"做得好！"，给玩家一个明确的完成反馈再切下一步
+	const int text_y = layout.grid_y + 7;
 	if(snapshot.tutorial_step_done && snapshot.tutorial_step != TutorialStep::Done)
-		CenterText(renderer, layout.window_width, 8, 2, GameText::kTutorialWellDone, kShockwave);
+		CenterText(renderer, layout.window_width, text_y, 2, GameText::kTutorialWellDone, kShockwave);
 	else
-		CenterText(renderer, layout.window_width, 8, 2, line, kTextAccent);
+		CenterText(renderer, layout.window_width, text_y, 2, line, kTextAccent);
 	if(hint[0] != '\0')
 		CenterText(renderer, layout.window_width, layout.window_height - 24, 1, hint, kTextDim);
 
@@ -771,12 +759,8 @@ void Draw(SDL_Renderer* renderer, const thunder::SessionSnapshot& snapshot, int 
 		         "WASD MOVE   SPACE FIRE   P PAUSE   Q MENU   F11 FULLSCREEN   ESC QUIT");
 		break;
 
-	case thunder::Screen::Help:
-		DrawHelp(renderer, layout);
-		break;
-
 	case thunder::Screen::Tutorial:
-		DrawTutorial(renderer, snapshot, layout, seconds);
+		DrawTutorial(renderer, snapshot, layout, fps, seconds);
 		break;
 
 	case thunder::Screen::TutorialDone:

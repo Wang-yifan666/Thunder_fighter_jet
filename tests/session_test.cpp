@@ -543,15 +543,28 @@ TEST(Session, TutorialFullPlaythroughUnlocksSkin)
 	EXPECT_TRUE(session.Snapshot().tutorial_newly_unlocked) << "第一次通关要提示解锁";
 	EXPECT_TRUE(settings.Load().tutorial_done) << "进度要落盘";
 }
-TEST(Session, HelpScreenOpensAndReturns)
+TEST(Session, TutorialAmmoPackIsDetectedWhileFiring)
 {
+	// 拾取训练不再禁火：玩家一边开火一边捡弹药包，也要能判定"捡到了"
 	MemoryScoreStore store;
-	GameSession session(store, 7);
+	thunder::MemorySettingsStore settings;
+	GameSession session(store, settings, 7);
 
-	StepMs(session, 16, Hold(Key::Digit4));
-	EXPECT_EQ(session.screen(), Screen::Help);
+	StepMs(session, 16, Hold(Key::Digit3));
+	StepMs(session, 250);
+	for(int i = 0; i < 100; ++i)
+		StepMs(session, 16, Hold(Key::Left));
 
-	StepMs(session, 250); // 等冷却
-	StepMs(session, 16, Hold(Key::Back));
-	EXPECT_EQ(session.screen(), Screen::Menu);
+	// 一路按住开火，直到走完开火与击落两步
+	for(int i = 0; i < 1500 && session.Snapshot().tutorial_step != TutorialStep::PickupAmmo; ++i)
+		StepMs(session, 16, Hold(Key::Fire));
+
+	ASSERT_EQ(session.Snapshot().tutorial_step, TutorialStep::PickupAmmo);
+
+	// 继续按着开火，等弹药包落到身上：不开火测试里会因为弹药被消耗而漏判
+	for(int i = 0; i < 900 && session.Snapshot().tutorial_step == TutorialStep::PickupAmmo; ++i)
+		StepMs(session, 16, Hold(Key::Fire));
+
+	EXPECT_NE(session.Snapshot().tutorial_step, TutorialStep::PickupAmmo)
+	    << "边开火边捡弹药包也要能过关";
 }

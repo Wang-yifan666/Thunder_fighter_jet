@@ -153,6 +153,8 @@ constexpr int kTutorialStepMinMs = 1600;
 constexpr int kTutorialStepDoneMs = 700;
 // 最后一步完成后多留一点时间再进结束页。
 constexpr int kTutorialFinishMs = 1200;
+// 机制说明页的阅读时间（没有目标，读够就过）
+constexpr int kTutorialMechanicsMs = 4200;
 // 移动训练至少挪动这么多格；射击训练至少开这么多枪（避免"随手一按就过关"）
 constexpr int kTutorialMoveCells = 6;
 constexpr int kTutorialFireShots = 3;

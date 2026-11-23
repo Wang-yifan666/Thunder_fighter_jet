@@ -21,18 +21,6 @@ steady_clock::duration ToDuration(milliseconds ms)
 
 } // namespace
 
-namespace
-{
-
-/// 教程里"捡补给"的四个步骤：这几步要禁火、要逐帧记账。
-bool IsTutorialPickupStep(TutorialStep step)
-{
-	return step == TutorialStep::PickupHealth || step == TutorialStep::PickupAmmo
-	    || step == TutorialStep::PickupShield || step == TutorialStep::PickupFirepower;
-}
-
-} // namespace
-
 GameSession::GameSession(ScoreStore& store, std::uint32_t rng_seed):
 world_(rng_seed), highscore_(store)
 {
@@ -98,11 +86,6 @@ void GameSession::Step(const RawInput& raw, steady_clock::duration dt)
 		{
 			StartTutorial();
 		}
-		else if(input_.Down(Key::Digit4))
-		{
-			cooldown_ = ToDuration(milliseconds(GameConfig::kKeyDebounceMs));
-			screen_ = Screen::Help;
-		}
 		// Q 与"游戏中返回主菜单"是同一个键，这里必须用按下沿：
 		// 若用按住判定，玩家在游戏中按住 Q 回到主菜单后会立刻退出程序。
 		else if(input_.Pressed(Key::Quit))
@@ -145,16 +128,6 @@ void GameSession::Step(const RawInput& raw, steady_clock::duration dt)
 
 	case Screen::Playing:
 		StepPlaying(input_, input_ready, dt);
-		break;
-
-	case Screen::Help:
-		// 任意键（B / Q / Esc）返回主菜单
-		if(input_ready && (input_.Down(Key::Back) || input_.Pressed(Key::Quit)
-		                   || input_.Pressed(Key::Escape)))
-		{
-			cooldown_ = ToDuration(milliseconds(GameConfig::kKeyDebounceMs));
-			screen_ = Screen::Menu;
-		}
 		break;
 
 	case Screen::Tutorial:
@@ -318,6 +291,9 @@ void GameSession::AdvanceTutorial()
 		SetTutorialStep(TutorialStep::PickupFirepower);
 		break;
 	case TutorialStep::PickupFirepower:
+		SetTutorialStep(TutorialStep::Mechanics);
+		break;
+	case TutorialStep::Mechanics:
 		SetTutorialStep(TutorialStep::Done);
 		break;
 	case TutorialStep::Done:
@@ -393,9 +369,6 @@ void GameSession::StepTutorial(const InputState& input, bool input_ready, steady
 	GameInput game_input = input_ready ? GameInput::FromInput(input) : GameInput{};
 	// 教程里禁用作弊键：数字键在教程中是别的用途，也不该把教程打乱
 	game_input.digit.fill(false);
-	// 拾取训练期间禁火：否则弹药包刚补的 50 发会被自己打掉，没法判断"捡到了没有"
-	if(IsTutorialPickupStep(tutorial_step_))
-		game_input.fire = false;
 
 	world_.Tick(game_input, dt);
 
@@ -445,7 +418,9 @@ void GameSession::StepTutorial(const InputState& input, bool input_ready, steady
 		break;
 
 	case TutorialStep::PickupAmmo:
-		goal_met = snap.bullets_remaining > tutorial_prev_ammo_;
+		// 这一步允许开火，所以不能用"比上一帧多"判断（开火会 -1）；
+		// 只有弹药包会一次加 50 发，用这个跳跃量认。
+		goal_met = (snap.bullets_remaining - tutorial_prev_ammo_) >= 20;
 		tutorial_prev_ammo_ = snap.bullets_remaining;
 		break;
 
@@ -455,6 +430,11 @@ void GameSession::StepTutorial(const InputState& input, bool input_ready, steady
 
 	case TutorialStep::PickupFirepower:
 		goal_met = snap.firepower_seconds_left > 0;
+		break;
+
+	case TutorialStep::Mechanics:
+		// 纯阅读页：给足时间看完再走
+		goal_met = tutorial_step_time_ >= ToDuration(milliseconds(GameConfig::kTutorialMechanicsMs));
 		break;
 
 	case TutorialStep::Done:

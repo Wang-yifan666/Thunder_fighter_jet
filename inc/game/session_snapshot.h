@@ -14,7 +14,6 @@ enum class Screen
 	Menu,
 	DifficultySelect,
 	Leaderboard,
-	Help,
 	Tutorial,
 	TutorialDone,
 	Playing,
